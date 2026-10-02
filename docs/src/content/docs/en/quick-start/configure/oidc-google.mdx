@@ -1,0 +1,132 @@
+---
+title: OIDC with Google
+---
+
+This guide shows how to let users sign in to HomeBox with a Google account. It builds on the general [OIDC SSO](./oidc) page, so read that first if you want to know what each setting does.
+
+> [!NOTE]
+> Google's console changes often. If a menu name below doesn't match what you see, check [Google's OpenID Connect documentation](https://developers.google.com/identity/openid-connect/openid-connect).
+
+## 1. Create OAuth credentials in Google Cloud
+
+1. Open the [Google Cloud Console](https://console.cloud.google.com/) and select (or create) a project.
+2. Go to **APIs & Services → OAuth consent screen** (shown as **Google Auth Platform** in newer consoles) and configure it:
+   - **User type**: choose **Internal** if you use Google Workspace and only your organisation should sign in. Otherwise choose **External**.
+   - Fill in the app name and support email.
+   - Scopes: `openid`, `email` and `profile` are enough.
+   - If the app is in **Testing** status, add your Google accounts under **Test users**. Only those accounts can sign in until you publish the app.
+3. Go to **APIs & Services → Credentials → Create credentials → OAuth client ID**.
+   - **Application type**: `Web application`
+   - **Authorized redirect URIs**: add the HomeBox callback URL (see below).
+4. Click **Create** and copy the **Client ID** and **Client secret**.
+
+### Redirect URI
+
+The redirect URI must match exactly what HomeBox sends:
+
+```
+https://<your-homebox-host>/api/v1/users/login/oidc/callback
+```
+
+Examples:
+
+| Setup | Redirect URI |
+| --- | --- |
+| Production behind HTTPS | `https://homebox.example.com/api/v1/users/login/oidc/callback` |
+| Local backend | `http://localhost:7745/api/v1/users/login/oidc/callback` |
+| Local Nuxt dev server | `http://localhost:3000/api/v1/users/login/oidc/callback` |
+
+> [!CAUTION]
+> Google only accepts plain `http://` redirect URIs for `localhost`. Any other host must use `https://`, and Google does not accept raw IP addresses.
+
+## 2. Configure HomeBox
+
+Google's issuer URL is always `https://accounts.google.com`.
+
+```bash
+HBOX_OIDC_ENABLED=true
+HBOX_OIDC_ISSUER_URL=https://accounts.google.com
+HBOX_OIDC_CLIENT_ID=1234567890-abcdefg.apps.googleusercontent.com
+HBOX_OIDC_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxx
+HBOX_OIDC_BUTTON_TEXT="Sign in with Google"
+HBOX_OIDC_VERIFY_EMAIL=true
+```
+
+The default scope (`openid profile email`) works with Google, so you don't need to set `HBOX_OIDC_SCOPE`.
+
+If you run HomeBox behind a reverse proxy, also set `HBOX_OPTIONS_TRUST_PROXY=true` so the `https` scheme is detected. See [OIDC SSO](./oidc#basic-oidc-setup) for details.
+
+### Docker Compose example
+
+```yaml
+services:
+  homebox:
+    image: ghcr.io/sysadminsmedia/homebox:latest
+    ports:
+      - 3100:7745
+    environment:
+      - HBOX_OPTIONS_TRUST_PROXY=true
+      - HBOX_OIDC_ENABLED=true
+      - HBOX_OIDC_ISSUER_URL=https://accounts.google.com
+      - HBOX_OIDC_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - HBOX_OIDC_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - HBOX_OIDC_BUTTON_TEXT=Sign in with Google
+      - HBOX_OIDC_VERIFY_EMAIL=true
+    volumes:
+      - ./data:/data
+```
+
+Put `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in a `.env` file next to the compose file, and keep that file out of version control.
+
+## 3. Test it
+
+1. Restart HomeBox.
+2. Open the login page. A **Sign in with Google** button should appear.
+3. Click it, choose a Google account and approve the consent screen. You are redirected back to HomeBox and logged in.
+
+## Limiting who can sign in
+
+Google does **not** provide a `groups` claim, so `HBOX_OIDC_ALLOWED_GROUPS` can't be used to restrict access with Google. Instead:
+
+- Use an **Internal** consent screen, which limits sign-in to your Google Workspace organisation.
+- Keep the app in **Testing** status with a short list of **Test users**.
+
+> [!NOTE]
+> HomeBox creates a new user the first time someone signs in through OIDC, so restrict access on the Google side as described above.
+
+## Local development
+
+If you run the Nuxt dev server on port 3000, its `/api` proxy rewrites the `Host` header to `localhost:7745`. HomeBox then sends `http://localhost:7745/...` as the redirect URI, which won't match a `:3000` URI registered in Google and causes `redirect_uri_mismatch`.
+
+Set the hostname override on the backend so the redirect URI always uses the address you browse to:
+
+```bash
+HBOX_OPTIONS_HOSTNAME=localhost:3000
+```
+
+Then register `http://localhost:3000/api/v1/users/login/oidc/callback` in Google and sign in from `http://localhost:3000`. The value is used as-is as the host, so a port is accepted.
+
+## Behind a reverse proxy or Cloudflare Tunnel
+
+Google needs a public `https://` domain, so a LAN IP or `.local` name won't work. Use one hostname for every access path, and register its callback URL in Google:
+
+```yaml
+HBOX_OPTIONS_HOSTNAME=homebox.example.com
+HBOX_OPTIONS_TRUST_PROXY=true
+```
+
+- Point the proxy or tunnel at HomeBox's port (7745) and don't override the `Host` header.
+- To keep LAN traffic local, use split DNS so the same hostname resolves to a local reverse proxy that has a valid certificate.
+- Leave `HBOX_OPTIONS_HOSTNAME` unset only if you want several hostnames. Then register one redirect URI per hostname and make sure the proxy forwards `Host` or `X-Forwarded-Host`.
+- If an access gateway such as Cloudflare Access protects the hostname, users must pass it before Google sign-in.
+- Home Assistant ingress can't be used for OIDC, because the callback path is fixed. Sign in through the public hostname instead.
+
+## Troubleshooting
+
+| Symptom | Likely cause |
+| --- | --- |
+| `redirect_uri_mismatch` error from Google | The URI registered in Google doesn't exactly match the one HomeBox sends. Check the scheme (`http` vs `https`), host, port and path. Behind a proxy, set `HBOX_OPTIONS_TRUST_PROXY=true`. |
+| `Access blocked: app has not completed verification` or `access_denied` | The app is in **Testing** status and your account isn't listed under **Test users**. |
+| Login button doesn't appear | `HBOX_OIDC_ENABLED` isn't `true`, or HomeBox couldn't reach the issuer at startup. Check the logs. |
+| Issuer mismatch error | `HBOX_OIDC_ISSUER_URL` must be exactly `https://accounts.google.com`, with no trailing slash. |
+| Email not verified | You set `HBOX_OIDC_VERIFY_EMAIL=true` and the Google account's email isn't verified. |
