@@ -16,6 +16,9 @@ record and notifier in the collection. Restore it with **Upload & Restore** into
 
 ## Destinations
 
+Only collection owners can see and manage destinations and the backups they hold. Other members cannot list, download or
+delete those backups, even through the general export endpoints.
+
 A destination is a place to write backups to, together with its own schedule, retention, health check and alert
 settings. A collection can have up to 20.
 
@@ -27,8 +30,10 @@ settings. A collection can have up to 20.
 | Google Cloud Storage | A `gcs://bucket` URL.                                                            | `GOOGLE_APPLICATION_CREDENTIALS`                      |
 | Azure Blob           | An `azblob://container` URL.                                                     | `AZURE_STORAGE_ACCOUNT` and `AZURE_STORAGE_KEY`       |
 
-The cloud types use the same connection strings and parameters as [Storage](./storage), including `endpoint`,
-`region` and `use_path_style` for S3-compatible servers.
+The cloud types use the same connection strings and parameters as [Storage](./storage), including `region` for AWS.
+S3-compatible servers (MinIO, a NAS) need the `endpoint` and `use_path_style` parameters, and an **operator must turn
+on custom endpoints** with `HBOX_BACKUP_ALLOW_CUSTOM_ENDPOINTS=true`. A custom endpoint makes the Homebox server
+connect to whatever address a collection owner types in, wherever the server can reach, so it is off by default.
 
 > [!IMPORTANT]
 > Homebox never stores credentials for a destination. Cloud providers read them from the server's environment, and a
@@ -87,7 +92,9 @@ Alerts are sent once per problem, not repeatedly, and a recovery notice follows:
 
 - a backup fails
 - a destination fails the configured number of consecutive health checks
-- no backup has succeeded for the configured number of hours (set `0` to turn this off)
+- no backup has succeeded for the configured number of hours (set `0` to turn this off). A run skipped because nothing
+  changed counts as a success here, and the limit is never shorter than two schedule periods, so a weekly or monthly
+  schedule does not alert between its runs even with the default 48 hours
 
 Problems also show as a banner above the destination list. Messages go to the collection's active
 [Notifiers](/user-guide/notifiers/).
@@ -102,10 +109,15 @@ Problems also show as a banner above the destination list. Messages go to the co
 |--------------------------------------|---------|----------------------------------------------------------------------------------------------|
 | `HBOX_BACKUP_ENABLED`                | `true`  | Turns destinations, the scheduler and health checks on or off. Manual exports are unaffected. |
 | `HBOX_BACKUP_LOCAL_ROOT`             |         | Directory local destinations live under. Empty disables local destinations.                  |
-| `HBOX_BACKUP_ALLOW_CUSTOM_ENDPOINTS` | `true`  | Allow cloud URLs with a custom `endpoint`. Turn off to restrict to default provider endpoints. |
+| `HBOX_BACKUP_ALLOW_CUSTOM_ENDPOINTS` | `false` | Let collection owners use cloud URLs with a custom `endpoint`. Off by default: it makes the server connect to addresses owners enter. |
 
 ## Limits
 
+- A destination's **type, address and folder prefix cannot be changed while it holds backups**, because each stored file
+  is found again through those settings. Delete its backups first, or add a new destination. The name, schedule,
+  retention and alert settings can always be edited.
+- A backup that stops partway (a crash or restart) is marked failed after six hours without progress, so it cannot block
+  the destination forever.
 - Deleting a destination removes it and its history, but **does not delete files** already written to it.
 - SFTP, WebDAV, SMB/NFS and consumer cloud drives (Google Drive, OneDrive, Dropbox) are not supported yet. See the
   [discussion](https://github.com/sysadminsmedia/homebox/discussions/1767) for what is planned.

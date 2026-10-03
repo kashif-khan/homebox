@@ -76,10 +76,12 @@ type BackupConf struct {
 	// sub-directories. Empty disables local destinations; the primary
 	// storage and cloud destinations still work.
 	LocalRoot string `yaml:"local_root"`
-	// AllowCustomEndpoints permits cloud destination URLs that carry an
-	// endpoint (S3-compatible servers, NAS gateways, emulators). Turn off to
-	// restrict destinations to the providers' default endpoints.
-	AllowCustomEndpoints bool `yaml:"allow_custom_endpoints" conf:"default:true"`
+	// AllowCustomEndpoints lets collection owners point destinations at addresses
+	// they choose: cloud URLs with a custom endpoint (S3-compatible servers, NAS
+	// gateways, emulators) and SFTP, WebDAV and SMB servers. Each is a connection
+	// the server makes on the owner's behalf, to wherever the server can reach,
+	// so it is off by default and an operator opts in.
+	AllowCustomEndpoints bool `yaml:"allow_custom_endpoints" conf:"default:false"`
 }
 
 // SearchConf selects and configures the free-text search engine. The default

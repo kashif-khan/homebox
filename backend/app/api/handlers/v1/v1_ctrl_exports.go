@@ -35,6 +35,10 @@ func (ctrl *V1Controller) HandleExportsList() errchain.HandlerFunc {
 		if err != nil {
 			return Results[repo.ExportOut]{}, err
 		}
+		rows, err = ctrl.svc.Backups.VisibleExports(ctx, rows)
+		if err != nil {
+			return Results[repo.ExportOut]{}, err
+		}
 		return WrapResults(rows), nil
 	}
 
@@ -74,7 +78,14 @@ func (ctrl *V1Controller) HandleExportsCreate() errchain.HandlerFunc {
 func (ctrl *V1Controller) HandleExportGet() errchain.HandlerFunc {
 	fn := func(r *http.Request, id uuid.UUID) (repo.ExportOut, error) {
 		ctx := services.NewContext(r.Context())
-		return ctrl.repo.Exports.Get(ctx, ctx.GID, id)
+		out, err := ctrl.repo.Exports.Get(ctx, ctx.GID, id)
+		if err != nil {
+			return out, err
+		}
+		if err := ctrl.svc.Backups.AuthorizeExportAccess(ctx, out); err != nil {
+			return repo.ExportOut{}, err
+		}
+		return out, nil
 	}
 
 	return adapters.CommandID("id", fn, http.StatusOK)
@@ -102,6 +113,9 @@ func (ctrl *V1Controller) HandleExportDownload() errchain.HandlerFunc {
 				return validate.NewRequestError(err, http.StatusNotFound)
 			}
 			return validate.NewRequestError(err, http.StatusInternalServerError)
+		}
+		if err := ctrl.svc.Backups.AuthorizeExportAccess(ctx, out); err != nil {
+			return err
 		}
 		if out.Status != "completed" || out.ArtifactPath == "" {
 			return validate.NewRequestError(errors.New("export not ready"), http.StatusConflict)
@@ -162,6 +176,11 @@ func (ctrl *V1Controller) HandleExportDelete() errchain.HandlerFunc {
 			if ent.IsNotFound(err) {
 				return nil, nil
 			}
+			return nil, err
+		}
+		// Checked before the artifact branch so a destination-bound row without an
+		// artifact is protected too.
+		if err := ctrl.svc.Backups.AuthorizeExportAccess(ctx, out); err != nil {
 			return nil, err
 		}
 		if out.ArtifactPath != "" {

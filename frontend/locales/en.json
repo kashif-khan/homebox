@@ -994,7 +994,7 @@
             "alerts_enabled": "Send alerts",
             "alerts_help": "Alerts go to this banner and to your active notifiers when a backup fails, a destination stays unreachable, or no backup has succeeded for too long.",
             "at_minute": "At minute",
-            "conn_help": "Credentials are not stored here. Cloud providers read them from the server's environment variables (see the Storage docs).",
+            "conn_help": "Credentials are not stored here. Cloud providers read them from the server's environment variables (see the Storage docs). Custom endpoints (for example MinIO) must be allowed by the server operator.",
             "conn_string": "Connection string",
             "day_of_month": "Day of month",
             "delete_confirm": "Delete the destination \"{name}\" and its backup history? Files already written to the destination are not deleted.",
