@@ -990,6 +990,11 @@ func (s *BackupService) SchedulerTick(ctx context.Context) {
 // schedule.
 func schedulePeriod(c repo.BackupSettings) time.Duration {
 	switch c.Frequency {
+	case "cron":
+		if sched, err := parseCron(c.CronExpr); err == nil {
+			return cronPeriod(sched)
+		}
+		return 24 * time.Hour
 	case "hourly":
 		return time.Duration(max(c.IntervalHours, 1)) * time.Hour
 	case "weekly":
