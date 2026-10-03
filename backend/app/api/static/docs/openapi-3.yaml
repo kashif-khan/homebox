@@ -806,7 +806,7 @@ paths:
         - Backups
       summary: Create a Backup Destination
       requestBody:
-        $ref: "#/components/requestBodies/repo.BackupSettings"
+        $ref: "#/components/requestBodies/repo.BackupInput"
       responses:
         "201":
           description: Created
@@ -822,7 +822,7 @@ paths:
         - Backups
       summary: Test Unsaved Backup Destination Settings
       requestBody:
-        $ref: "#/components/requestBodies/repo.BackupSettings"
+        $ref: "#/components/requestBodies/repo.BackupInput"
       responses:
         "200":
           description: OK
@@ -865,7 +865,7 @@ paths:
           schema:
             type: string
       requestBody:
-        $ref: "#/components/requestBodies/repo.BackupSettings"
+        $ref: "#/components/requestBodies/repo.BackupInput"
       responses:
         "200":
           description: OK
@@ -2261,11 +2261,11 @@ servers:
   - url: /api
 components:
   requestBodies:
-    repo.BackupSettings:
+    repo.BackupInput:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/repo.BackupSettings"
+            $ref: "#/components/schemas/repo.BackupInput"
       description: Destination settings
       required: true
   securitySchemes:
@@ -2340,6 +2340,8 @@ components:
         - s3
         - gcs
         - azblob
+        - sftp
+        - webdav
       x-enum-varnames:
         - DefaultType
         - TypePrimary
@@ -2347,6 +2349,8 @@ components:
         - TypeS3
         - TypeGcs
         - TypeAzblob
+        - TypeSftp
+        - TypeWebdav
     currencies.Currency:
       type: object
       properties:
@@ -2581,6 +2585,9 @@ components:
           description: HealthStatus holds the value of the "health_status" field.
           allOf:
             - $ref: "#/components/schemas/backupdestination.HealthStatus"
+        host_key:
+          description: HostKey holds the value of the "host_key" field.
+          type: string
         id:
           description: ID of the ent.
           type: string
@@ -2632,6 +2639,9 @@ components:
             - $ref: "#/components/schemas/backupdestination.Type"
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
+          type: string
+        username:
+          description: Username holds the value of the "username" field.
           type: string
         weekday:
           description: Weekday holds the value of the "weekday" field.
@@ -3614,6 +3624,9 @@ components:
             - monthly
         groupId:
           type: string
+        hasSecret:
+          description: HasSecret reports whether credentials are stored for the destination.
+          type: boolean
         healthCheckedAt:
           type: string
           nullable: true
@@ -3627,6 +3640,9 @@ components:
           minimum: 1
         healthStatus:
           type: string
+        hostKey:
+          type: string
+          maxLength: 255
         id:
           type: string
         intervalHours:
@@ -3671,7 +3687,7 @@ components:
         skipIfUnchanged:
           type: boolean
         type:
-          description: Type is one of primary, local, s3, gcs, azblob.
+          description: Type is one of primary, local, s3, gcs, azblob, sftp, webdav.
           type: string
           enum:
             - primary
@@ -3679,13 +3695,21 @@ components:
             - s3
             - gcs
             - azblob
+            - sftp
+            - webdav
         updatedAt:
           type: string
+        username:
+          description: |-
+            Username and HostKey serve the sftp and webdav types. HostKey is the
+            SSH host key fingerprint (SHA256:...) an sftp server must present.
+          type: string
+          maxLength: 255
         weekday:
           type: integer
           maximum: 6
           minimum: 0
-    repo.BackupSettings:
+    repo.BackupInput:
       type: object
       required:
         - frequency
@@ -3722,6 +3746,13 @@ components:
         description:
           type: string
           maxLength: 1000
+        destinationId:
+          description: >-
+            DestinationID is only used when testing unsaved settings: it lets
+            the
+
+            test reuse the stored credentials of that destination.
+          type: string
         enabled:
           type: boolean
         frequency:
@@ -3736,6 +3767,9 @@ components:
           type: integer
           maximum: 1440
           minimum: 1
+        hostKey:
+          type: string
+          maxLength: 255
         intervalHours:
           type: integer
           maximum: 168
@@ -3756,15 +3790,25 @@ components:
           type: string
           maxLength: 255
           minLength: 1
+        password:
+          description: >-
+            Password is the sftp or webdav password. Leave empty to keep the
+            stored
+
+            credentials of an existing destination.
+          type: string
         prefix:
           type: string
           maxLength: 255
+        privateKey:
+          description: PrivateKey is an unencrypted PEM private key for sftp.
+          type: string
         scheduleEnabled:
           type: boolean
         skipIfUnchanged:
           type: boolean
         type:
-          description: Type is one of primary, local, s3, gcs, azblob.
+          description: Type is one of primary, local, s3, gcs, azblob, sftp, webdav.
           type: string
           enum:
             - primary
@@ -3772,6 +3816,14 @@ components:
             - s3
             - gcs
             - azblob
+            - sftp
+            - webdav
+        username:
+          description: |-
+            Username and HostKey serve the sftp and webdav types. HostKey is the
+            SSH host key fingerprint (SHA256:...) an sftp server must present.
+          type: string
+          maxLength: 255
         weekday:
           type: integer
           maximum: 6
@@ -4886,6 +4938,11 @@ components:
     services.TestResult:
       type: object
       properties:
+        hostKey:
+          description: |-
+            HostKey is the SSH host key fingerprint the server presented when it
+            was missing or did not match, so the UI can offer to trust it.
+          type: string
         latencyMs:
           type: integer
         message:
@@ -4965,6 +5022,8 @@ components:
         enabled:
           type: boolean
         localEnabled:
+          type: boolean
+        remoteEnabled:
           type: boolean
     v1.Build:
       type: object

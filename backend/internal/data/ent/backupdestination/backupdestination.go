@@ -30,6 +30,12 @@ const (
 	FieldType = "type"
 	// FieldConnString holds the string denoting the conn_string field in the database.
 	FieldConnString = "conn_string"
+	// FieldUsername holds the string denoting the username field in the database.
+	FieldUsername = "username"
+	// FieldSecret holds the string denoting the secret field in the database.
+	FieldSecret = "secret"
+	// FieldHostKey holds the string denoting the host_key field in the database.
+	FieldHostKey = "host_key"
 	// FieldPrefix holds the string denoting the prefix field in the database.
 	FieldPrefix = "prefix"
 	// FieldEnabled holds the string denoting the enabled field in the database.
@@ -113,6 +119,9 @@ var Columns = []string{
 	FieldGroupID,
 	FieldType,
 	FieldConnString,
+	FieldUsername,
+	FieldSecret,
+	FieldHostKey,
 	FieldPrefix,
 	FieldEnabled,
 	FieldScheduleEnabled,
@@ -168,6 +177,10 @@ var (
 	DescriptionValidator func(string) error
 	// ConnStringValidator is a validator for the "conn_string" field. It is called by the builders before save.
 	ConnStringValidator func(string) error
+	// UsernameValidator is a validator for the "username" field. It is called by the builders before save.
+	UsernameValidator func(string) error
+	// HostKeyValidator is a validator for the "host_key" field. It is called by the builders before save.
+	HostKeyValidator func(string) error
 	// DefaultPrefix holds the default value on creation for the "prefix" field.
 	DefaultPrefix string
 	// PrefixValidator is a validator for the "prefix" field. It is called by the builders before save.
@@ -233,6 +246,8 @@ const (
 	TypeS3      Type = "s3"
 	TypeGcs     Type = "gcs"
 	TypeAzblob  Type = "azblob"
+	TypeSftp    Type = "sftp"
+	TypeWebdav  Type = "webdav"
 )
 
 func (_type Type) String() string {
@@ -242,7 +257,7 @@ func (_type Type) String() string {
 // TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
 func TypeValidator(_type Type) error {
 	switch _type {
-	case TypePrimary, TypeLocal, TypeS3, TypeGcs, TypeAzblob:
+	case TypePrimary, TypeLocal, TypeS3, TypeGcs, TypeAzblob, TypeSftp, TypeWebdav:
 		return nil
 	default:
 		return fmt.Errorf("backupdestination: invalid enum value for type field: %q", _type)
@@ -345,6 +360,21 @@ func ByType(opts ...sql.OrderTermOption) OrderOption {
 // ByConnString orders the results by the conn_string field.
 func ByConnString(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldConnString, opts...).ToFunc()
+}
+
+// ByUsername orders the results by the username field.
+func ByUsername(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUsername, opts...).ToFunc()
+}
+
+// BySecret orders the results by the secret field.
+func BySecret(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSecret, opts...).ToFunc()
+}
+
+// ByHostKey orders the results by the host_key field.
+func ByHostKey(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHostKey, opts...).ToFunc()
 }
 
 // ByPrefix orders the results by the prefix field.

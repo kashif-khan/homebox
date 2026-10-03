@@ -26,19 +26,57 @@ settings. A collection can have up to 20.
 | S3-compatible        | An `s3://bucket?...` URL: AWS, MinIO, Backblaze B2, Cloudflare R2 and similar.   | `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`       |
 | Google Cloud Storage | A `gcs://bucket` URL.                                                            | `GOOGLE_APPLICATION_CREDENTIALS`                      |
 | Azure Blob           | An `azblob://container` URL.                                                     | `AZURE_STORAGE_ACCOUNT` and `AZURE_STORAGE_KEY`       |
+| SFTP                 | A folder on any SSH server: TrueNAS, Unraid, Synology, a Linux box.              | Username and password or key, stored encrypted        |
+| WebDAV               | A WebDAV share: Nextcloud, ownCloud, Synology, an Apache or nginx DAV folder.    | Username and password, stored encrypted               |
 
 The cloud types use the same connection strings and parameters as [Storage](./storage), including `endpoint`,
 `region` and `use_path_style` for S3-compatible servers.
 
 > [!IMPORTANT]
-> Homebox never stores credentials for a destination. Cloud providers read them from the server's environment, and a
-> connection string that embeds a username or password is rejected.
+> The S3, Google Cloud Storage and Azure types never store credentials: they read them from the server's environment, and
+> a connection string that embeds a username or password is rejected. Only SFTP and WebDAV store a login, and they store
+> it encrypted (see below).
+
+### SFTP and WebDAV
+
+These two types need a login, so they are only available once you set an encryption key:
+
+```yaml
+services:
+  homebox:
+    environment:
+      # openssl rand -base64 32
+      HBOX_BACKUP_ENCRYPTION_KEY: "<generated key>"
+```
+
+Passwords and private keys are sealed with AES-256-GCM before they are saved, are bound to their destination, and are
+never returned by the API or shown again. **Keep the key stable and backed up separately**: if it changes, stored logins
+can no longer be read and you will need to re-enter them.
+
+- **Address**: `sftp://host[:port]/path` for SFTP, or the full `https://host/path/` URL for WebDAV. Put the username in its
+  own field, not in the URL.
+- **SFTP host key**: to make sure backups are only sent to your server, an SFTP destination is pinned to the server's SSH
+  host key. Click **Test connection** once. Homebox shows the fingerprint the server presented. Compare it with your server
+  (`ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`), then click **Trust this host key**. If the key ever changes, the
+  destination goes unreachable instead of silently trusting the new one.
+- **Private key**: SFTP also accepts an unencrypted PEM private key instead of a password.
+- **Changing a destination**: saved credentials are only kept while the type, address and username stay the same.
+  Otherwise you must enter them again, so a destination can't be re-pointed at another server to collect them.
+
+Uploads are written to a temporary `.part` file and renamed when complete, so a half-finished backup never looks like a
+good one.
+
+![Add an SFTP backup destination](../../../../../assets/user-guide/backups-add-sftp.png)
 
 ![Add backup destination dialog](../../../../../assets/user-guide/backups-add-destination.png)
 
 ### Using a NAS (TrueNAS, Unraid, Synology)
 
-Mount the share on the host (NFS or SMB), make it available to the container, and point `HBOX_BACKUP_LOCAL_ROOT` at it:
+The simplest option is an **SFTP** destination pointing at a dataset on the NAS (enable the SSH service and give a user
+write access). **WebDAV** and **S3-compatible** (MinIO) work as well.
+
+If you would rather use a share you already mount (NFS or SMB), make it available to the container and point
+`HBOX_BACKUP_LOCAL_ROOT` at it:
 
 ```yaml
 services:
@@ -50,8 +88,7 @@ services:
 ```
 
 Then add a **Local directory** destination and enter a folder name such as `daily`. Backups are written to
-`/backups/daily/`. Folder names cannot leave the backup root. Alternatively, run MinIO on the NAS and use an
-**S3-compatible** destination.
+`/backups/daily/`. Folder names cannot leave the backup root.
 
 ## Schedule
 
@@ -102,11 +139,14 @@ Problems also show as a banner above the destination list. Messages go to the co
 |--------------------------------------|---------|----------------------------------------------------------------------------------------------|
 | `HBOX_BACKUP_ENABLED`                | `true`  | Turns destinations, the scheduler and health checks on or off. Manual exports are unaffected. |
 | `HBOX_BACKUP_LOCAL_ROOT`             |         | Directory local destinations live under. Empty disables local destinations.                  |
-| `HBOX_BACKUP_ALLOW_CUSTOM_ENDPOINTS` | `true`  | Allow cloud URLs with a custom `endpoint`. Turn off to restrict to default provider endpoints. |
+| `HBOX_BACKUP_ALLOW_CUSTOM_ENDPOINTS` | `true`  | Allow cloud URLs with a custom `endpoint`, and SFTP/WebDAV servers. Turn off to restrict to default provider endpoints. |
+| `HBOX_BACKUP_ENCRYPTION_KEY`         |         | Seals SFTP and WebDAV logins at rest. Required to use those types. Keep it stable.           |
 
 ## Limits
 
 - Deleting a destination removes it and its history, but **does not delete files** already written to it.
-- SFTP, WebDAV, SMB/NFS and consumer cloud drives (Google Drive, OneDrive, Dropbox) are not supported yet. See the
+- Native SMB/NFS and consumer cloud drives (Google Drive, OneDrive, Dropbox) are not supported yet. Mount an SMB/NFS share
+  and use a local directory, or use SFTP or WebDAV. See the
   [discussion](https://github.com/sysadminsmedia/homebox/discussions/1767) for what is planned.
+- SFTP private keys must be unencrypted (no passphrase).
 - Scheduled backups are not available in demo mode.

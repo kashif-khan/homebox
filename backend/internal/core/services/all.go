@@ -134,6 +134,11 @@ func New(repos *repo.AllRepos, opts ...OptionsFunc) *AllServices {
 		bus:            options.bus,
 	}
 	exportSvc.backups = backupSvc
+	box, err := newSecretBox(options.backup.EncryptionKey)
+	if err != nil {
+		panic("failed to initialise backup secret encryption: " + err.Error())
+	}
+	backupSvc.secrets = box
 
 	return &AllServices{
 		User:  &UserService{repos: repos, mailer: options.mailer},

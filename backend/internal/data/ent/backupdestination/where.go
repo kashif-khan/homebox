@@ -86,6 +86,21 @@ func ConnString(v string) predicate.BackupDestination {
 	return predicate.BackupDestination(sql.FieldEQ(FieldConnString, v))
 }
 
+// Username applies equality check predicate on the "username" field. It's identical to UsernameEQ.
+func Username(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldEQ(FieldUsername, v))
+}
+
+// Secret applies equality check predicate on the "secret" field. It's identical to SecretEQ.
+func Secret(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldEQ(FieldSecret, v))
+}
+
+// HostKey applies equality check predicate on the "host_key" field. It's identical to HostKeyEQ.
+func HostKey(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldEQ(FieldHostKey, v))
+}
+
 // Prefix applies equality check predicate on the "prefix" field. It's identical to PrefixEQ.
 func Prefix(v string) predicate.BackupDestination {
 	return predicate.BackupDestination(sql.FieldEQ(FieldPrefix, v))
@@ -559,6 +574,231 @@ func ConnStringEqualFold(v string) predicate.BackupDestination {
 // ConnStringContainsFold applies the ContainsFold predicate on the "conn_string" field.
 func ConnStringContainsFold(v string) predicate.BackupDestination {
 	return predicate.BackupDestination(sql.FieldContainsFold(FieldConnString, v))
+}
+
+// UsernameEQ applies the EQ predicate on the "username" field.
+func UsernameEQ(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldEQ(FieldUsername, v))
+}
+
+// UsernameNEQ applies the NEQ predicate on the "username" field.
+func UsernameNEQ(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldNEQ(FieldUsername, v))
+}
+
+// UsernameIn applies the In predicate on the "username" field.
+func UsernameIn(vs ...string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldIn(FieldUsername, vs...))
+}
+
+// UsernameNotIn applies the NotIn predicate on the "username" field.
+func UsernameNotIn(vs ...string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldNotIn(FieldUsername, vs...))
+}
+
+// UsernameGT applies the GT predicate on the "username" field.
+func UsernameGT(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldGT(FieldUsername, v))
+}
+
+// UsernameGTE applies the GTE predicate on the "username" field.
+func UsernameGTE(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldGTE(FieldUsername, v))
+}
+
+// UsernameLT applies the LT predicate on the "username" field.
+func UsernameLT(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldLT(FieldUsername, v))
+}
+
+// UsernameLTE applies the LTE predicate on the "username" field.
+func UsernameLTE(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldLTE(FieldUsername, v))
+}
+
+// UsernameContains applies the Contains predicate on the "username" field.
+func UsernameContains(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldContains(FieldUsername, v))
+}
+
+// UsernameHasPrefix applies the HasPrefix predicate on the "username" field.
+func UsernameHasPrefix(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldHasPrefix(FieldUsername, v))
+}
+
+// UsernameHasSuffix applies the HasSuffix predicate on the "username" field.
+func UsernameHasSuffix(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldHasSuffix(FieldUsername, v))
+}
+
+// UsernameIsNil applies the IsNil predicate on the "username" field.
+func UsernameIsNil() predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldIsNull(FieldUsername))
+}
+
+// UsernameNotNil applies the NotNil predicate on the "username" field.
+func UsernameNotNil() predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldNotNull(FieldUsername))
+}
+
+// UsernameEqualFold applies the EqualFold predicate on the "username" field.
+func UsernameEqualFold(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldEqualFold(FieldUsername, v))
+}
+
+// UsernameContainsFold applies the ContainsFold predicate on the "username" field.
+func UsernameContainsFold(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldContainsFold(FieldUsername, v))
+}
+
+// SecretEQ applies the EQ predicate on the "secret" field.
+func SecretEQ(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldEQ(FieldSecret, v))
+}
+
+// SecretNEQ applies the NEQ predicate on the "secret" field.
+func SecretNEQ(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldNEQ(FieldSecret, v))
+}
+
+// SecretIn applies the In predicate on the "secret" field.
+func SecretIn(vs ...string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldIn(FieldSecret, vs...))
+}
+
+// SecretNotIn applies the NotIn predicate on the "secret" field.
+func SecretNotIn(vs ...string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldNotIn(FieldSecret, vs...))
+}
+
+// SecretGT applies the GT predicate on the "secret" field.
+func SecretGT(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldGT(FieldSecret, v))
+}
+
+// SecretGTE applies the GTE predicate on the "secret" field.
+func SecretGTE(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldGTE(FieldSecret, v))
+}
+
+// SecretLT applies the LT predicate on the "secret" field.
+func SecretLT(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldLT(FieldSecret, v))
+}
+
+// SecretLTE applies the LTE predicate on the "secret" field.
+func SecretLTE(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldLTE(FieldSecret, v))
+}
+
+// SecretContains applies the Contains predicate on the "secret" field.
+func SecretContains(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldContains(FieldSecret, v))
+}
+
+// SecretHasPrefix applies the HasPrefix predicate on the "secret" field.
+func SecretHasPrefix(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldHasPrefix(FieldSecret, v))
+}
+
+// SecretHasSuffix applies the HasSuffix predicate on the "secret" field.
+func SecretHasSuffix(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldHasSuffix(FieldSecret, v))
+}
+
+// SecretIsNil applies the IsNil predicate on the "secret" field.
+func SecretIsNil() predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldIsNull(FieldSecret))
+}
+
+// SecretNotNil applies the NotNil predicate on the "secret" field.
+func SecretNotNil() predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldNotNull(FieldSecret))
+}
+
+// SecretEqualFold applies the EqualFold predicate on the "secret" field.
+func SecretEqualFold(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldEqualFold(FieldSecret, v))
+}
+
+// SecretContainsFold applies the ContainsFold predicate on the "secret" field.
+func SecretContainsFold(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldContainsFold(FieldSecret, v))
+}
+
+// HostKeyEQ applies the EQ predicate on the "host_key" field.
+func HostKeyEQ(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldEQ(FieldHostKey, v))
+}
+
+// HostKeyNEQ applies the NEQ predicate on the "host_key" field.
+func HostKeyNEQ(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldNEQ(FieldHostKey, v))
+}
+
+// HostKeyIn applies the In predicate on the "host_key" field.
+func HostKeyIn(vs ...string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldIn(FieldHostKey, vs...))
+}
+
+// HostKeyNotIn applies the NotIn predicate on the "host_key" field.
+func HostKeyNotIn(vs ...string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldNotIn(FieldHostKey, vs...))
+}
+
+// HostKeyGT applies the GT predicate on the "host_key" field.
+func HostKeyGT(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldGT(FieldHostKey, v))
+}
+
+// HostKeyGTE applies the GTE predicate on the "host_key" field.
+func HostKeyGTE(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldGTE(FieldHostKey, v))
+}
+
+// HostKeyLT applies the LT predicate on the "host_key" field.
+func HostKeyLT(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldLT(FieldHostKey, v))
+}
+
+// HostKeyLTE applies the LTE predicate on the "host_key" field.
+func HostKeyLTE(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldLTE(FieldHostKey, v))
+}
+
+// HostKeyContains applies the Contains predicate on the "host_key" field.
+func HostKeyContains(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldContains(FieldHostKey, v))
+}
+
+// HostKeyHasPrefix applies the HasPrefix predicate on the "host_key" field.
+func HostKeyHasPrefix(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldHasPrefix(FieldHostKey, v))
+}
+
+// HostKeyHasSuffix applies the HasSuffix predicate on the "host_key" field.
+func HostKeyHasSuffix(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldHasSuffix(FieldHostKey, v))
+}
+
+// HostKeyIsNil applies the IsNil predicate on the "host_key" field.
+func HostKeyIsNil() predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldIsNull(FieldHostKey))
+}
+
+// HostKeyNotNil applies the NotNil predicate on the "host_key" field.
+func HostKeyNotNil() predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldNotNull(FieldHostKey))
+}
+
+// HostKeyEqualFold applies the EqualFold predicate on the "host_key" field.
+func HostKeyEqualFold(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldEqualFold(FieldHostKey, v))
+}
+
+// HostKeyContainsFold applies the ContainsFold predicate on the "host_key" field.
+func HostKeyContainsFold(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldContainsFold(FieldHostKey, v))
 }
 
 // PrefixEQ applies the EQ predicate on the "prefix" field.

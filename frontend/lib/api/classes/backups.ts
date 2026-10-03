@@ -1,8 +1,8 @@
 import { BaseAPI, route } from "../base";
 import type {
   BackupDestinationOut,
+  BackupInput,
   BackupOptions,
-  BackupSettings,
   ExportOut,
   ResultsRepoBackupDestinationOut,
   ResultsRepoExportOut,
@@ -80,15 +80,15 @@ export class BackupsAPI extends BaseAPI {
     return this.http.get<ResultsRepoBackupDestinationOut>({ url: route("/group/backup-destinations") });
   }
 
-  createDestination(data: BackupSettings) {
-    return this.http.post<BackupSettings, BackupDestinationOut>({
+  createDestination(data: BackupInput) {
+    return this.http.post<BackupInput, BackupDestinationOut>({
       url: route("/group/backup-destinations"),
       body: data,
     });
   }
 
-  updateDestination(id: string, data: BackupSettings) {
-    return this.http.put<BackupSettings, BackupDestinationOut>({
+  updateDestination(id: string, data: BackupInput) {
+    return this.http.put<BackupInput, BackupDestinationOut>({
       url: route(`/group/backup-destinations/${id}`),
       body: data,
     });
@@ -104,8 +104,8 @@ export class BackupsAPI extends BaseAPI {
   }
 
   /** Test settings that have not been saved yet. */
-  testSettings(data: BackupSettings) {
-    return this.http.post<BackupSettings, TestResult>({ url: route("/group/backup-destinations/test"), body: data });
+  testSettings(data: BackupInput) {
+    return this.http.post<BackupInput, TestResult>({ url: route("/group/backup-destinations/test"), body: data });
   }
 
   /** Start an on-demand backup to a destination. */

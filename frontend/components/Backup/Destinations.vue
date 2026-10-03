@@ -142,7 +142,9 @@
               {{
                 form.type === "local"
                   ? $t("tools.backup_destinations.local_dir")
-                  : $t("tools.backup_destinations.conn_string")
+                  : isRemote
+                    ? $t("tools.backup_destinations.address")
+                    : $t("tools.backup_destinations.conn_string")
               }}
             </Label>
             <Input
@@ -153,9 +155,50 @@
               autocomplete="off"
               spellcheck="false"
             />
-            <p v-if="form.type !== 'local'" class="text-xs text-muted-foreground">
+            <p v-if="form.type !== 'local' && !isRemote" class="text-xs text-muted-foreground">
               {{ $t("tools.backup_destinations.conn_help") }}
             </p>
+          </div>
+
+          <div v-if="isRemote" class="grid gap-3 rounded-md border p-3">
+            <div class="grid gap-1.5">
+              <Label for="bd-user">{{ $t("tools.backup_destinations.username") }}</Label>
+              <Input id="bd-user" v-model="form.username" required autocomplete="off" maxlength="255" />
+            </div>
+            <div class="grid gap-1.5">
+              <Label for="bd-pass">{{ $t("tools.backup_destinations.password") }}</Label>
+              <Input
+                id="bd-pass"
+                v-model="form.password"
+                type="password"
+                autocomplete="new-password"
+                :placeholder="hasStoredSecret ? $t('tools.backup_destinations.password_keep') : ''"
+              />
+            </div>
+            <div v-if="form.type === 'sftp'" class="grid gap-1.5">
+              <Label for="bd-key">{{ $t("tools.backup_destinations.private_key") }}</Label>
+              <Textarea
+                id="bd-key"
+                v-model="form.privateKey"
+                rows="3"
+                spellcheck="false"
+                autocomplete="off"
+                placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
+              />
+              <p class="text-xs text-muted-foreground">{{ $t("tools.backup_destinations.private_key_help") }}</p>
+            </div>
+            <div v-if="form.type === 'sftp'" class="grid gap-1.5">
+              <Label for="bd-hostkey">{{ $t("tools.backup_destinations.host_key") }}</Label>
+              <Input
+                id="bd-hostkey"
+                v-model="form.hostKey"
+                placeholder="SHA256:..."
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <p class="text-xs text-muted-foreground">{{ $t("tools.backup_destinations.host_key_help") }}</p>
+            </div>
+            <p class="text-xs text-muted-foreground">{{ $t("tools.backup_destinations.remote_help") }}</p>
           </div>
 
           <div v-if="form.type !== 'primary' && form.type !== 'local'" class="grid gap-1.5">
@@ -278,6 +321,13 @@
               }}
             </p>
             <p class="break-words text-muted-foreground">{{ testResult.message }}</p>
+            <div v-if="testResult.hostKey && testResult.hostKey !== form.hostKey" class="mt-2 grid gap-2">
+              <p class="break-all font-mono text-xs">{{ testResult.hostKey }}</p>
+              <p class="text-xs text-muted-foreground">{{ $t("tools.backup_destinations.host_key_confirm") }}</p>
+              <Button type="button" size="sm" variant="outline" class="w-fit" @click="trustHostKey">
+                {{ $t("tools.backup_destinations.trust_host_key") }}
+              </Button>
+            </div>
           </div>
 
           <DialogFooter class="gap-2">
@@ -307,6 +357,7 @@
   import { Input } from "@/components/ui/input";
   import { Label } from "@/components/ui/label";
   import { Switch } from "@/components/ui/switch";
+  import { Textarea } from "@/components/ui/textarea";
   import { Checkbox } from "@/components/ui/checkbox";
   import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
   import { Dialog, DialogFooter, DialogHeader, DialogScrollContent, DialogTitle } from "@/components/ui/dialog";
@@ -315,8 +366,8 @@
   import { ServerEvent, onServerEvent } from "@/composables/use-server-events";
   import type {
     BackupDestinationOut,
+    BackupInput,
     BackupOptions,
-    BackupSettings,
     ExportOut,
     TestResult,
   } from "@/lib/api/types/data-contracts";
@@ -337,9 +388,15 @@
   const frequencies = ["hourly", "daily", "weekly", "monthly"] as const;
 
   const typeOptions = computed(() => {
-    const all = ["primary", "local", "s3", "gcs", "azblob"];
-    return all.filter(ty => ty !== "local" || options.value?.localEnabled);
+    const all = ["primary", "local", "s3", "gcs", "azblob", "sftp", "webdav"];
+    return all.filter(ty => {
+      if (ty === "local") return options.value?.localEnabled;
+      if (ty === "sftp" || ty === "webdav") return options.value?.remoteEnabled || form.type === ty;
+      return true;
+    });
   });
+
+  const isRemote = computed(() => form.type === "sftp" || form.type === "webdav");
 
   function typeLabel(ty: string) {
     return t(`tools.backup_destinations.types.${ty}`);
@@ -353,6 +410,10 @@
         return "gcs://my-bucket";
       case "azblob":
         return "azblob://my-container";
+      case "sftp":
+        return "sftp://nas.lan:22/mnt/tank/homebox-backups";
+      case "webdav":
+        return "https://cloud.example.com/remote.php/dav/files/me/";
       default:
         return "s3://my-bucket?region=us-east-1";
     }
@@ -462,12 +523,17 @@
 
   // ---- dialog form ------------------------------------------------------------
 
-  function defaults(): BackupSettings {
+  function defaults(): BackupInput {
     return {
       name: "",
       description: "",
       type: "primary",
       connString: "",
+      username: "",
+      hostKey: "",
+      password: "",
+      privateKey: "",
+      destinationId: "",
       prefix: "homebox-backups",
       enabled: true,
       scheduleEnabled: true,
@@ -488,7 +554,7 @@
     };
   }
 
-  const form = reactive<BackupSettings>(defaults());
+  const form = reactive<BackupInput>(defaults());
   const editingId = ref<string | null>(null);
   const saving = ref(false);
   const testing = ref(false);
@@ -515,6 +581,8 @@
   function openCreate() {
     Object.assign(form, defaults());
     editingId.value = null;
+    storedSecret.value = false;
+    original.value = null;
     testResult.value = null;
     openDialog(DialogID.BackupDestination);
   }
@@ -526,6 +594,8 @@
       description,
       type,
       connString,
+      username: d.username,
+      hostKey: d.hostKey,
       prefix,
       enabled,
       scheduleEnabled,
@@ -545,12 +615,39 @@
       alertStaleHours: d.alertStaleHours,
     });
     editingId.value = d.id;
+    storedSecret.value = d.hasSecret;
+    original.value = { type: d.type, connString: d.connString, username: d.username };
     testResult.value = null;
     openDialog(DialogID.BackupDestination);
   }
 
-  function payload(): BackupSettings {
-    return { ...form, name: form.name.trim() };
+  // Credentials are never sent back, so an edit can only keep them while the
+  // type, address and username stay as they were.
+  const storedSecret = ref(false);
+  const original = ref<{ type: string; connString: string; username: string } | null>(null);
+  const hasStoredSecret = computed(
+    () =>
+      storedSecret.value &&
+      original.value !== null &&
+      original.value.type === form.type &&
+      original.value.connString === form.connString &&
+      original.value.username === form.username
+  );
+
+  function trustHostKey() {
+    if (testResult.value?.hostKey) {
+      form.hostKey = testResult.value.hostKey;
+      testResult.value = null;
+    }
+  }
+
+  function payload(): BackupInput {
+    return {
+      ...form,
+      name: form.name.trim(),
+      // Lets a test of an edited destination reuse its stored credentials.
+      destinationId: editingId.value ?? "",
+    };
   }
 
   async function testForm() {
@@ -559,7 +656,7 @@
     const res = await api.backups.testSettings(payload());
     testing.value = false;
     if (res.error || !res.data) {
-      testResult.value = { ok: false, latencyMs: 0, message: errorMessage(res.data) };
+      testResult.value = { ok: false, latencyMs: 0, message: errorMessage(res.data), hostKey: "" };
       return;
     }
     testResult.value = res.data;

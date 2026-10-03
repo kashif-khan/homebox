@@ -33,6 +33,12 @@ type BackupDestination struct {
 	Type backupdestination.Type `json:"type,omitempty"`
 	// ConnString holds the value of the "conn_string" field.
 	ConnString string `json:"conn_string,omitempty"`
+	// Username holds the value of the "username" field.
+	Username string `json:"username,omitempty"`
+	// Secret holds the value of the "secret" field.
+	Secret string `json:"-"`
+	// HostKey holds the value of the "host_key" field.
+	HostKey string `json:"host_key,omitempty"`
 	// Prefix holds the value of the "prefix" field.
 	Prefix string `json:"prefix,omitempty"`
 	// Enabled holds the value of the "enabled" field.
@@ -128,7 +134,7 @@ func (*BackupDestination) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case backupdestination.FieldIntervalHours, backupdestination.FieldAtHour, backupdestination.FieldAtMinute, backupdestination.FieldWeekday, backupdestination.FieldDayOfMonth, backupdestination.FieldKeepDaily, backupdestination.FieldKeepWeekly, backupdestination.FieldKeepMonthly, backupdestination.FieldHealthFailures, backupdestination.FieldHealthIntervalMinutes, backupdestination.FieldAlertFailureThreshold, backupdestination.FieldAlertStaleHours:
 			values[i] = new(sql.NullInt64)
-		case backupdestination.FieldName, backupdestination.FieldDescription, backupdestination.FieldType, backupdestination.FieldConnString, backupdestination.FieldPrefix, backupdestination.FieldFrequency, backupdestination.FieldLastFingerprint, backupdestination.FieldLastError, backupdestination.FieldHealthStatus, backupdestination.FieldHealthError:
+		case backupdestination.FieldName, backupdestination.FieldDescription, backupdestination.FieldType, backupdestination.FieldConnString, backupdestination.FieldUsername, backupdestination.FieldSecret, backupdestination.FieldHostKey, backupdestination.FieldPrefix, backupdestination.FieldFrequency, backupdestination.FieldLastFingerprint, backupdestination.FieldLastError, backupdestination.FieldHealthStatus, backupdestination.FieldHealthError:
 			values[i] = new(sql.NullString)
 		case backupdestination.FieldCreatedAt, backupdestination.FieldUpdatedAt, backupdestination.FieldNextRunAt, backupdestination.FieldLastRunAt, backupdestination.FieldLastSuccessAt, backupdestination.FieldLastSkippedAt, backupdestination.FieldHealthCheckedAt:
 			values[i] = new(sql.NullTime)
@@ -196,6 +202,24 @@ func (_m *BackupDestination) assignValues(columns []string, values []any) error 
 				return fmt.Errorf("unexpected type %T for field conn_string", values[i])
 			} else if value.Valid {
 				_m.ConnString = value.String
+			}
+		case backupdestination.FieldUsername:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field username", values[i])
+			} else if value.Valid {
+				_m.Username = value.String
+			}
+		case backupdestination.FieldSecret:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field secret", values[i])
+			} else if value.Valid {
+				_m.Secret = value.String
+			}
+		case backupdestination.FieldHostKey:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field host_key", values[i])
+			} else if value.Valid {
+				_m.HostKey = value.String
 			}
 		case backupdestination.FieldPrefix:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -443,6 +467,14 @@ func (_m *BackupDestination) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("conn_string=")
 	builder.WriteString(_m.ConnString)
+	builder.WriteString(", ")
+	builder.WriteString("username=")
+	builder.WriteString(_m.Username)
+	builder.WriteString(", ")
+	builder.WriteString("secret=<sensitive>")
+	builder.WriteString(", ")
+	builder.WriteString("host_key=")
+	builder.WriteString(_m.HostKey)
 	builder.WriteString(", ")
 	builder.WriteString("prefix=")
 	builder.WriteString(_m.Prefix)

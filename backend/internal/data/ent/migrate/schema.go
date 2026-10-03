@@ -136,8 +136,11 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString, Size: 255},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 1000},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"primary", "local", "s3", "gcs", "azblob"}, Default: "primary"},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"primary", "local", "s3", "gcs", "azblob", "sftp", "webdav"}, Default: "primary"},
 		{Name: "conn_string", Type: field.TypeString, Nullable: true, Size: 2048},
+		{Name: "username", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "secret", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "host_key", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "prefix", Type: field.TypeString, Size: 255, Default: "homebox-backups"},
 		{Name: "enabled", Type: field.TypeBool, Default: true},
 		{Name: "schedule_enabled", Type: field.TypeBool, Default: false},
@@ -178,7 +181,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "backup_destinations_groups_backup_destinations",
-				Columns:    []*schema.Column{BackupDestinationsColumns[37]},
+				Columns:    []*schema.Column{BackupDestinationsColumns[40]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -187,7 +190,7 @@ var (
 			{
 				Name:    "backupdestination_group_id",
 				Unique:  false,
-				Columns: []*schema.Column{BackupDestinationsColumns[37]},
+				Columns: []*schema.Column{BackupDestinationsColumns[40]},
 			},
 		},
 	}

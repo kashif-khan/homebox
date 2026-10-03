@@ -64,6 +64,8 @@ definitions:
     - s3
     - gcs
     - azblob
+    - sftp
+    - webdav
     type: string
     x-enum-varnames:
     - DefaultType
@@ -72,6 +74,8 @@ definitions:
     - TypeS3
     - TypeGcs
     - TypeAzblob
+    - TypeSftp
+    - TypeWebdav
   currencies.Currency:
     properties:
       code:
@@ -300,6 +304,9 @@ definitions:
         allOf:
         - $ref: '#/definitions/backupdestination.HealthStatus'
         description: HealthStatus holds the value of the "health_status" field.
+      host_key:
+        description: HostKey holds the value of the "host_key" field.
+        type: string
       id:
         description: ID of the ent.
         type: string
@@ -351,6 +358,9 @@ definitions:
         description: Type holds the value of the "type" field.
       updated_at:
         description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+      username:
+        description: Username holds the value of the "username" field.
         type: string
       weekday:
         description: Weekday holds the value of the "weekday" field.
@@ -1317,6 +1327,9 @@ definitions:
         type: string
       groupId:
         type: string
+      hasSecret:
+        description: HasSecret reports whether credentials are stored for the destination.
+        type: boolean
       healthCheckedAt:
         type: string
         x-nullable: true
@@ -1329,6 +1342,9 @@ definitions:
         minimum: 1
         type: integer
       healthStatus:
+        type: string
+      hostKey:
+        maxLength: 255
         type: string
       id:
         type: string
@@ -1374,15 +1390,23 @@ definitions:
       skipIfUnchanged:
         type: boolean
       type:
-        description: Type is one of primary, local, s3, gcs, azblob.
+        description: Type is one of primary, local, s3, gcs, azblob, sftp, webdav.
         enum:
         - primary
         - local
         - s3
         - gcs
         - azblob
+        - sftp
+        - webdav
         type: string
       updatedAt:
+        type: string
+      username:
+        description: |-
+          Username and HostKey serve the sftp and webdav types. HostKey is the
+          SSH host key fingerprint (SHA256:...) an sftp server must present.
+        maxLength: 255
         type: string
       weekday:
         maximum: 6
@@ -1393,7 +1417,7 @@ definitions:
     - name
     - type
     type: object
-  repo.BackupSettings:
+  repo.BackupInput:
     properties:
       alertFailureThreshold:
         maximum: 100
@@ -1425,6 +1449,11 @@ definitions:
       description:
         maxLength: 1000
         type: string
+      destinationId:
+        description: |-
+          DestinationID is only used when testing unsaved settings: it lets the
+          test reuse the stored credentials of that destination.
+        type: string
       enabled:
         type: boolean
       frequency:
@@ -1439,6 +1468,9 @@ definitions:
         maximum: 1440
         minimum: 1
         type: integer
+      hostKey:
+        maxLength: 255
+        type: string
       intervalHours:
         maximum: 168
         minimum: 1
@@ -1459,21 +1491,37 @@ definitions:
         maxLength: 255
         minLength: 1
         type: string
+      password:
+        description: |-
+          Password is the sftp or webdav password. Leave empty to keep the stored
+          credentials of an existing destination.
+        type: string
       prefix:
         maxLength: 255
+        type: string
+      privateKey:
+        description: PrivateKey is an unencrypted PEM private key for sftp.
         type: string
       scheduleEnabled:
         type: boolean
       skipIfUnchanged:
         type: boolean
       type:
-        description: Type is one of primary, local, s3, gcs, azblob.
+        description: Type is one of primary, local, s3, gcs, azblob, sftp, webdav.
         enum:
         - primary
         - local
         - s3
         - gcs
         - azblob
+        - sftp
+        - webdav
+        type: string
+      username:
+        description: |-
+          Username and HostKey serve the sftp and webdav types. HostKey is the
+          SSH host key fingerprint (SHA256:...) an sftp server must present.
+        maxLength: 255
         type: string
       weekday:
         maximum: 6
@@ -2588,6 +2636,11 @@ definitions:
     type: object
   services.TestResult:
     properties:
+      hostKey:
+        description: |-
+          HostKey is the SSH host key fingerprint the server presented when it
+          was missing or did not match, so the UI can offer to trust it.
+        type: string
       latencyMs:
         type: integer
       message:
@@ -2667,6 +2720,8 @@ definitions:
       enabled:
         type: boolean
       localEnabled:
+        type: boolean
+      remoteEnabled:
         type: boolean
     type: object
   v1.Build:
@@ -3613,7 +3668,7 @@ paths:
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/repo.BackupSettings'
+          $ref: '#/definitions/repo.BackupInput'
       produces:
       - application/json
       responses:
@@ -3677,7 +3732,7 @@ paths:
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/repo.BackupSettings'
+          $ref: '#/definitions/repo.BackupInput'
       produces:
       - application/json
       responses:
@@ -3764,7 +3819,7 @@ paths:
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/repo.BackupSettings'
+          $ref: '#/definitions/repo.BackupInput'
       produces:
       - application/json
       responses:

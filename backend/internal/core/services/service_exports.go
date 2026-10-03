@@ -494,24 +494,14 @@ func (s *ExportService) buildArtifact(ctx context.Context, exp repo.ExportOut) (
 	}
 	size := stat.Size()
 
-	artifactPath, bucket, key, err := s.openArtifactTarget(ctx, exp)
+	artifactPath, store, key, err := s.openArtifactTarget(ctx, exp)
 	if err != nil {
 		return "", 0, err
 	}
-	defer func() { _ = bucket.Close() }()
+	defer func() { _ = store.Close() }()
 
-	bw, err := bucket.NewWriter(ctx, key, &blob.WriterOptions{
-		ContentType: "application/zip",
-	})
-	if err != nil {
-		return "", 0, fmt.Errorf("blob writer: %w", err)
-	}
-	if _, err := io.Copy(bw, tmp); err != nil {
-		_ = bw.Close()
-		return "", 0, fmt.Errorf("blob copy: %w", err)
-	}
-	if err := bw.Close(); err != nil {
-		return "", 0, fmt.Errorf("blob close: %w", err)
+	if err := store.Write(ctx, key, tmp, size, "application/zip"); err != nil {
+		return "", 0, fmt.Errorf("upload artifact: %w", err)
 	}
 
 	return artifactPath, size, nil
@@ -519,15 +509,15 @@ func (s *ExportService) buildArtifact(ctx context.Context, exp repo.ExportOut) (
 
 // openArtifactTarget picks where a finished export is written: the primary
 // storage for plain exports, or the bound backup destination. It returns the
-// artifact path to record on the row plus the open bucket and full key.
-func (s *ExportService) openArtifactTarget(ctx context.Context, exp repo.ExportOut) (string, *blob.Bucket, string, error) {
+// artifact path to record on the row plus the open store and full key.
+func (s *ExportService) openArtifactTarget(ctx context.Context, exp repo.ExportOut) (string, objectStore, string, error) {
 	if exp.DestinationID == nil || s.backups == nil {
 		artifactPath := fmt.Sprintf("%s/exports/%s.zip", exp.GroupID.String(), exp.ID.String())
 		bucket, err := blob.OpenBucket(ctx, s.repos.Attachments.GetConnString())
 		if err != nil {
 			return "", nil, "", fmt.Errorf("open bucket: %w", err)
 		}
-		return artifactPath, bucket, s.repos.Attachments.GetFullPath(artifactPath), nil
+		return artifactPath, blobStore{bucket}, s.repos.Attachments.GetFullPath(artifactPath), nil
 	}
 
 	dest, err := s.repos.BackupDestinations.Get(ctx, exp.GroupID, *exp.DestinationID)
@@ -535,11 +525,11 @@ func (s *ExportService) openArtifactTarget(ctx context.Context, exp repo.ExportO
 		return "", nil, "", fmt.Errorf("load backup destination: %w", err)
 	}
 	artifactPath := artifactPath(dest, exp.GroupID, exp.ID, time.Now())
-	bucket, key, err := s.backups.openBucket(ctx, dest)
+	store, key, err := s.backups.openStore(ctx, dest, nil)
 	if err != nil {
 		return "", nil, "", fmt.Errorf("open destination %q: %w", dest.Name, err)
 	}
-	return artifactPath, bucket, key(artifactPath), nil
+	return artifactPath, store, key(artifactPath), nil
 }
 
 // copyAttachmentBlobs streams every attachment blob in the group — including
