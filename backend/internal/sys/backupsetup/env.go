@@ -76,8 +76,8 @@ func Build(p Params, existing map[string]string) Plan {
 	}
 	add(EnvEncryptionKey, key)
 	add(EnvLocalRoot, p.LocalRoot)
-	if !p.AllowCustomEndpoints {
-		add(EnvCustomEndpoints, "false")
+	if p.AllowCustomEndpoints {
+		add(EnvCustomEndpoints, "true") // the server default is off
 	}
 
 	add(EnvGoogleID, p.Google.ClientID)

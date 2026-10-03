@@ -56,7 +56,7 @@ type backupConfigFlags struct {
 	googleID, googleSecret, msID, msSecret           string
 	dropboxID, dropboxSecret                         string
 	toStdout, dryRun, yes, nonInteractive, rotateKey bool
-	behindProxy, noCustomEndpoints                   bool
+	behindProxy, allowCustomEndpoints                bool
 }
 
 func runBackupConfig(args []string, bio backupConfigIO) int {
@@ -71,7 +71,7 @@ func runBackupConfig(args []string, bio backupConfigIO) int {
 	fs.StringVar(&f.baseURL, "base-url", "", "address Homebox is reached at, e.g. https://homebox.example.com (needed for cloud drives)")
 	fs.BoolVar(&f.behindProxy, "behind-proxy", false, "Homebox is behind a TLS-terminating reverse proxy that sets X-Forwarded-Host/-Proto")
 	fs.StringVar(&f.localRoot, "local-root", "", "folder inside the container for local-directory backups, e.g. /backups")
-	fs.BoolVar(&f.noCustomEndpoints, "no-custom-endpoints", false, "restrict cloud URLs to default provider endpoints and disable SFTP/WebDAV/SMB")
+	fs.BoolVar(&f.allowCustomEndpoints, "allow-custom-endpoints", false, "let collection owners use SFTP, WebDAV and SMB servers and S3-compatible endpoints (the server then connects to addresses they enter)")
 	fs.StringVar(&f.key, "encryption-key", "", "use this encryption key instead of generating one")
 	fs.BoolVar(&f.rotateKey, "rotate-key", false, "replace an existing encryption key (stored logins must then be re-entered)")
 	fs.StringVar(&f.googleID, "google-client-id", "", "Google OAuth client ID")
@@ -126,7 +126,7 @@ func runBackupConfig(args []string, bio backupConfigIO) int {
 		BaseURL:              f.baseURL,
 		BehindProxy:          f.behindProxy,
 		LocalRoot:            f.localRoot,
-		AllowCustomEndpoints: !f.noCustomEndpoints,
+		AllowCustomEndpoints: f.allowCustomEndpoints || isTrue(existing[backupsetup.EnvCustomEndpoints]),
 		EncryptionKey:        f.key,
 		RotateKey:            f.rotateKey,
 		Google:               backupsetup.App{ClientID: f.googleID, ClientSecret: f.googleSecret},
@@ -247,6 +247,14 @@ func promptBackupConfig(p *backupsetup.Params, existing map[string]string, bio b
 	var err error
 	if p.LocalRoot == "" {
 		if p.LocalRoot, err = ask("Folder inside the container for local-directory backups, e.g. /backups (blank = no local destinations)", existing[backupsetup.EnvLocalRoot]); err != nil {
+			return err
+		}
+	}
+
+	if !p.AllowCustomEndpoints {
+		say("\nSFTP, WebDAV, SMB and S3-compatible (MinIO, NAS) destinations make the Homebox server connect to an address")
+		say("a collection owner types in, anywhere the server can reach. They are off unless you allow them.")
+		if p.AllowCustomEndpoints, err = yesNo("Allow SFTP, WebDAV, SMB and custom S3 endpoints", false); err != nil {
 			return err
 		}
 	}

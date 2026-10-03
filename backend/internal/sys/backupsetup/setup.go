@@ -71,8 +71,10 @@ type Params struct {
 	// LocalRoot is where local-directory destinations may write, as seen by the
 	// Homebox process (inside the container). Empty disables them.
 	LocalRoot string
-	// AllowCustomEndpoints defaults to true; false restricts cloud URLs to the
-	// providers' default endpoints and disables SFTP/WebDAV/SMB.
+	// AllowCustomEndpoints lets collection owners use SFTP, WebDAV and SMB
+	// servers and S3-compatible endpoints they type in. It defaults to false:
+	// each is a connection the server makes on the owner's behalf, to wherever
+	// the server can reach.
 	AllowCustomEndpoints bool
 	// EncryptionKey seals stored logins. Empty means "generate one" (or keep the
 	// existing one when merging).
@@ -160,6 +162,9 @@ func (p Params) Validate() []Issue {
 	out = append(out, p.validateApps()...)
 	out = append(out, p.validateLocalRoot()...)
 	out = append(out, p.validateKey()...)
+	if p.AllowCustomEndpoints {
+		out = append(out, warnf("custom endpoints are on: collection owners can make the server connect to any address it can reach (SFTP, WebDAV and SMB hosts, S3-compatible endpoints). Turn this off unless you trust every collection owner or the server's network is restricted"))
+	}
 	if p.BehindProxy {
 		out = append(out, warnf("behind a proxy, Homebox trusts X-Forwarded-Host and X-Forwarded-Proto: make sure the proxy sets them and strips any client-supplied copies"))
 	}

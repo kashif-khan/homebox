@@ -165,14 +165,14 @@ func TestBuildAndKeyHandling(t *testing.T) {
 		assert.Equal(t, "organizations", get(plan, EnvMicrosoftTenant))
 		assert.Equal(t, "homebox.example.com", get(plan, EnvHostname), "a bare host: the OIDC code prepends the scheme")
 		assert.Equal(t, "true", get(plan, EnvTrustProxy))
-		assert.Empty(t, get(plan, EnvCustomEndpoints), "only written when turned off")
+		assert.Equal(t, "true", get(plan, EnvCustomEndpoints), "written when allowed, since the server default is off")
 
 		p := full()
 		p.AllowCustomEndpoints = false
 		p.BehindProxy = false
 		p.MicrosoftTenant = "common"
 		plan = Build(p, nil)
-		assert.Equal(t, "false", get(plan, EnvCustomEndpoints))
+		assert.Empty(t, get(plan, EnvCustomEndpoints), "left at the server's safe default when not allowed")
 		assert.Empty(t, get(plan, EnvTrustProxy), "trust proxy is opt-in")
 		assert.Empty(t, get(plan, EnvMicrosoftTenant), "the default tenant is not written")
 
@@ -276,8 +276,8 @@ func TestEnvNamesMatchTheRealConfig(t *testing.T) {
 	assert.True(t, cfg.Options.TrustProxy)
 }
 
-func TestCustomEndpointSwitchMatchesTheRealConfig(t *testing.T) {
-	plan := Build(Params{AllowCustomEndpoints: false}, nil)
+func TestCustomEndpointOptInMatchesTheRealConfig(t *testing.T) {
+	plan := Build(Params{AllowCustomEndpoints: true}, nil)
 	for _, kv := range plan.Vars {
 		t.Setenv(kv.Key, kv.Value)
 	}
@@ -287,5 +287,32 @@ func TestCustomEndpointSwitchMatchesTheRealConfig(t *testing.T) {
 
 	cfg, err := config.New("test", "test")
 	require.NoError(t, err)
-	assert.False(t, cfg.Backup.AllowCustomEndpoints)
+	assert.True(t, cfg.Backup.AllowCustomEndpoints)
+}
+
+func TestCustomEndpointsStayOffUnlessAllowed(t *testing.T) {
+	plan := Build(Params{}, nil)
+	for _, kv := range plan.Vars {
+		t.Setenv(kv.Key, kv.Value)
+	}
+	old := os.Args
+	os.Args = []string{"homebox"}
+	t.Cleanup(func() { os.Args = old })
+
+	cfg, err := config.New("test", "test")
+	require.NoError(t, err)
+	assert.False(t, cfg.Backup.AllowCustomEndpoints, "the server default is off, and the helper does not turn it on")
+}
+
+func TestAllowingCustomEndpointsWarns(t *testing.T) {
+	var warned bool
+	for _, i := range (Params{AllowCustomEndpoints: true}).Validate() {
+		if i.Level == Warning && strings.Contains(i.Message, "custom endpoints are on") {
+			warned = true
+		}
+	}
+	assert.True(t, warned)
+	for _, i := range (Params{}).Validate() {
+		assert.NotContains(t, i.Message, "custom endpoints are on")
+	}
 }

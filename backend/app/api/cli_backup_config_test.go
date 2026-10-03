@@ -187,6 +187,7 @@ func TestBackupConfigInteractive(t *testing.T) {
 	env := filepath.Join(t.TempDir(), ".env")
 	answers := strings.Join([]string{
 		"/backups",                    // local root
+		"n",                           // custom endpoints
 		"https://homebox.example.com", // address
 		"",                            // trust the proxy: Enter accepts the default (yes)
 		"y",                           // Google Drive
@@ -216,7 +217,7 @@ func TestBackupConfigInteractiveDeclineAndEarlyEnd(t *testing.T) {
 
 	// Skipping everything still produces a valid file (a key), but declining the
 	// confirmation writes nothing.
-	r := runCLI(t, "\n\nn\n", true, nil, "--output", env)
+	r := runCLI(t, "\n\n\nn\n", true, nil, "--output", env)
 	assert.Equal(t, 1, r.code)
 	assert.Contains(t, r.errOut, "nothing was written")
 	_, err := os.Stat(env)
@@ -235,7 +236,7 @@ func TestBackupConfigPromptsDefaultFromTheExistingFile(t *testing.T) {
 	require.NoError(t, os.WriteFile(env, []byte("HBOX_BACKUP_LOCAL_ROOT=/mnt/nas\nHBOX_OPTIONS_HOSTNAME=homebox.example.com\n"), 0o600))
 
 	// Enter accepts the defaults: the existing local root and address; no providers.
-	r := runCLI(t, "\n\ny\nn\nn\nn\ny\n", true, nil, "--output", env)
+	r := runCLI(t, "\n\n\ny\nn\nn\nn\ny\n", true, nil, "--output", env)
 	require.Equal(t, 0, r.code, r.errOut)
 	assert.Contains(t, r.errOut, "[/mnt/nas]")
 	assert.Contains(t, r.errOut, "[https://homebox.example.com]")
@@ -274,4 +275,46 @@ func TestBackupConfigAcceptsProxyTrustAlreadyConfigured(t *testing.T) {
 	t.Setenv(backupsetup.EnvTrustProxy, "true")
 	r = runCLI(t, "", false, nil, flags(filepath.Join(t.TempDir(), ".env"))...)
 	require.Equal(t, 0, r.code, r.errOut)
+}
+
+func TestBackupConfigCustomEndpointsAreOptIn(t *testing.T) {
+	read := func(env string) map[string]string {
+		b, err := os.ReadFile(env)
+		require.NoError(t, err)
+		return backupsetup.ParseEnv(b)
+	}
+
+	t.Run("off by default: nothing is written and the server's default applies", func(t *testing.T) {
+		env := filepath.Join(t.TempDir(), ".env")
+		r := runCLI(t, "", false, nil, "--non-interactive", "--output", env, "--local-root", "/backups")
+		require.Equal(t, 0, r.code, r.errOut)
+		assert.NotContains(t, read(env), backupsetup.EnvCustomEndpoints)
+		assert.NotContains(t, r.errOut, "custom endpoints are on")
+	})
+
+	t.Run("the flag turns it on, with a warning", func(t *testing.T) {
+		env := filepath.Join(t.TempDir(), ".env")
+		r := runCLI(t, "", false, nil, "--non-interactive", "--output", env, "--allow-custom-endpoints")
+		require.Equal(t, 0, r.code, r.errOut)
+		assert.Equal(t, "true", read(env)[backupsetup.EnvCustomEndpoints])
+		assert.Contains(t, r.errOut, "custom endpoints are on")
+	})
+
+	t.Run("the wizard asks, and a yes turns it on", func(t *testing.T) {
+		env := filepath.Join(t.TempDir(), ".env")
+		// local root (blank), custom endpoints (yes), address (blank), confirm.
+		r := runCLI(t, "\ny\n\ny\n", true, nil, "--output", env)
+		require.Equal(t, 0, r.code, r.errOut)
+		assert.Contains(t, r.errOut, "make the Homebox server connect to an address")
+		assert.Equal(t, "true", read(env)[backupsetup.EnvCustomEndpoints])
+	})
+
+	t.Run("an existing choice in the file is kept and not asked again", func(t *testing.T) {
+		env := filepath.Join(t.TempDir(), ".env")
+		require.NoError(t, os.WriteFile(env, []byte("HBOX_BACKUP_ALLOW_CUSTOM_ENDPOINTS=true\n"), 0o600))
+		r := runCLI(t, "\n\ny\n", true, nil, "--output", env)
+		require.Equal(t, 0, r.code, r.errOut)
+		assert.NotContains(t, r.errOut, "Allow SFTP, WebDAV, SMB")
+		assert.Equal(t, "true", read(env)[backupsetup.EnvCustomEndpoints])
+	})
 }

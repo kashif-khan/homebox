@@ -235,7 +235,9 @@ docker run --rm -it --user "$(id -u):$(id -g)" -v "$PWD:/out" \
 ./homebox backup-config --output backup.env
 ```
 
-It walks you through the local backup folder, your public address, and each cloud drive you want. Secrets are typed
+It walks you through the local backup folder, whether to allow custom endpoints (SFTP, WebDAV, SMB and S3-compatible
+servers, which make the server connect to addresses owners type in, so they are off unless you say yes), your public
+address, and each cloud drive you want. Secrets are typed
 hidden, never printed (previews show only the first characters) and the file is created readable by you alone. Then load
 the file in compose with `env_file: [backup.env]` and restart Homebox.
 
@@ -268,7 +270,7 @@ shell history and process lists.
 | `--yes`, `--non-interactive`                           | Skip the confirmation, or never prompt.                                          |
 | `--base-url`, `--behind-proxy`                         | How users reach Homebox, and that a TLS proxy is in front.                        |
 | `--local-root`                                         | Folder inside the container for local-directory backups.                         |
-| `--no-custom-endpoints`                                | Restrict cloud URLs to default endpoints and turn off SFTP, WebDAV and SMB.      |
+| `--allow-custom-endpoints`                             | Let collection owners use SFTP, WebDAV and SMB servers and S3-compatible endpoints. Off unless you pass this. |
 | `--encryption-key`, `--rotate-key`                     | Use your own key, or replace an existing one.                                    |
 | `--google-*`, `--microsoft-*`, `--microsoft-tenant`, `--dropbox-*` | The OAuth app credentials for each cloud drive.                      |
 
