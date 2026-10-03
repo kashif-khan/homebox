@@ -51,6 +51,7 @@ func backupError(err error) error {
 	}
 }
 
+// denyDemoBackupChange refuses destination changes, connection tests and OAuth starts in demo mode.
 func (ctrl *V1Controller) denyDemoBackupChange() error {
 	if ctrl.isDemo {
 		return validate.NewRequestError(errors.New("backup destinations are not available in demo mode"), http.StatusForbidden)
