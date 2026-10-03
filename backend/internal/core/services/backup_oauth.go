@@ -258,8 +258,9 @@ func randomToken(n int) string {
 
 // OAuthStart begins connecting an account and returns the provider's
 // authorization URL. redirectURI is where the provider sends the user back; it
-// must match the one registered with the OAuth app.
-func (s *BackupService) OAuthStart(gid, uid uuid.UUID, providerKey, redirectURI string) (string, error) {
+// must match the one registered with the OAuth app. loginHint, when set, asks
+// the provider to preselect that account.
+func (s *BackupService) OAuthStart(gid, uid uuid.UUID, providerKey, redirectURI, loginHint string) (string, error) {
 	if !s.cfg.Enabled {
 		return "", ErrBackupDisabled
 	}
@@ -287,6 +288,9 @@ func (s *BackupService) OAuthStart(gid, uid uuid.UUID, providerKey, redirectURI 
 	q.Set("state", state)
 	q.Set("code_challenge", challenge)
 	q.Set("code_challenge_method", "S256")
+	if loginHint != "" && p.Key != providerDropbox {
+		q.Set("login_hint", loginHint)
+	}
 	return p.EP.Auth + "?" + q.Encode(), nil
 }
 
@@ -480,4 +484,52 @@ func (t *tokenSource) invalidate() {
 	t.mu.Lock()
 	t.access = ""
 	t.mu.Unlock()
+}
+
+// ---------------------------------------------------------------------------
+// OIDC-assisted offer
+
+// OIDCSuggestion offers a cloud drive that matches the identity provider the
+// user signed in with: a Google login suggests Google Drive, a Microsoft login
+// OneDrive. It is only an offer. The account is still connected through the
+// normal OAuth flow, with the login's email as a hint so the provider
+// preselects it.
+type OIDCSuggestion struct {
+	Provider string `json:"provider"`
+	DestType string `json:"destType"`
+	Email    string `json:"email"`
+}
+
+// oidcProviderKey maps an OIDC issuer URL to the cloud provider that issued the
+// login, or "" when the identity provider has no cloud storage (Authentik,
+// Keycloak, Authelia and similar).
+func oidcProviderKey(issuer string) string {
+	issuer = strings.TrimSuffix(strings.TrimSpace(issuer), "/")
+	issuer = strings.TrimPrefix(strings.TrimPrefix(issuer, "https://"), "http://")
+	host, _, _ := strings.Cut(issuer, "/")
+	switch strings.ToLower(host) {
+	case "accounts.google.com":
+		return providerGoogle
+	case "login.microsoftonline.com", "sts.windows.net", "login.windows.net":
+		return providerMicrosoft
+	}
+	return ""
+}
+
+// OIDCSuggestionFor returns the offer for a user, or nil when they did not sign
+// in through a Google or Microsoft identity provider or the matching backup
+// OAuth app is not configured.
+func (s *BackupService) OIDCSuggestionFor(issuer *string, email string) *OIDCSuggestion {
+	if issuer == nil || email == "" || !s.cfg.Enabled {
+		return nil
+	}
+	key := oidcProviderKey(*issuer)
+	if key == "" {
+		return nil
+	}
+	p, ok := s.providerByKey(key)
+	if !ok || s.secrets == nil {
+		return nil
+	}
+	return &OIDCSuggestion{Provider: key, DestType: p.DestType, Email: email}
 }

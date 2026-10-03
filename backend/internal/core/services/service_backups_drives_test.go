@@ -49,7 +49,7 @@ func driveSettings(typ string) repo.BackupSettings {
 // returns the outcome of the callback.
 func connectAccount(t *testing.T, svc *AllServices, cloud *fakeCloud, gid, uid uuid.UUID, provider string) OAuthOutcome {
 	t.Helper()
-	authURL, err := svc.Backups.OAuthStart(gid, uid, provider, driveRedirect)
+	authURL, err := svc.Backups.OAuthStart(gid, uid, provider, driveRedirect, "")
 	require.NoError(t, err)
 	u, err := url.Parse(authURL)
 	require.NoError(t, err)
@@ -91,7 +91,7 @@ func TestOAuthFlowSecurity(t *testing.T) {
 	})
 
 	t.Run("state is single use", func(t *testing.T) {
-		authURL, err := svc.Backups.OAuthStart(grpA.ID, uid, providerGoogle, driveRedirect)
+		authURL, err := svc.Backups.OAuthStart(grpA.ID, uid, providerGoogle, driveRedirect, "")
 		require.NoError(t, err)
 		u, _ := url.Parse(authURL)
 		state, ch := u.Query().Get("state"), u.Query().Get("code_challenge")
@@ -104,31 +104,31 @@ func TestOAuthFlowSecurity(t *testing.T) {
 	t.Run("unknown state, provider errors and missing codes are refused", func(t *testing.T) {
 		assert.False(t, svc.Backups.OAuthCallback(ctx, driveRedirect, "nope", "code", "").OK)
 
-		authURL, _ := svc.Backups.OAuthStart(grpA.ID, uid, providerDropbox, driveRedirect)
+		authURL, _ := svc.Backups.OAuthStart(grpA.ID, uid, providerDropbox, driveRedirect, "")
 		u, _ := url.Parse(authURL)
 		denied := svc.Backups.OAuthCallback(ctx, driveRedirect, u.Query().Get("state"), "", "access_denied")
 		assert.False(t, denied.OK)
 		assert.Contains(t, denied.Error, "access_denied")
 
-		authURL, _ = svc.Backups.OAuthStart(grpA.ID, uid, providerDropbox, driveRedirect)
+		authURL, _ = svc.Backups.OAuthStart(grpA.ID, uid, providerDropbox, driveRedirect, "")
 		u, _ = url.Parse(authURL)
 		assert.False(t, svc.Backups.OAuthCallback(ctx, driveRedirect, u.Query().Get("state"), "", "").OK)
 	})
 
 	t.Run("a code that fails PKCE or was not issued is refused", func(t *testing.T) {
-		authURL, _ := svc.Backups.OAuthStart(grpA.ID, uid, providerGoogle, driveRedirect)
+		authURL, _ := svc.Backups.OAuthStart(grpA.ID, uid, providerGoogle, driveRedirect, "")
 		u, _ := url.Parse(authURL)
 		out := svc.Backups.OAuthCallback(ctx, driveRedirect, u.Query().Get("state"), cloud.authorize("a-different-challenge"), "")
 		assert.False(t, out.OK)
 		assert.Contains(t, out.Error, "PKCE")
 
-		authURL, _ = svc.Backups.OAuthStart(grpA.ID, uid, providerGoogle, driveRedirect)
+		authURL, _ = svc.Backups.OAuthStart(grpA.ID, uid, providerGoogle, driveRedirect, "")
 		u, _ = url.Parse(authURL)
 		assert.False(t, svc.Backups.OAuthCallback(ctx, driveRedirect, u.Query().Get("state"), "forged-code", "").OK)
 	})
 
 	t.Run("an expired flow is refused", func(t *testing.T) {
-		authURL, _ := svc.Backups.OAuthStart(grpA.ID, uid, providerGoogle, driveRedirect)
+		authURL, _ := svc.Backups.OAuthStart(grpA.ID, uid, providerGoogle, driveRedirect, "")
 		u, _ := url.Parse(authURL)
 		state := u.Query().Get("state")
 		svc.Backups.oauth.mu.Lock()
@@ -170,7 +170,7 @@ func TestOAuthFlowSecurity(t *testing.T) {
 
 	t.Run("unconfigured providers and a missing key are refused", func(t *testing.T) {
 		bare := &BackupService{cfg: config.BackupConf{Enabled: true, AllowCustomEndpoints: true}}
-		_, err := bare.OAuthStart(grpA.ID, uid, providerGoogle, driveRedirect)
+		_, err := bare.OAuthStart(grpA.ID, uid, providerGoogle, driveRedirect, "")
 		require.ErrorIs(t, err, ErrBackupInvalid)
 
 		noKey := New(tRepos, WithBackupConfig(config.BackupConf{Enabled: true, GoogleClientID: "x", GoogleClientSecret: "y"}))
@@ -182,7 +182,7 @@ func TestOAuthFlowSecurity(t *testing.T) {
 		_, err = onlyGoogle.Backups.NormalizeSettings(driveSettings(destTypeDropbox))
 		require.ErrorIs(t, err, ErrBackupInvalid)
 
-		_, err = svc.Backups.OAuthStart(grpA.ID, uid, "unknown", driveRedirect)
+		_, err = svc.Backups.OAuthStart(grpA.ID, uid, "unknown", driveRedirect, "")
 		require.ErrorIs(t, err, ErrBackupInvalid)
 	})
 }
@@ -414,4 +414,74 @@ func TestDropboxArgIsASCII(t *testing.T) {
 
 func TestDriveQueryEscaping(t *testing.T) {
 	assert.Equal(t, `it\'s a \\ name`, driveQueryEscaper.Replace(`it's a \ name`))
+}
+
+func TestOIDCProviderKey(t *testing.T) {
+	cases := map[string]string{
+		"https://accounts.google.com":                                providerGoogle,
+		"https://accounts.google.com/":                               providerGoogle,
+		"accounts.google.com":                                        providerGoogle,
+		"https://login.microsoftonline.com/9188040d-6c67/v2.0":       providerMicrosoft,
+		"https://login.microsoftonline.com/common/v2.0":              providerMicrosoft,
+		"https://sts.windows.net/9188040d-6c67/":                     providerMicrosoft,
+		"https://auth.example.com/application/o/homebox/":            "",
+		"https://keycloak.lan/realms/home":                           "",
+		"https://accounts.google.com.evil.example":                   "",
+		"https://evil.example/accounts.google.com":                   "",
+		"https://login.microsoftonline.com.evil.example/common/v2.0": "",
+		"": "",
+	}
+	for issuer, want := range cases {
+		assert.Equal(t, want, oidcProviderKey(issuer), issuer)
+	}
+}
+
+func TestOIDCSuggestion(t *testing.T) {
+	cloud := newFakeCloud(t)
+	svc := newDriveSvc(t, cloud)
+	str := func(s string) *string { return &s }
+
+	t.Run("a Google login suggests Google Drive", func(t *testing.T) {
+		got := svc.Backups.OIDCSuggestionFor(str("https://accounts.google.com"), "me@example.com")
+		require.NotNil(t, got)
+		assert.Equal(t, OIDCSuggestion{Provider: providerGoogle, DestType: destTypeGDrive, Email: "me@example.com"}, *got)
+	})
+	t.Run("a Microsoft login suggests OneDrive", func(t *testing.T) {
+		got := svc.Backups.OIDCSuggestionFor(str("https://login.microsoftonline.com/tid/v2.0"), "me@contoso.example")
+		require.NotNil(t, got)
+		assert.Equal(t, destTypeOneDrive, got.DestType)
+	})
+	t.Run("no offer without an OIDC login, an email, or a storage-less provider", func(t *testing.T) {
+		assert.Nil(t, svc.Backups.OIDCSuggestionFor(nil, "me@example.com"), "password login")
+		assert.Nil(t, svc.Backups.OIDCSuggestionFor(str("https://accounts.google.com"), ""))
+		assert.Nil(t, svc.Backups.OIDCSuggestionFor(str("https://auth.example.com/application/o/homebox/"), "me@example.com"), "Authentik has no cloud storage")
+	})
+	t.Run("no offer when the matching backup app is not configured or backups are off", func(t *testing.T) {
+		onlyDropbox := New(tRepos, WithBackupConfig(config.BackupConf{
+			Enabled: true, EncryptionKey: "k", DropboxClientID: "x", DropboxClientSecret: "y",
+		}))
+		assert.Nil(t, onlyDropbox.Backups.OIDCSuggestionFor(str("https://accounts.google.com"), "me@example.com"))
+
+		noKey := New(tRepos, WithBackupConfig(config.BackupConf{Enabled: true, GoogleClientID: "x", GoogleClientSecret: "y"}))
+		assert.Nil(t, noKey.Backups.OIDCSuggestionFor(str("https://accounts.google.com"), "me@example.com"))
+
+		off := New(tRepos, WithBackupConfig(config.BackupConf{EncryptionKey: "k", GoogleClientID: "x", GoogleClientSecret: "y"}))
+		assert.Nil(t, off.Backups.OIDCSuggestionFor(str("https://accounts.google.com"), "me@example.com"))
+	})
+}
+
+func TestOAuthStartLoginHint(t *testing.T) {
+	cloud := newFakeCloud(t)
+	svc := newDriveSvc(t, cloud)
+	hint := func(provider, h string) string {
+		u, err := svc.Backups.OAuthStart(uuid.New(), uuid.New(), provider, driveRedirect, h)
+		require.NoError(t, err)
+		parsed, err := url.Parse(u)
+		require.NoError(t, err)
+		return parsed.Query().Get("login_hint")
+	}
+	assert.Equal(t, "me@example.com", hint(providerGoogle, "me@example.com"))
+	assert.Equal(t, "me@contoso.example", hint(providerMicrosoft, "me@contoso.example"))
+	assert.Empty(t, hint(providerGoogle, ""), "no hint unless asked")
+	assert.Empty(t, hint(providerDropbox, "me@example.com"), "Dropbox takes no login hint")
 }

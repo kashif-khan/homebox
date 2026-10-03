@@ -119,10 +119,10 @@ export class BackupsAPI extends BaseAPI {
   }
 
   /** Begin connecting a cloud drive. Open the returned URL in a popup. */
-  startOAuth(provider: "google" | "microsoft" | "dropbox") {
-    return this.http.post<{ provider: string }, BackupOAuthStartOut>({
+  startOAuth(provider: "google" | "microsoft" | "dropbox", useLoginAccount = false) {
+    return this.http.post<{ provider: string; useLoginAccount: boolean }, BackupOAuthStartOut>({
       url: route("/group/backup-oauth/start"),
-      body: { provider },
+      body: { provider, useLoginAccount },
     });
   }
 }

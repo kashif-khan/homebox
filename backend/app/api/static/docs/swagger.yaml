@@ -2656,6 +2656,15 @@ definitions:
       version:
         type: string
     type: object
+  services.OIDCSuggestion:
+    properties:
+      destType:
+        type: string
+      email:
+        type: string
+      provider:
+        type: string
+    type: object
   services.TestResult:
     properties:
       hostKey:
@@ -2743,6 +2752,12 @@ definitions:
         - microsoft
         - dropbox
         type: string
+      useLoginAccount:
+        description: |-
+          UseLoginAccount asks the provider to preselect the account the user
+          signed in to Homebox with. Honoured only when that login came from the
+          same provider.
+        type: boolean
     required:
     - provider
     type: object
@@ -2765,6 +2780,13 @@ definitions:
         items:
           type: string
         type: array
+      oidcSuggestion:
+        allOf:
+        - $ref: '#/definitions/services.OIDCSuggestion'
+        description: |-
+          OIDCSuggestion offers the cloud drive matching the identity provider the
+          current user signed in with, when there is one.
+        x-nullable: true
       remoteEnabled:
         type: boolean
     type: object

@@ -5,13 +5,14 @@ draft: true
 ---
 
 > [!NOTE]
-> **Phases 1 to 3 are implemented**: scheduled backups, skip-if-unchanged, versioning and retention, destinations on the
+> **Phases 1 to 4 are implemented**: scheduled backups, skip-if-unchanged, versioning and retention, destinations on the
 > primary storage, a local directory, S3 / Google Cloud Storage / Azure Blob, SFTP and WebDAV (with encrypted login
 > storage and SSH host key pinning), Google Drive / OneDrive / Dropbox through OAuth, test connection, health checks, and
-> alerts through the existing Notifiers. See [Backups](/quick-start/configure/backups/).
+> alerts through the existing Notifiers, and an offer to use the matching Drive or OneDrive after a Google or Microsoft
+> OIDC login. See [Backups](/quick-start/configure/backups/).
 >
-> **Everything else on this page is still a proposal**: the OIDC-assisted cloud offer, native SMB/NFS and cron schedules.
-> The mockups and the demo show the target design, so they include items that do not exist yet.
+> **Everything else on this page is still a proposal**: native SMB/NFS and cron schedules. The mockups and the demo show
+> the target design, so they include items that do not exist yet.
 > Discussion: [sysadminsmedia/homebox#1767](https://github.com/sysadminsmedia/homebox/discussions/1767).
 
 ## Status
@@ -25,7 +26,7 @@ draft: true
 | Test connection, health checks, alerts, UI banner   | Implemented |
 | SFTP and WebDAV, encrypted credentials, host key pin | Implemented |
 | Google Drive, OneDrive, Dropbox (OAuth)             | Implemented |
-| OIDC-assisted cloud destination                     | Planned     |
+| OIDC-assisted cloud destination                     | Implemented |
 | Custom cron expressions                             | Planned     |
 | Native SMB/NFS                                      | Planned     |
 
