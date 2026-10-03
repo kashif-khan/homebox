@@ -958,6 +958,55 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.Results-repo_ExportOut"
+  /v1/group/backup-oauth/callback:
+    get:
+      description: "The redirect target for cloud providers. Public: access is
+        authorized by the single-use state created when the flow started."
+      tags:
+        - Backups
+      summary: Cloud Drive Authorization Callback
+      parameters:
+        - description: State
+          name: state
+          in: query
+          schema:
+            type: string
+        - description: Authorization code
+          name: code
+          in: query
+          schema:
+            type: string
+        - description: Provider error
+          name: error
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+  /v1/group/backup-oauth/start:
+    post:
+      security:
+        - Bearer: []
+      description: Returns the provider's authorization URL. Open it in a popup; the
+        callback page reports the result to the opener window.
+      tags:
+        - Backups
+      summary: Start Connecting a Cloud Drive
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1.BackupOAuthStartIn"
+        description: Provider
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.BackupOAuthStartOut"
   /v1/group/backup-options:
     get:
       security:
@@ -2342,6 +2391,9 @@ components:
         - azblob
         - sftp
         - webdav
+        - gdrive
+        - onedrive
+        - dropbox
       x-enum-varnames:
         - DefaultType
         - TypePrimary
@@ -2351,6 +2403,9 @@ components:
         - TypeAzblob
         - TypeSftp
         - TypeWebdav
+        - TypeGdrive
+        - TypeOnedrive
+        - TypeDropbox
     currencies.Currency:
       type: object
       properties:
@@ -3687,7 +3742,11 @@ components:
         skipIfUnchanged:
           type: boolean
         type:
-          description: Type is one of primary, local, s3, gcs, azblob, sftp, webdav.
+          description: >-
+            Type is one of primary, local, s3, gcs, azblob, sftp, webdav,
+            gdrive,
+
+            onedrive, dropbox.
           type: string
           enum:
             - primary
@@ -3697,6 +3756,9 @@ components:
             - azblob
             - sftp
             - webdav
+            - gdrive
+            - onedrive
+            - dropbox
         updatedAt:
           type: string
         username:
@@ -3790,6 +3852,15 @@ components:
           type: string
           maxLength: 255
           minLength: 1
+        oauthTicket:
+          description: >-
+            OAuthTicket is the one-time ticket returned by the OAuth callback
+            for a
+
+            cloud-drive destination. It carries the connected account, and is
+
+            consumed when the destination is saved.
+          type: string
         password:
           description: >-
             Password is the sftp or webdav password. Leave empty to keep the
@@ -3808,7 +3879,11 @@ components:
         skipIfUnchanged:
           type: boolean
         type:
-          description: Type is one of primary, local, s3, gcs, azblob, sftp, webdav.
+          description: >-
+            Type is one of primary, local, s3, gcs, azblob, sftp, webdav,
+            gdrive,
+
+            onedrive, dropbox.
           type: string
           enum:
             - primary
@@ -3818,6 +3893,9 @@ components:
             - azblob
             - sftp
             - webdav
+            - gdrive
+            - onedrive
+            - dropbox
         username:
           description: |-
             Username and HostKey serve the sftp and webdav types. HostKey is the
@@ -5014,6 +5092,22 @@ components:
       properties:
         completed:
           type: integer
+    v1.BackupOAuthStartIn:
+      type: object
+      required:
+        - provider
+      properties:
+        provider:
+          type: string
+          enum:
+            - google
+            - microsoft
+            - dropbox
+    v1.BackupOAuthStartOut:
+      type: object
+      properties:
+        authUrl:
+          type: string
     v1.BackupOptions:
       type: object
       properties:
@@ -5023,6 +5117,12 @@ components:
           type: boolean
         localEnabled:
           type: boolean
+        oauthProviders:
+          description: "OAuthProviders lists the configured cloud drives: google,
+            microsoft, dropbox."
+          type: array
+          items:
+            type: string
         remoteEnabled:
           type: boolean
     v1.Build:

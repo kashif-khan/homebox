@@ -1487,6 +1487,82 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/group/backup-oauth/callback": {
+            "get": {
+                "description": "The redirect target for cloud providers. Public: access is authorized by the single-use state created when the flow started.",
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "Backups"
+                ],
+                "summary": "Cloud Drive Authorization Callback",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "State",
+                        "name": "state",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Authorization code",
+                        "name": "code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider error",
+                        "name": "error",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/v1/group/backup-oauth/start": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Returns the provider's authorization URL. Open it in a popup; the callback page reports the result to the opener window.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Backups"
+                ],
+                "summary": "Start Connecting a Cloud Drive",
+                "parameters": [
+                    {
+                        "description": "Provider",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BackupOAuthStartIn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.BackupOAuthStartOut"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/group/backup-options": {
             "get": {
                 "security": [
@@ -3631,7 +3707,10 @@ const docTemplate = `{
                 "gcs",
                 "azblob",
                 "sftp",
-                "webdav"
+                "webdav",
+                "gdrive",
+                "onedrive",
+                "dropbox"
             ],
             "x-enum-varnames": [
                 "DefaultType",
@@ -3641,7 +3720,10 @@ const docTemplate = `{
                 "TypeGcs",
                 "TypeAzblob",
                 "TypeSftp",
-                "TypeWebdav"
+                "TypeWebdav",
+                "TypeGdrive",
+                "TypeOnedrive",
+                "TypeDropbox"
             ]
         },
         "currencies.Currency": {
@@ -5537,7 +5619,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "type": {
-                    "description": "Type is one of primary, local, s3, gcs, azblob, sftp, webdav.",
+                    "description": "Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,\nonedrive, dropbox.",
                     "type": "string",
                     "enum": [
                         "primary",
@@ -5546,7 +5628,10 @@ const docTemplate = `{
                         "gcs",
                         "azblob",
                         "sftp",
-                        "webdav"
+                        "webdav",
+                        "gdrive",
+                        "onedrive",
+                        "dropbox"
                     ]
                 },
                 "updatedAt": {
@@ -5660,6 +5745,10 @@ const docTemplate = `{
                     "maxLength": 255,
                     "minLength": 1
                 },
+                "oauthTicket": {
+                    "description": "OAuthTicket is the one-time ticket returned by the OAuth callback for a\ncloud-drive destination. It carries the connected account, and is\nconsumed when the destination is saved.",
+                    "type": "string"
+                },
                 "password": {
                     "description": "Password is the sftp or webdav password. Leave empty to keep the stored\ncredentials of an existing destination.",
                     "type": "string"
@@ -5679,7 +5768,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "type": {
-                    "description": "Type is one of primary, local, s3, gcs, azblob, sftp, webdav.",
+                    "description": "Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,\nonedrive, dropbox.",
                     "type": "string",
                     "enum": [
                         "primary",
@@ -5688,7 +5777,10 @@ const docTemplate = `{
                         "gcs",
                         "azblob",
                         "sftp",
-                        "webdav"
+                        "webdav",
+                        "gdrive",
+                        "onedrive",
+                        "dropbox"
                     ]
                 },
                 "username": {
@@ -7402,6 +7494,30 @@ const docTemplate = `{
                 }
             }
         },
+        "v1.BackupOAuthStartIn": {
+            "type": "object",
+            "required": [
+                "provider"
+            ],
+            "properties": {
+                "provider": {
+                    "type": "string",
+                    "enum": [
+                        "google",
+                        "microsoft",
+                        "dropbox"
+                    ]
+                }
+            }
+        },
+        "v1.BackupOAuthStartOut": {
+            "type": "object",
+            "properties": {
+                "authUrl": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.BackupOptions": {
             "type": "object",
             "properties": {
@@ -7413,6 +7529,13 @@ const docTemplate = `{
                 },
                 "localEnabled": {
                     "type": "boolean"
+                },
+                "oauthProviders": {
+                    "description": "OAuthProviders lists the configured cloud drives: google, microsoft, dropbox.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "remoteEnabled": {
                     "type": "boolean"

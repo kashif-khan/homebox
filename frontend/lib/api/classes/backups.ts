@@ -2,6 +2,7 @@ import { BaseAPI, route } from "../base";
 import type {
   BackupDestinationOut,
   BackupInput,
+  BackupOAuthStartOut,
   BackupOptions,
   ExportOut,
   ResultsRepoBackupDestinationOut,
@@ -115,5 +116,13 @@ export class BackupsAPI extends BaseAPI {
 
   destinationVersions(id: string) {
     return this.http.get<ResultsRepoExportOut>({ url: route(`/group/backup-destinations/${id}/versions`) });
+  }
+
+  /** Begin connecting a cloud drive. Open the returned URL in a popup. */
+  startOAuth(provider: "google" | "microsoft" | "dropbox") {
+    return this.http.post<{ provider: string }, BackupOAuthStartOut>({
+      url: route("/group/backup-oauth/start"),
+      body: { provider },
+    });
   }
 }

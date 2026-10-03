@@ -35,7 +35,7 @@ func (BackupDestination) Mixin() []ent.Mixin {
 func (BackupDestination) Fields() []ent.Field {
 	return []ent.Field{
 		field.Enum("type").
-			Values("primary", "local", "s3", "gcs", "azblob", "sftp", "webdav").
+			Values("primary", "local", "s3", "gcs", "azblob", "sftp", "webdav", "gdrive", "onedrive", "dropbox").
 			Default("primary"),
 		// conn_string is a sub-directory of the configured local backup root
 		// for type=local, and a gocloud URL (s3://bucket?region=...) for the
@@ -43,9 +43,11 @@ func (BackupDestination) Fields() []ent.Field {
 		field.String("conn_string").
 			MaxLen(2048).
 			Optional(),
-		// username, secret and host_key serve the sftp and webdav types.
-		// secret is an AES-GCM sealed JSON blob holding the password and/or
-		// private key; it is never returned by the API.
+		// username, secret and host_key serve the sftp and webdav types. For
+		// the cloud-drive types (gdrive, onedrive, dropbox) username holds the
+		// connected account's name and secret the OAuth refresh token.
+		// secret is an AES-GCM sealed JSON blob holding the credentials; it is
+		// never returned by the API.
 		field.String("username").
 			MaxLen(255).
 			Optional(),

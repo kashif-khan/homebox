@@ -10,15 +10,25 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 )
 
-// backupSecret is the login material for an sftp or webdav destination.
+// backupSecret is the login material for an sftp, webdav or cloud-drive destination.
 type backupSecret struct {
 	Password   string `json:"password,omitempty"`
 	PrivateKey string `json:"privateKey,omitempty"`
+	// RefreshToken is the OAuth refresh token of a cloud-drive destination.
+	RefreshToken string `json:"refreshToken,omitempty"`
+
+	// accessToken and accessExpiry seed a cloud-drive client that is only
+	// being tested. They are never serialized or stored.
+	accessToken  string
+	accessExpiry time.Time
 }
 
-func (s backupSecret) empty() bool { return s.Password == "" && s.PrivateKey == "" }
+func (s backupSecret) empty() bool {
+	return s.Password == "" && s.PrivateKey == "" && s.RefreshToken == ""
+}
 
 // secretBox seals destination credentials with AES-256-GCM. The key is
 // derived from HBOX_BACKUP_ENCRYPTION_KEY; the additional data binds a blob to

@@ -137,7 +137,7 @@
             <p class="text-xs text-muted-foreground">{{ $t(`tools.backup_destinations.type_help.${form.type}`) }}</p>
           </div>
 
-          <div v-if="form.type !== 'primary'" class="grid gap-1.5">
+          <div v-if="form.type !== 'primary' && !isDrive" class="grid gap-1.5">
             <Label for="bd-conn">
               {{
                 form.type === "local"
@@ -158,6 +158,24 @@
             <p v-if="form.type !== 'local' && !isRemote" class="text-xs text-muted-foreground">
               {{ $t("tools.backup_destinations.conn_help") }}
             </p>
+          </div>
+
+          <div v-if="isDrive" class="grid gap-2 rounded-md border p-3">
+            <p class="text-sm">
+              <template v-if="connectedAccount">
+                {{ $t("tools.backup_destinations.connected_as") }} <b>{{ connectedAccount }}</b>
+              </template>
+              <template v-else>{{ $t("tools.backup_destinations.not_connected") }}</template>
+            </p>
+            <Button type="button" variant="outline" class="w-fit" @click="connect">
+              <MdiLoading v-if="connecting" class="mr-1 animate-spin" />
+              {{
+                connectedAccount
+                  ? $t("tools.backup_destinations.reconnect", { name: typeLabel(form.type) })
+                  : $t("tools.backup_destinations.connect", { name: typeLabel(form.type) })
+              }}
+            </Button>
+            <p class="text-xs text-muted-foreground">{{ $t(`tools.backup_destinations.connect_help.${form.type}`) }}</p>
           </div>
 
           <div v-if="isRemote" class="grid gap-3 rounded-md border p-3">
@@ -335,7 +353,7 @@
               <MdiLoading v-if="testing" class="mr-1 animate-spin" />
               {{ $t("tools.backup_destinations.test_connection") }}
             </Button>
-            <Button type="submit" :disabled="saving || !form.name.trim()">
+            <Button type="submit" :disabled="saving || !form.name.trim() || (isDrive && !connectedAccount)">
               <MdiLoading v-if="saving" class="mr-1 animate-spin" />
               {{ $t("global.save") }}
             </Button>
@@ -387,16 +405,25 @@
 
   const frequencies = ["hourly", "daily", "weekly", "monthly"] as const;
 
+  // Cloud drives are offered once the operator has configured their OAuth app.
+  const driveProvider: Record<string, "google" | "microsoft" | "dropbox"> = {
+    gdrive: "google",
+    onedrive: "microsoft",
+    dropbox: "dropbox",
+  };
+
   const typeOptions = computed(() => {
-    const all = ["primary", "local", "s3", "gcs", "azblob", "sftp", "webdav"];
+    const all = ["primary", "local", "s3", "gcs", "azblob", "sftp", "webdav", "gdrive", "onedrive", "dropbox"];
     return all.filter(ty => {
       if (ty === "local") return options.value?.localEnabled;
       if (ty === "sftp" || ty === "webdav") return options.value?.remoteEnabled || form.type === ty;
+      if (ty in driveProvider) return options.value?.oauthProviders?.includes(driveProvider[ty]!) || form.type === ty;
       return true;
     });
   });
 
   const isRemote = computed(() => form.type === "sftp" || form.type === "webdav");
+  const isDrive = computed(() => form.type in driveProvider);
 
   function typeLabel(ty: string) {
     return t(`tools.backup_destinations.types.${ty}`);
@@ -534,6 +561,7 @@
       password: "",
       privateKey: "",
       destinationId: "",
+      oauthTicket: "",
       prefix: "homebox-backups",
       enabled: true,
       scheduleEnabled: true,
@@ -583,6 +611,7 @@
     editingId.value = null;
     storedSecret.value = false;
     original.value = null;
+    connectedAccount.value = "";
     testResult.value = null;
     openDialog(DialogID.BackupDestination);
   }
@@ -617,6 +646,7 @@
     editingId.value = d.id;
     storedSecret.value = d.hasSecret;
     original.value = { type: d.type, connString: d.connString, username: d.username };
+    connectedAccount.value = d.type in driveProvider ? d.username : "";
     testResult.value = null;
     openDialog(DialogID.BackupDestination);
   }
@@ -633,6 +663,76 @@
       original.value.connString === form.connString &&
       original.value.username === form.username
   );
+
+  // Cloud drives: the account is connected in a popup, which reports a
+  // one-time ticket back. The app is served with Cross-Origin-Opener-Policy:
+  // same-origin, which cuts the popup's window.opener once it visits the
+  // provider, so the result arrives on a same-origin BroadcastChannel (with
+  // postMessage as a fallback). The ticket is sent with the save.
+  const connectedAccount = ref("");
+  const connecting = ref(false);
+  const OAUTH_CHANNEL = "homebox-backup-oauth";
+  let channel: BroadcastChannel | null = null;
+  let giveUp: ReturnType<typeof setTimeout> | undefined;
+
+  type OAuthMessage = { type?: string; ok?: boolean; ticket?: string; account?: string; error?: string };
+
+  function handleOAuthMessage(d: OAuthMessage | null) {
+    if (!connecting.value || d?.type !== OAUTH_CHANNEL) {
+      return;
+    }
+    stopListening();
+    if (d.ok && d.ticket) {
+      form.oauthTicket = d.ticket;
+      connectedAccount.value = d.account ?? "";
+      testResult.value = null;
+    } else {
+      toast.error(d.error ?? t("tools.backup_destinations.connect_failed"));
+    }
+  }
+
+  function onWindowMessage(e: MessageEvent) {
+    if (e.origin === window.location.origin) {
+      handleOAuthMessage(e.data as OAuthMessage);
+    }
+  }
+
+  function stopListening() {
+    connecting.value = false;
+    clearTimeout(giveUp);
+    channel?.close();
+    channel = null;
+    window.removeEventListener("message", onWindowMessage);
+  }
+
+  async function connect() {
+    const provider = driveProvider[form.type];
+    if (!provider) {
+      return;
+    }
+    stopListening();
+    connecting.value = true;
+    const res = await api.backups.startOAuth(provider);
+    if (res.error || !res.data) {
+      stopListening();
+      toast.error(errorMessage(res.data));
+      return;
+    }
+    if ("BroadcastChannel" in window) {
+      channel = new BroadcastChannel(OAUTH_CHANNEL);
+      channel.onmessage = e => handleOAuthMessage(e.data as OAuthMessage);
+    }
+    window.addEventListener("message", onWindowMessage);
+    // The user may close the window without finishing; stop waiting eventually.
+    giveUp = setTimeout(stopListening, 10 * 60 * 1000);
+    const win = window.open(res.data.authUrl, "homebox-backup-oauth", "width=560,height=720");
+    if (!win) {
+      stopListening();
+      toast.error(t("tools.backup_destinations.popup_blocked"));
+    }
+  }
+
+  onBeforeUnmount(stopListening);
 
   function trustHostKey() {
     if (testResult.value?.hostKey) {

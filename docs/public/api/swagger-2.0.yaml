@@ -66,6 +66,9 @@ definitions:
     - azblob
     - sftp
     - webdav
+    - gdrive
+    - onedrive
+    - dropbox
     type: string
     x-enum-varnames:
     - DefaultType
@@ -76,6 +79,9 @@ definitions:
     - TypeAzblob
     - TypeSftp
     - TypeWebdav
+    - TypeGdrive
+    - TypeOnedrive
+    - TypeDropbox
   currencies.Currency:
     properties:
       code:
@@ -1390,7 +1396,9 @@ definitions:
       skipIfUnchanged:
         type: boolean
       type:
-        description: Type is one of primary, local, s3, gcs, azblob, sftp, webdav.
+        description: |-
+          Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,
+          onedrive, dropbox.
         enum:
         - primary
         - local
@@ -1399,6 +1407,9 @@ definitions:
         - azblob
         - sftp
         - webdav
+        - gdrive
+        - onedrive
+        - dropbox
         type: string
       updatedAt:
         type: string
@@ -1491,6 +1502,12 @@ definitions:
         maxLength: 255
         minLength: 1
         type: string
+      oauthTicket:
+        description: |-
+          OAuthTicket is the one-time ticket returned by the OAuth callback for a
+          cloud-drive destination. It carries the connected account, and is
+          consumed when the destination is saved.
+        type: string
       password:
         description: |-
           Password is the sftp or webdav password. Leave empty to keep the stored
@@ -1507,7 +1524,9 @@ definitions:
       skipIfUnchanged:
         type: boolean
       type:
-        description: Type is one of primary, local, s3, gcs, azblob, sftp, webdav.
+        description: |-
+          Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,
+          onedrive, dropbox.
         enum:
         - primary
         - local
@@ -1516,6 +1535,9 @@ definitions:
         - azblob
         - sftp
         - webdav
+        - gdrive
+        - onedrive
+        - dropbox
         type: string
       username:
         description: |-
@@ -2713,6 +2735,22 @@ definitions:
       completed:
         type: integer
     type: object
+  v1.BackupOAuthStartIn:
+    properties:
+      provider:
+        enum:
+        - google
+        - microsoft
+        - dropbox
+        type: string
+    required:
+    - provider
+    type: object
+  v1.BackupOAuthStartOut:
+    properties:
+      authUrl:
+        type: string
+    type: object
   v1.BackupOptions:
     properties:
       allowCustomEndpoints:
@@ -2721,6 +2759,12 @@ definitions:
         type: boolean
       localEnabled:
         type: boolean
+      oauthProviders:
+        description: 'OAuthProviders lists the configured cloud drives: google, microsoft,
+          dropbox.'
+        items:
+          type: string
+        type: array
       remoteEnabled:
         type: boolean
     type: object
@@ -3830,6 +3874,56 @@ paths:
       security:
       - Bearer: []
       summary: Test Unsaved Backup Destination Settings
+      tags:
+      - Backups
+  /v1/group/backup-oauth/callback:
+    get:
+      description: 'The redirect target for cloud providers. Public: access is authorized
+        by the single-use state created when the flow started.'
+      parameters:
+      - description: State
+        in: query
+        name: state
+        type: string
+      - description: Authorization code
+        in: query
+        name: code
+        type: string
+      - description: Provider error
+        in: query
+        name: error
+        type: string
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: OK
+      summary: Cloud Drive Authorization Callback
+      tags:
+      - Backups
+  /v1/group/backup-oauth/start:
+    post:
+      consumes:
+      - application/json
+      description: Returns the provider's authorization URL. Open it in a popup; the
+        callback page reports the result to the opener window.
+      parameters:
+      - description: Provider
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/v1.BackupOAuthStartIn'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.BackupOAuthStartOut'
+      security:
+      - Bearer: []
+      summary: Start Connecting a Cloud Drive
       tags:
       - Backups
   /v1/group/backup-options:

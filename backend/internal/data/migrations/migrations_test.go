@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/backupdestination"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/export"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/migrations"
 	_ "github.com/sysadminsmedia/homebox/backend/internal/data/migrations/sqlite3"
@@ -99,6 +100,56 @@ func TestSqliteBackupDestinationRebuildKeepsRows(t *testing.T) {
 	require.NoError(t, err)
 
 	// The group cascade survived the rebuild.
+	require.NoError(t, c.Group.DeleteOneID(gid).Exec(ctx))
+	n, err := c.BackupDestination.Query().Count(ctx)
+	require.NoError(t, err)
+	require.Zero(t, n)
+}
+
+// TestSqliteCloudDriveRebuildKeepsCredentials checks that the second rebuild of
+// backup_destinations keeps the sftp/webdav columns added by the first, and
+// that the cloud-drive types are accepted afterwards.
+func TestSqliteCloudDriveRebuildKeepsCredentials(t *testing.T) {
+	ctx := context.Background()
+	c, err := ent.Open("sqlite3", "file:migdrives?mode=memory&cache=shared&_fk=1&_time_format=sqlite")
+	require.NoError(t, err)
+	defer func() { _ = c.Close() }()
+
+	fs, err := migrations.Migrations("sqlite3")
+	require.NoError(t, err)
+	goose.SetBaseFS(fs)
+	require.NoError(t, goose.SetDialect("sqlite3"))
+	require.NoError(t, goose.UpTo(c.Sql(), "sqlite3", 20261003000000))
+
+	gid, did := uuid.New(), uuid.New()
+	_, err = c.Sql().ExecContext(ctx, `insert into groups (id, created_at, updated_at, name, currency) values (?, datetime('now'), datetime('now'), 'g', 'USD')`, gid)
+	require.NoError(t, err)
+	_, err = c.Sql().ExecContext(ctx, `insert into backup_destinations
+		(id, created_at, updated_at, name, type, conn_string, username, secret, host_key, keep_weekly, group_id)
+		values (?, datetime('now'), datetime('now'), 'nas', 'sftp', 'sftp://nas:22/x', 'bob', 'sealed-blob', 'SHA256:abc', 9, ?)`, did, gid)
+	require.NoError(t, err)
+
+	// The previous constraint refuses the new types.
+	_, err = c.Sql().ExecContext(ctx, `update backup_destinations set type = 'gdrive' where id = ?`, did)
+	require.Error(t, err)
+
+	require.NoError(t, goose.Up(c.Sql(), "sqlite3"))
+
+	d, err := c.BackupDestination.Get(ctx, did)
+	require.NoError(t, err)
+	require.Equal(t, "sftp", string(d.Type))
+	require.Equal(t, "bob", d.Username)
+	require.Equal(t, "sealed-blob", d.Secret)
+	require.Equal(t, "SHA256:abc", d.HostKey)
+	require.Equal(t, 9, d.KeepWeekly)
+
+	for _, typ := range []string{"gdrive", "onedrive", "dropbox"} {
+		_, err = c.BackupDestination.UpdateOneID(did).SetType(backupdestination.Type(typ)).Save(ctx)
+		require.NoError(t, err, typ)
+	}
+	_, err = c.Sql().ExecContext(ctx, `update backup_destinations set type = 'ftp' where id = ?`, did)
+	require.Error(t, err, "unknown types are still rejected")
+
 	require.NoError(t, c.Group.DeleteOneID(gid).Exec(ctx))
 	n, err := c.BackupDestination.Query().Count(ctx)
 	require.NoError(t, err)

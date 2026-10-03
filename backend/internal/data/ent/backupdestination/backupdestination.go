@@ -241,13 +241,16 @@ const DefaultType = TypePrimary
 
 // Type values.
 const (
-	TypePrimary Type = "primary"
-	TypeLocal   Type = "local"
-	TypeS3      Type = "s3"
-	TypeGcs     Type = "gcs"
-	TypeAzblob  Type = "azblob"
-	TypeSftp    Type = "sftp"
-	TypeWebdav  Type = "webdav"
+	TypePrimary  Type = "primary"
+	TypeLocal    Type = "local"
+	TypeS3       Type = "s3"
+	TypeGcs      Type = "gcs"
+	TypeAzblob   Type = "azblob"
+	TypeSftp     Type = "sftp"
+	TypeWebdav   Type = "webdav"
+	TypeGdrive   Type = "gdrive"
+	TypeOnedrive Type = "onedrive"
+	TypeDropbox  Type = "dropbox"
 )
 
 func (_type Type) String() string {
@@ -257,7 +260,7 @@ func (_type Type) String() string {
 // TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
 func TypeValidator(_type Type) error {
 	switch _type {
-	case TypePrimary, TypeLocal, TypeS3, TypeGcs, TypeAzblob, TypeSftp, TypeWebdav:
+	case TypePrimary, TypeLocal, TypeS3, TypeGcs, TypeAzblob, TypeSftp, TypeWebdav, TypeGdrive, TypeOnedrive, TypeDropbox:
 		return nil
 	default:
 		return fmt.Errorf("backupdestination: invalid enum value for type field: %q", _type)

@@ -16,6 +16,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services/reporting/eventbus"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/backupdestination"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/export"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/migrations"
 	_ "github.com/sysadminsmedia/homebox/backend/internal/data/migrations/postgres"
@@ -58,6 +59,10 @@ func TestPostgresMigrationsAndBackupQueries(t *testing.T) {
 	require.NoError(t, err)
 	_, err = db.ExecContext(ctx, `update backup_destinations set type = 'ftp' where id = $1`, d.ID)
 	require.Error(t, err, "the check constraint still rejects unknown types")
+	for _, typ := range []string{"gdrive", "onedrive", "dropbox"} {
+		_, err = c.BackupDestination.UpdateOneID(d.ID).SetType(backupdestination.Type(typ)).Save(ctx)
+		require.NoError(t, err, typ)
+	}
 	_, err = c.BackupDestination.UpdateOneID(d.ID).SetType("primary").Save(ctx)
 	require.NoError(t, err)
 

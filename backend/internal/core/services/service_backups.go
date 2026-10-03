@@ -7,12 +7,14 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -66,9 +68,17 @@ type BackupService struct {
 	notifierConfig *config.NotifierConf
 	dialect        string
 	bus            *eventbus.EventBus
-	// secrets seals sftp/webdav credentials; nil when no encryption key is
-	// configured, which disables those destination types.
+	// secrets seals sftp/webdav/cloud-drive credentials; nil when no
+	// encryption key is configured, which disables those destination types.
 	secrets *secretBox
+
+	oauth oauthPending
+	// endpointOverrides and httpc let tests point providers at fake servers.
+	endpointOverrides map[string]providerEndpoints
+	httpc             *http.Client
+
+	tokensMu sync.Mutex
+	tokens   map[uuid.UUID]*tokenSource
 }
 
 // Enabled reports whether scheduled backups are switched on.
@@ -82,6 +92,9 @@ type BackupOptions struct {
 	// RemoteEnabled reports whether sftp and webdav destinations can be used:
 	// they need an encryption key for their credentials and custom endpoints.
 	RemoteEnabled bool
+	// OAuthProviders are the cloud drives the operator configured: any of
+	// providerGoogle, providerMicrosoft and providerDropbox.
+	OAuthProviders []string
 }
 
 // Options returns the server-side backup switches.
@@ -91,6 +104,7 @@ func (s *BackupService) Options() BackupOptions {
 		LocalEnabled:         s.cfg.LocalRoot != "",
 		AllowCustomEndpoints: s.cfg.AllowCustomEndpoints,
 		RemoteEnabled:        s.secrets != nil && s.cfg.AllowCustomEndpoints,
+		OAuthProviders:       s.OAuthProviderKeys(),
 	}
 }
 
@@ -187,6 +201,13 @@ func (s *BackupService) normalize(in repo.BackupSettings, requireHostKey bool) (
 		if in.Username == "" {
 			return in, invalid("a username is required")
 		}
+	case destTypeGDrive, destTypeOneDrive, destTypeDropbox:
+		if _, ok := s.providerByType(in.Type); !ok || s.secrets == nil {
+			return in, invalid("this cloud provider is not configured on the server")
+		}
+		// The address is the provider's; the account name is set when the
+		// account is connected, never taken from the request.
+		in.ConnString = ""
 	default:
 		return in, invalid("unknown destination type %q", in.Type)
 	}
@@ -326,6 +347,12 @@ func (s *BackupService) openStore(ctx context.Context, d repo.BackupDestinationO
 			return nil, nil, err
 		}
 		return st, identity, nil
+	case destTypeGDrive, destTypeOneDrive, destTypeDropbox:
+		st, err := s.driveStore(d, sec)
+		if err != nil {
+			return nil, nil, err
+		}
+		return st, identity, nil
 	default:
 		if err := s.validateCloudURL(d.Type, d.ConnString); err != nil {
 			return nil, nil, err
@@ -388,6 +415,72 @@ func artifactPrefix(d repo.BackupDestinationOut, gid uuid.UUID) string {
 		return gid.String() + "/exports/"
 	}
 	return fmt.Sprintf("%s/%s/backups/", d.Prefix, gid)
+}
+
+// driveStore builds the client for a cloud-drive destination. Access tokens
+// are cached per destination, and a refresh token the provider rotates is
+// written back (sealed) so the next refresh still works.
+func (s *BackupService) driveStore(d repo.BackupDestinationOut, sec *backupSecret) (objectStore, error) {
+	p, ok := s.providerByType(d.Type)
+	if !ok {
+		return nil, errors.New("this cloud provider is not configured on the server")
+	}
+	cred, err := s.credentials(d, sec)
+	if err != nil {
+		return nil, err
+	}
+	if cred.RefreshToken == "" {
+		return nil, errors.New("no account is connected; edit the destination and connect the account")
+	}
+
+	hc := s.httpClient()
+	ts := s.tokenSourceFor(d, p, cred.RefreshToken, sec != nil, hc)
+	if sec != nil && sec.accessToken != "" {
+		ts.access, ts.expiry = sec.accessToken, sec.accessExpiry
+	}
+	api := &driveAPI{ts: ts, hc: hc}
+	switch d.Type {
+	case destTypeGDrive:
+		return newGoogleStore(api, p.EP), nil
+	case destTypeOneDrive:
+		return newOneDriveStore(api, p.EP, hc), nil
+	default:
+		return newDropboxStore(api, p.EP), nil
+	}
+}
+
+func (s *BackupService) tokenSourceFor(d repo.BackupDestinationOut, p oauthProvider, refresh string, transient bool, hc *http.Client) *tokenSource {
+	if transient {
+		return &tokenSource{prov: p, hc: hc, refresh: refresh}
+	}
+	s.tokensMu.Lock()
+	defer s.tokensMu.Unlock()
+	if ts, ok := s.tokens[d.ID]; ok && ts.prov.Key == p.Key {
+		ts.mu.Lock()
+		same := ts.refresh == refresh
+		ts.mu.Unlock()
+		if same {
+			return ts
+		}
+	}
+	ts := &tokenSource{prov: p, hc: hc, refresh: refresh}
+	gid, id := d.GroupID, d.ID
+	ts.onRotate = func(newRefresh string) {
+		sealed, err := s.secrets.seal(secretAAD(gid, id), backupSecret{RefreshToken: newRefresh})
+		if err == nil {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			err = s.repos.BackupDestinations.SetSecret(ctx, id, sealed)
+		}
+		if err != nil {
+			log.Err(err).Stringer("destination_id", id).Msg("backup: could not store the rotated refresh token")
+		}
+	}
+	if s.tokens == nil {
+		s.tokens = map[uuid.UUID]*tokenSource{}
+	}
+	s.tokens[id] = ts
+	return ts
 }
 
 // ArtifactLocation resolves where an export's artifact lives. The caller owns
@@ -486,10 +579,23 @@ func (s *BackupService) CreateDestination(ctx context.Context, gid uuid.UUID, in
 	}
 	id := uuid.New()
 	var secret string
-	if isRemoteType(st.Type) {
+	switch {
+	case isRemoteType(st.Type):
 		if secret, err = s.sealSecret(gid, id, st.Type, in); err != nil {
 			return repo.BackupDestinationOut{}, err
 		}
+	case isDriveType(st.Type):
+		if in.OAuthTicket == "" {
+			return repo.BackupDestinationOut{}, invalid("connect your account first")
+		}
+		sec, account, terr := s.ticketCredentials(gid, in.OAuthTicket, st.Type, true)
+		if terr != nil {
+			return repo.BackupDestinationOut{}, terr
+		}
+		if secret, err = s.secrets.seal(secretAAD(gid, id), sec); err != nil {
+			return repo.BackupDestinationOut{}, err
+		}
+		st.Username = account
 	}
 	return s.repos.BackupDestinations.Create(ctx, gid, id, st, secret, s.initialNextRun(st))
 }
@@ -510,6 +616,24 @@ func (s *BackupService) UpdateDestination(ctx context.Context, gid, id uuid.UUID
 		cur.Username != st.Username || cur.HostKey != st.HostKey
 
 	var secret string
+	if isDriveType(st.Type) {
+		switch {
+		case in.OAuthTicket != "":
+			sec, account, terr := s.ticketCredentials(gid, in.OAuthTicket, st.Type, true)
+			if terr != nil {
+				return repo.BackupDestinationOut{}, terr
+			}
+			if secret, err = s.secrets.seal(secretAAD(gid, id), sec); err != nil {
+				return repo.BackupDestinationOut{}, err
+			}
+			st.Username = account
+			moved = true
+		case cur.Secret != "" && cur.Type == st.Type:
+			secret, st.Username = cur.Secret, cur.Username
+		default:
+			return repo.BackupDestinationOut{}, invalid("connect your account first")
+		}
+	}
 	if isRemoteType(st.Type) {
 		switch {
 		case in.Password != "" || in.PrivateKey != "":
@@ -555,6 +679,9 @@ func (s *BackupService) DeleteDestination(ctx context.Context, gid, id uuid.UUID
 	if _, err := s.repos.BackupDestinations.Delete(ctx, gid, id); err != nil {
 		return err
 	}
+	s.tokensMu.Lock()
+	delete(s.tokens, id)
+	s.tokensMu.Unlock()
 	s.publishMutation(gid)
 	return nil
 }
@@ -570,6 +697,31 @@ func (s *BackupService) TestSettings(ctx context.Context, gid uuid.UUID, in repo
 	d := repo.BackupDestinationOut{GroupID: gid, BackupSettings: st}
 
 	var sec *backupSecret
+	if isDriveType(st.Type) {
+		switch {
+		case in.OAuthTicket != "":
+			cred, _, terr := s.ticketCredentials(gid, in.OAuthTicket, st.Type, false)
+			if terr != nil {
+				return TestResult{}, terr
+			}
+			sec = &cred
+		case in.DestinationID != "":
+			id, perr := uuid.Parse(in.DestinationID)
+			if perr != nil {
+				return TestResult{}, invalid("invalid destination id")
+			}
+			cur, gerr := s.repos.BackupDestinations.Get(ctx, gid, id)
+			if gerr != nil {
+				return TestResult{}, gerr
+			}
+			if cur.Secret == "" || cur.Type != st.Type {
+				return TestResult{}, invalid("connect your account first")
+			}
+			d.ID, d.Secret = cur.ID, cur.Secret
+		default:
+			return TestResult{}, invalid("connect your account first")
+		}
+	}
 	if isRemoteType(st.Type) {
 		switch {
 		case in.Password != "" || in.PrivateKey != "":
