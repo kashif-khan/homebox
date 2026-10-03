@@ -404,11 +404,40 @@ func (s *ExportService) RunExport(ctx context.Context, exportID, gid uuid.UUID) 
 	}
 
 	if err := s.repos.Exports.SetCompleted(ctx, gid, exportID, artifactPath, sizeBytes); err != nil {
-		log.Err(err).Msg("export job: failed to mark completed")
+		// The file was written but the row cannot say so, so nothing refers to it.
+		// Treat the run as failed: counting it as a success would advance the
+		// change fingerprint, clear the alerts and skip the next run, all on the
+		// strength of a backup that cannot be found or restored.
+		log.Err(err).Stringer("export_id", exportID).Msg("export job: failed to mark completed")
+		failMsg := "the backup was written but could not be recorded: " + err.Error()
+		_ = s.repos.Exports.SetFailed(ctx, gid, exportID, failMsg)
+		s.removeOrphanedArtifact(ctx, gid, exp, artifactPath)
+		s.publishMutation(gid)
+		if s.backups != nil {
+			s.backups.afterRun(ctx, gid, exp, fingerprint, errors.New(failMsg))
+		}
+		return
 	}
 	s.publishMutation(gid)
 	if s.backups != nil {
 		s.backups.afterRun(ctx, gid, exp, fingerprint, nil)
+	}
+}
+
+// removeOrphanedArtifact deletes a file whose row could not be updated, best
+// effort, so it is not left behind unreferenced.
+func (s *ExportService) removeOrphanedArtifact(ctx context.Context, gid uuid.UUID, exp repo.ExportOut, artifactPath string) {
+	if s.backups == nil {
+		return
+	}
+	exp.ArtifactPath = artifactPath
+	store, key, err := s.backups.ArtifactLocation(ctx, gid, exp)
+	if err != nil {
+		return
+	}
+	defer func() { _ = store.Close() }()
+	if err := store.Delete(ctx, key); err != nil {
+		log.Warn().Err(err).Str("artifact_path", artifactPath).Msg("export job: could not remove the orphaned artifact")
 	}
 }
 

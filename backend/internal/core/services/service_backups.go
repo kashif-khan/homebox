@@ -54,6 +54,11 @@ const (
 	checkTimeout       = 30 * time.Second
 
 	maxDestinationsPerGroup = 20
+
+	// activeRunTimeout is how long a pending or running backup may go without any
+	// update before it is treated as interrupted. A live run updates its row as it
+	// progresses, so this only has to outlast the longest silent step.
+	activeRunTimeout = 6 * time.Hour
 )
 
 // BackupService owns scheduled backups: destination management, the
@@ -118,6 +123,7 @@ type TestResult struct {
 	HostKey string `json:"hostKey,omitempty"`
 }
 
+// invalid wraps a message as ErrBackupInvalid, the class of error a user can fix.
 func invalid(format string, a ...any) error {
 	return fmt.Errorf("%w: %s", ErrBackupInvalid, fmt.Sprintf(format, a...))
 }
@@ -258,6 +264,7 @@ func (s *BackupService) localDir(sub string) (string, error) {
 	return dir, nil
 }
 
+// validateCloudURL checks a cloud connection string: the right scheme for the type, no embedded credentials, a named bucket, and no custom endpoint unless the operator allowed them.
 func (s *BackupService) validateCloudURL(typ, raw string) error {
 	if raw == "" {
 		return invalid("a connection string is required")
@@ -554,14 +561,17 @@ func (s *BackupService) check(ctx context.Context, d repo.BackupDestinationOut, 
 // ---------------------------------------------------------------------------
 // Destination CRUD
 
+// ListDestinations returns a collection's backup destinations, oldest first.
 func (s *BackupService) ListDestinations(ctx context.Context, gid uuid.UUID) ([]repo.BackupDestinationOut, error) {
 	return s.repos.BackupDestinations.ListByGroup(ctx, gid)
 }
 
+// GetDestination returns one destination of the collection.
 func (s *BackupService) GetDestination(ctx context.Context, gid, id uuid.UUID) (repo.BackupDestinationOut, error) {
 	return s.repos.BackupDestinations.Get(ctx, gid, id)
 }
 
+// CreateDestination validates and stores a new destination, scheduling its first run when scheduling is on.
 func (s *BackupService) CreateDestination(ctx context.Context, gid uuid.UUID, in repo.BackupInput) (repo.BackupDestinationOut, error) {
 	if !s.cfg.Enabled {
 		return repo.BackupDestinationOut{}, ErrBackupDisabled
@@ -600,6 +610,7 @@ func (s *BackupService) CreateDestination(ctx context.Context, gid uuid.UUID, in
 	return s.repos.BackupDestinations.Create(ctx, gid, id, st, secret, s.initialNextRun(st))
 }
 
+// UpdateDestination replaces a destination's settings. Its type, address and prefix cannot change while it holds backups, since each stored file is located through them.
 func (s *BackupService) UpdateDestination(ctx context.Context, gid, id uuid.UUID, in repo.BackupInput) (repo.BackupDestinationOut, error) {
 	if !s.cfg.Enabled {
 		return repo.BackupDestinationOut{}, ErrBackupDisabled
@@ -612,8 +623,21 @@ func (s *BackupService) UpdateDestination(ctx context.Context, gid, id uuid.UUID
 	if err != nil {
 		return repo.BackupDestinationOut{}, err
 	}
-	moved := cur.Type != st.Type || cur.ConnString != st.ConnString || cur.Prefix != st.Prefix ||
-		cur.Username != st.Username || cur.HostKey != st.HostKey
+	relocated := cur.Type != st.Type || cur.ConnString != st.ConnString || cur.Prefix != st.Prefix
+	if relocated {
+		// Each stored backup records its path relative to the destination, and is
+		// found again by resolving that path against the destination's current
+		// settings. Changing where the destination points would leave those files
+		// unreachable for download, pruning and deletion.
+		n, cerr := s.repos.Exports.CountArtifactsForDestination(ctx, gid, id)
+		if cerr != nil {
+			return repo.BackupDestinationOut{}, cerr
+		}
+		if n > 0 {
+			return repo.BackupDestinationOut{}, invalid("this destination already holds %d backup(s) at its current location, so its type, address and folder prefix can't change; delete those backups first, or add a new destination", n)
+		}
+	}
+	moved := relocated || cur.Username != st.Username || cur.HostKey != st.HostKey
 
 	var secret string
 	if isDriveType(st.Type) {
@@ -656,6 +680,7 @@ func (s *BackupService) UpdateDestination(ctx context.Context, gid, id uuid.UUID
 	return out, err
 }
 
+// initialNextRun returns the first scheduled run for new or edited settings, or nil when the destination is disabled or not scheduled.
 func (s *BackupService) initialNextRun(in repo.BackupSettings) *time.Time {
 	if !in.Enabled || !in.ScheduleEnabled {
 		return nil
@@ -773,6 +798,7 @@ func (s *BackupService) RunNow(ctx context.Context, gid, id uuid.UUID) (repo.Exp
 	if !d.Enabled {
 		return repo.ExportOut{}, invalid("destination is disabled")
 	}
+	s.failInterrupted(ctx, gid, id)
 	active, err := s.repos.Exports.HasActiveForDestination(ctx, gid, id)
 	if err != nil {
 		return repo.ExportOut{}, err
@@ -783,6 +809,21 @@ func (s *BackupService) RunNow(ctx context.Context, gid, id uuid.UUID) (repo.Exp
 	return s.exports.EnqueueForDestination(ctx, gid, id, originManual)
 }
 
+// failInterrupted fails runs that stopped updating, so a crash mid-backup cannot
+// block the destination forever.
+func (s *BackupService) failInterrupted(ctx context.Context, gid, id uuid.UUID) {
+	n, err := s.repos.Exports.FailStaleActive(ctx, gid, id, time.Now().Add(-activeRunTimeout))
+	if err != nil {
+		log.Err(err).Stringer("destination_id", id).Msg("backup: failing interrupted runs")
+		return
+	}
+	if n > 0 {
+		log.Warn().Stringer("destination_id", id).Int("runs", n).Msg("backup: marked interrupted runs as failed")
+		s.publishMutation(gid)
+	}
+}
+
+// ListVersions returns the backups written to a destination, newest first.
 func (s *BackupService) ListVersions(ctx context.Context, gid, id uuid.UUID) ([]repo.ExportOut, error) {
 	if _, err := s.repos.BackupDestinations.Get(ctx, gid, id); err != nil {
 		return nil, err
@@ -790,6 +831,7 @@ func (s *BackupService) ListVersions(ctx context.Context, gid, id uuid.UUID) ([]
 	return s.repos.Exports.ListByDestination(ctx, gid, id)
 }
 
+// publishMutation tells connected clients of the collection to refresh their backup views.
 func (s *BackupService) publishMutation(gid uuid.UUID) {
 	if s.bus != nil {
 		s.bus.Publish(eventbus.EventExportMutation, eventbus.GroupMutationEvent{GID: gid})
@@ -865,6 +907,7 @@ func (s *BackupService) SchedulerTick(ctx context.Context) {
 		}
 
 		next := NextRun(d.BackupSettings, now)
+		s.failInterrupted(ctx, d.GroupID, d.ID)
 		active, err := s.repos.Exports.HasActiveForDestination(ctx, d.GroupID, d.ID)
 		if err != nil {
 			log.Err(err).Stringer("destination_id", d.ID).Msg("backup scheduler: check active")
@@ -896,6 +939,34 @@ func (s *BackupService) SchedulerTick(ctx context.Context) {
 	}
 }
 
+// schedulePeriod is the longest normal gap between two scheduled runs, used to
+// keep the "no recent backup" alert from firing between runs of a sparse
+// schedule.
+func schedulePeriod(c repo.BackupSettings) time.Duration {
+	switch c.Frequency {
+	case "hourly":
+		return time.Duration(max(c.IntervalHours, 1)) * time.Hour
+	case "weekly":
+		return 7 * 24 * time.Hour
+	case "monthly":
+		return 31 * 24 * time.Hour
+	default: // daily
+		return 24 * time.Hour
+	}
+}
+
+// staleThreshold is how long a destination may go without a successful (or
+// legitimately skipped) backup before it alerts: the configured hours, but never
+// less than two schedule periods. A weekly or monthly schedule with the default
+// 48 hours would otherwise alert on every healthy gap, since one missed run is
+// not yet a problem.
+func staleThreshold(d repo.BackupDestinationOut) time.Duration {
+	return max(time.Duration(d.AlertStaleHours)*time.Hour, 2*schedulePeriod(d.BackupSettings))
+}
+
+// checkStale raises the "no recent backup" alert. A run skipped because nothing
+// changed counts as fresh: the data is already backed up, so a quiet collection
+// must not alert just because it had nothing new to save.
 func (s *BackupService) checkStale(ctx context.Context, d repo.BackupDestinationOut, now time.Time) {
 	if !d.AlertsEnabled || d.AlertStaleHours <= 0 || d.AlertedStale {
 		return
@@ -904,11 +975,15 @@ func (s *BackupService) checkStale(ctx context.Context, d repo.BackupDestination
 	if d.LastSuccessAt != nil {
 		ref = *d.LastSuccessAt
 	}
-	if now.Sub(ref) < time.Duration(d.AlertStaleHours)*time.Hour {
+	if d.LastSkippedAt != nil && d.LastSkippedAt.After(ref) {
+		ref = *d.LastSkippedAt
+	}
+	limit := staleThreshold(d)
+	if now.Sub(ref) < limit {
 		return
 	}
-	s.alert(ctx, d, fmt.Sprintf("no successful backup in the last %d hours.", d.AlertStaleHours))
-	_ = s.repos.BackupDestinations.SetAlertFlags(ctx, d.ID, d.AlertedUnreachable, d.AlertedFailure, true)
+	s.alert(ctx, d, fmt.Sprintf("no successful backup in the last %d hours.", int(limit.Hours())))
+	_ = s.repos.BackupDestinations.SetAlertedStale(ctx, d.ID, true)
 }
 
 // ---------------------------------------------------------------------------
@@ -924,6 +999,7 @@ type fingerprintSpec struct {
 	hasUpdated bool
 }
 
+// fingerprintSpecs lists the tables, and the rows within them, that make up a backup.
 func fingerprintSpecs() []fingerprintSpec {
 	specs := make([]fingerprintSpec, 0, len(exportTables)+1)
 	specs = append(specs, fingerprintSpec{table: "groups", scope: "id = ?", hasUpdated: true})
@@ -1007,11 +1083,12 @@ func (s *BackupService) afterRun(ctx context.Context, gid uuid.UUID, exp repo.Ex
 	if d.AlertedFailure && d.AlertsEnabled {
 		s.alert(ctx, d, "backups are working again.")
 	}
-	_ = s.repos.BackupDestinations.SetAlertFlags(ctx, d.ID, d.AlertedUnreachable, false, false)
+	// MarkRunSucceeded already cleared the failure and stale flags.
 	s.Prune(ctx, d)
 	s.publishMutation(gid)
 }
 
+// recordFailure stores a failed run and sends the failure alert once per streak.
 func (s *BackupService) recordFailure(ctx context.Context, d repo.BackupDestinationOut, msg string) {
 	msg = s.redact(msg)
 	if err := s.repos.BackupDestinations.MarkRunFailed(ctx, d.ID, time.Now(), msg); err != nil {
@@ -1019,7 +1096,7 @@ func (s *BackupService) recordFailure(ctx context.Context, d repo.BackupDestinat
 	}
 	if d.AlertsEnabled && !d.AlertedFailure {
 		s.alert(ctx, d, "backup failed: "+msg)
-		_ = s.repos.BackupDestinations.SetAlertFlags(ctx, d.ID, d.AlertedUnreachable, true, d.AlertedStale)
+		_ = s.repos.BackupDestinations.SetAlertedFailure(ctx, d.ID, true)
 	}
 	s.publishMutation(d.GroupID)
 }
@@ -1155,7 +1232,7 @@ func (s *BackupService) recordHealth(ctx context.Context, d repo.BackupDestinati
 			if d.AlertsEnabled {
 				s.alert(ctx, d, "destination is reachable again.")
 			}
-			_ = s.repos.BackupDestinations.SetAlertFlags(ctx, d.ID, false, d.AlertedFailure, d.AlertedStale)
+			_ = s.repos.BackupDestinations.SetAlertedUnreachable(ctx, d.ID, false)
 		}
 		s.publishMutation(d.GroupID)
 		return
@@ -1168,7 +1245,7 @@ func (s *BackupService) recordHealth(ctx context.Context, d repo.BackupDestinati
 	}
 	if d.AlertsEnabled && !d.AlertedUnreachable && failures >= d.AlertFailureThreshold {
 		s.alert(ctx, d, fmt.Sprintf("destination is unreachable after %d failed checks: %s", failures, res.Message))
-		_ = s.repos.BackupDestinations.SetAlertFlags(ctx, d.ID, true, d.AlertedFailure, d.AlertedStale)
+		_ = s.repos.BackupDestinations.SetAlertedUnreachable(ctx, d.ID, true)
 	}
 	s.publishMutation(d.GroupID)
 }
@@ -1192,4 +1269,42 @@ func (s *BackupService) alert(ctx context.Context, d repo.BackupDestinationOut, 
 			log.Err(err).Str("notifier", notifiers[i].Name).Msg("backup alert: send failed")
 		}
 	}
+}
+
+// AuthorizeExportAccess refuses access to a backup that belongs to a destination
+// unless the caller owns the collection. Destinations are managed by owners, so
+// the backups they hold are owner-only too; ordinary manual exports stay
+// available to every member. Without this, the generic export endpoints would
+// expose (and let members delete) the backups the owner-only routes protect.
+func (s *BackupService) AuthorizeExportAccess(ctx Context, exp repo.ExportOut) error {
+	if exp.DestinationID == nil {
+		return nil
+	}
+	isOwner, err := s.repos.Groups.IsOwnerOf(ctx.Context, ctx.UID, ctx.GID)
+	if err != nil {
+		return err
+	}
+	if !isOwner {
+		return validate.NewRequestError(ErrNotGroupOwner, http.StatusForbidden)
+	}
+	return nil
+}
+
+// VisibleExports drops destination-bound backups from a listing unless the
+// caller owns the collection.
+func (s *BackupService) VisibleExports(ctx Context, rows []repo.ExportOut) ([]repo.ExportOut, error) {
+	isOwner, err := s.repos.Groups.IsOwnerOf(ctx.Context, ctx.UID, ctx.GID)
+	if err != nil {
+		return nil, err
+	}
+	if isOwner {
+		return rows, nil
+	}
+	out := make([]repo.ExportOut, 0, len(rows))
+	for _, r := range rows {
+		if r.DestinationID == nil {
+			out = append(out, r)
+		}
+	}
+	return out, nil
 }
