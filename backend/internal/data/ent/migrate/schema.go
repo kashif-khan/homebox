@@ -136,7 +136,7 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString, Size: 255},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 1000},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"primary", "local", "s3", "gcs", "azblob", "sftp", "webdav", "gdrive", "onedrive", "dropbox"}, Default: "primary"},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"primary", "local", "s3", "gcs", "azblob", "sftp", "webdav", "gdrive", "onedrive", "dropbox", "smb"}, Default: "primary"},
 		{Name: "conn_string", Type: field.TypeString, Nullable: true, Size: 2048},
 		{Name: "username", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "secret", Type: field.TypeString, Nullable: true, Size: 2147483647},
@@ -144,7 +144,8 @@ var (
 		{Name: "prefix", Type: field.TypeString, Size: 255, Default: "homebox-backups"},
 		{Name: "enabled", Type: field.TypeBool, Default: true},
 		{Name: "schedule_enabled", Type: field.TypeBool, Default: false},
-		{Name: "frequency", Type: field.TypeEnum, Enums: []string{"hourly", "daily", "weekly", "monthly"}, Default: "daily"},
+		{Name: "frequency", Type: field.TypeEnum, Enums: []string{"hourly", "daily", "weekly", "monthly", "cron"}, Default: "daily"},
+		{Name: "cron_expr", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "interval_hours", Type: field.TypeInt, Default: 1},
 		{Name: "at_hour", Type: field.TypeInt, Default: 3},
 		{Name: "at_minute", Type: field.TypeInt, Default: 0},
@@ -181,7 +182,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "backup_destinations_groups_backup_destinations",
-				Columns:    []*schema.Column{BackupDestinationsColumns[40]},
+				Columns:    []*schema.Column{BackupDestinationsColumns[41]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -190,7 +191,7 @@ var (
 			{
 				Name:    "backupdestination_group_id",
 				Unique:  false,
-				Columns: []*schema.Column{BackupDestinationsColumns[40]},
+				Columns: []*schema.Column{BackupDestinationsColumns[41]},
 			},
 		},
 	}

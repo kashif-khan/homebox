@@ -435,3 +435,183 @@ func TestRemoteStoresRejectPathEscape(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "/srv/backups/p/g/backups/x.zip", p)
 }
+
+func TestSFTPPassphraseProtectedKey(t *testing.T) {
+	ctx := context.Background()
+	root := t.TempDir()
+	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+	require.NoError(t, err)
+	sshPub, err := ssh.NewPublicKey(pub)
+	require.NoError(t, err)
+	addr, fp := startSFTPServer(t, sshPub)
+	grp, err := tRepos.Groups.GroupCreate(ctx, "pass-"+fk.Str(4), uuid.Nil)
+	require.NoError(t, err)
+
+	const passphrase = "correct horse battery staple"
+	block, err := ssh.MarshalPrivateKeyWithPassphrase(priv, "", []byte(passphrase))
+	require.NoError(t, err)
+	locked := string(pem.EncodeToMemory(block))
+	plainBlock, err := ssh.MarshalPrivateKey(priv, "")
+	require.NoError(t, err)
+	plain := string(pem.EncodeToMemory(plainBlock))
+
+	settings := remoteSettings("sftp", "sftp://"+addr+root)
+	settings.HostKey = fp
+	test := func(in repo.BackupInput) TestResult {
+		in.BackupSettings = settings
+		res, err := tSvc.Backups.TestSettings(ctx, grp.ID, in)
+		require.NoError(t, err)
+		return res
+	}
+
+	res := test(repo.BackupInput{PrivateKey: locked, Passphrase: passphrase})
+	assert.True(t, res.OK, res.Message)
+
+	res = test(repo.BackupInput{PrivateKey: locked})
+	assert.False(t, res.OK)
+	assert.Contains(t, res.Message, "passphrase")
+
+	res = test(repo.BackupInput{PrivateKey: locked, Passphrase: "wrong"})
+	assert.False(t, res.OK)
+	assert.Contains(t, res.Message, "wrong")
+	assert.NotContains(t, res.Message, "BEGIN", "the key never appears in messages")
+
+	res = test(repo.BackupInput{PrivateKey: plain, Passphrase: "not needed"})
+	assert.True(t, res.OK, "a passphrase given for an unencrypted key is harmless: %s", res.Message)
+
+	res = test(repo.BackupInput{PrivateKey: "not a key"})
+	assert.False(t, res.OK)
+
+	// The passphrase is stored sealed with the key and survives a round trip.
+	dest, err := tSvc.Backups.CreateDestination(ctx, grp.ID, repo.BackupInput{BackupSettings: settings, PrivateKey: locked, Passphrase: passphrase})
+	require.NoError(t, err)
+	assert.NotContains(t, dest.Secret, passphrase)
+	sec, err := tSvc.Backups.credentials(dest, nil)
+	require.NoError(t, err)
+	assert.Equal(t, passphrase, sec.Passphrase)
+	got, err := tSvc.Backups.TestDestination(ctx, grp.ID, dest.ID)
+	require.NoError(t, err)
+	assert.True(t, got.OK, got.Message)
+}
+
+func TestParseSMBURL(t *testing.T) {
+	ok := func(raw string, want smbTarget) {
+		got, err := parseSMBURL(raw)
+		require.NoError(t, err, raw)
+		assert.Equal(t, want, got, raw)
+	}
+	ok("smb://nas.lan/backups", smbTarget{addr: "nas.lan:445", share: "backups"})
+	ok("smb://nas.lan:1445/backups/homebox/daily", smbTarget{addr: "nas.lan:1445", share: "backups", base: "homebox/daily"})
+	ok("smb://nas.lan/backups/../backups/x", smbTarget{addr: "nas.lan:445", share: "backups", base: "x"})
+	for _, raw := range []string{"smb://nas.lan", "smb://nas.lan/", "smb://user:pw@nas.lan/share", "http://nas.lan/share", "smb:///share", "nas.lan/share"} {
+		_, err := parseSMBURL(raw)
+		require.Error(t, err, raw)
+	}
+}
+
+func TestSMBPathGuard(t *testing.T) {
+	s := &smbStore{base: "homebox/daily"}
+	for _, k := range []string{"../x", "a/../../x", "/../etc"} {
+		_, err := s.full(k)
+		require.Error(t, err, k)
+	}
+	p, err := s.full("p/g/backups/x.zip")
+	require.NoError(t, err)
+	assert.Equal(t, "homebox/daily/p/g/backups/x.zip", p)
+
+	root := &smbStore{}
+	p, err = root.full("a/b.zip")
+	require.NoError(t, err)
+	assert.Equal(t, "a/b.zip", p)
+}
+
+func TestNormalizeSMBSettings(t *testing.T) {
+	box, _ := newSecretBox("k")
+	svc := &BackupService{cfg: config.BackupConf{Enabled: true, AllowCustomEndpoints: true}, secrets: box}
+	in := remoteSettings("smb", "smb://nas.lan/backups/homebox")
+	in.HostKey = "SHA256:ignored"
+	out, err := svc.NormalizeSettings(in)
+	require.NoError(t, err)
+	assert.Equal(t, "smb://nas.lan:445/backups/homebox", out.ConnString)
+	assert.Empty(t, out.HostKey)
+
+	for _, conn := range []string{"smb://nas.lan", "smb://u:p@nas.lan/s", "ftp://nas.lan/s"} {
+		in := remoteSettings("smb", conn)
+		_, err := svc.NormalizeSettings(in)
+		require.ErrorIs(t, err, ErrBackupInvalid, conn)
+	}
+	noName := remoteSettings("smb", "smb://nas.lan/s")
+	noName.Username = ""
+	_, err = svc.NormalizeSettings(noName)
+	require.ErrorIs(t, err, ErrBackupInvalid)
+
+	// A key is never stored for a password-only type.
+	sealed, err := svc.sealSecret(uuid.New(), uuid.New(), "smb", repo.BackupInput{Password: "pw", PrivateKey: "k", Passphrase: "p"})
+	require.NoError(t, err)
+	assert.NotEmpty(t, sealed)
+	_, err = svc.sealSecret(uuid.New(), uuid.New(), "smb", repo.BackupInput{PrivateKey: "k"})
+	require.ErrorIs(t, err, ErrBackupInvalid)
+}
+
+// TestSMBDestinationAgainstServer runs the real pipeline against a live SMB
+// server. Point it at a disposable share:
+//
+//	HBOX_TEST_SMB_URL=smb://127.0.0.1:1445/backups HBOX_TEST_SMB_USER=hbuser HBOX_TEST_SMB_PASS=... go test -run SMBDestination
+func TestSMBDestinationAgainstServer(t *testing.T) {
+	conn, user, pass := os.Getenv("HBOX_TEST_SMB_URL"), os.Getenv("HBOX_TEST_SMB_USER"), os.Getenv("HBOX_TEST_SMB_PASS")
+	if conn == "" {
+		t.Skip("set HBOX_TEST_SMB_URL, HBOX_TEST_SMB_USER and HBOX_TEST_SMB_PASS to run against a disposable SMB share")
+	}
+	ctx := context.Background()
+	grp, err := tRepos.Groups.GroupCreate(ctx, "smb-"+fk.Str(4), uuid.Nil)
+	require.NoError(t, err)
+
+	settings := remoteSettings("smb", conn)
+	settings.Username = user
+
+	res, err := tSvc.Backups.TestSettings(ctx, grp.ID, repo.BackupInput{BackupSettings: settings, Password: "wrong-" + pass})
+	require.NoError(t, err)
+	assert.False(t, res.OK, "a wrong password is refused")
+
+	res, err = tSvc.Backups.TestSettings(ctx, grp.ID, repo.BackupInput{BackupSettings: settings, Password: pass})
+	require.NoError(t, err)
+	require.True(t, res.OK, res.Message)
+
+	dest, err := tSvc.Backups.CreateDestination(ctx, grp.ID, repo.BackupInput{BackupSettings: settings, Password: pass})
+	require.NoError(t, err)
+	assert.NotContains(t, dest.Secret, pass)
+
+	exp, err := tRepos.Exports.CreateForDestination(ctx, grp.ID, dest.ID, "scheduled")
+	require.NoError(t, err)
+	tSvc.Exports.RunExport(ctx, exp.ID, grp.ID)
+	exp, err = tRepos.Exports.Get(ctx, grp.ID, exp.ID)
+	require.NoError(t, err)
+	require.Equal(t, "completed", exp.Status, exp.Error)
+
+	store, key, err := tSvc.Backups.ArtifactLocation(ctx, grp.ID, exp)
+	require.NoError(t, err)
+	rc, err := store.Open(ctx, key)
+	require.NoError(t, err)
+	got, err := io.ReadAll(rc)
+	require.NoError(t, err)
+	_ = rc.Close()
+	_ = store.Close()
+	assert.Len(t, got, int(exp.SizeBytes))
+	assert.Equal(t, []byte("PK"), got[:2])
+
+	// Overwriting works (SMB rename will not replace), and deleting twice is fine.
+	st, _, err := tSvc.Backups.openStore(ctx, dest, nil)
+	require.NoError(t, err)
+	require.NoError(t, st.Write(ctx, key, bytesReader([]byte("replacement")), 11, "application/zip"))
+	require.NoError(t, st.Write(ctx, key, bytesReader([]byte("replaced again")), 14, "application/zip"))
+	rc, err = st.Open(ctx, key)
+	require.NoError(t, err)
+	got, err = io.ReadAll(rc)
+	require.NoError(t, err)
+	_ = rc.Close()
+	assert.Equal(t, "replaced again", string(got))
+	_ = st.Close()
+
+	require.NoError(t, tSvc.Backups.DeleteVersion(ctx, grp.ID, exp))
+	require.NoError(t, tSvc.Backups.DeleteVersion(ctx, grp.ID, exp))
+}

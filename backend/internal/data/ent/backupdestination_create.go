@@ -202,6 +202,20 @@ func (_c *BackupDestinationCreate) SetNillableFrequency(v *backupdestination.Fre
 	return _c
 }
 
+// SetCronExpr sets the "cron_expr" field.
+func (_c *BackupDestinationCreate) SetCronExpr(v string) *BackupDestinationCreate {
+	_c.mutation.SetCronExpr(v)
+	return _c
+}
+
+// SetNillableCronExpr sets the "cron_expr" field if the given value is not nil.
+func (_c *BackupDestinationCreate) SetNillableCronExpr(v *string) *BackupDestinationCreate {
+	if v != nil {
+		_c.SetCronExpr(*v)
+	}
+	return _c
+}
+
 // SetIntervalHours sets the "interval_hours" field.
 func (_c *BackupDestinationCreate) SetIntervalHours(v int) *BackupDestinationCreate {
 	_c.mutation.SetIntervalHours(v)
@@ -795,6 +809,11 @@ func (_c *BackupDestinationCreate) check() error {
 			return &ValidationError{Name: "frequency", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.frequency": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.CronExpr(); ok {
+		if err := backupdestination.CronExprValidator(v); err != nil {
+			return &ValidationError{Name: "cron_expr", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.cron_expr": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.IntervalHours(); !ok {
 		return &ValidationError{Name: "interval_hours", err: errors.New(`ent: missing required field "BackupDestination.interval_hours"`)}
 	}
@@ -958,6 +977,10 @@ func (_c *BackupDestinationCreate) createSpec() (*BackupDestination, *sqlgraph.C
 	if value, ok := _c.mutation.Frequency(); ok {
 		_spec.SetField(backupdestination.FieldFrequency, field.TypeEnum, value)
 		_node.Frequency = value
+	}
+	if value, ok := _c.mutation.CronExpr(); ok {
+		_spec.SetField(backupdestination.FieldCronExpr, field.TypeString, value)
+		_node.CronExpr = value
 	}
 	if value, ok := _c.mutation.IntervalHours(); ok {
 		_spec.SetField(backupdestination.FieldIntervalHours, field.TypeInt, value)

@@ -28,6 +28,7 @@ settings. A collection can have up to 20.
 | Azure Blob           | An `azblob://container` URL.                                                     | `AZURE_STORAGE_ACCOUNT` and `AZURE_STORAGE_KEY`       |
 | SFTP                 | A folder on any SSH server: TrueNAS, Unraid, Synology, a Linux box.              | Username and password or key, stored encrypted        |
 | WebDAV               | A WebDAV share: Nextcloud, ownCloud, Synology, an Apache or nginx DAV folder.    | Username and password, stored encrypted               |
+| SMB                  | A Windows or Samba share: TrueNAS, Unraid, Synology, Windows.                    | Username and password, stored encrypted               |
 | Google Drive         | A folder in a Google account's Drive.                                            | The account is connected in the browser (OAuth)       |
 | OneDrive             | The Homebox app folder in a Microsoft account's OneDrive.                        | The account is connected in the browser (OAuth)       |
 | Dropbox              | A folder in a Dropbox account.                                                   | The account is connected in the browser (OAuth)       |
@@ -56,13 +57,17 @@ Passwords and private keys are sealed with AES-256-GCM before they are saved, ar
 never returned by the API or shown again. **Keep the key stable and backed up separately**: if it changes, stored logins
 can no longer be read and you will need to re-enter them.
 
-- **Address**: `sftp://host[:port]/path` for SFTP, or the full `https://host/path/` URL for WebDAV. Put the username in its
-  own field, not in the URL.
+- **Address**: `sftp://host[:port]/path` for SFTP, `smb://host[:port]/share[/folder]` for SMB, or the full
+  `https://host/path/` URL for WebDAV. Put the username in its own field, not in the URL.
 - **SFTP host key**: to make sure backups are only sent to your server, an SFTP destination is pinned to the server's SSH
   host key. Click **Test connection** once. Homebox shows the fingerprint the server presented. Compare it with your server
   (`ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`), then click **Trust this host key**. If the key ever changes, the
   destination goes unreachable instead of silently trusting the new one.
-- **Private key**: SFTP also accepts an unencrypted PEM private key instead of a password.
+- **Private key**: SFTP also accepts a PEM private key instead of a password. If the key is protected by a passphrase,
+  enter it in the extra field that appears; it is stored sealed with the key.
+- **SMB**: Homebox speaks SMB 2 and 3 (not the obsolete SMB 1) and signs in with NTLM. If your server needs a domain, enter
+  the username as `DOMAIN\user`. The share must already exist and be writable by that user. Some servers keep deleted files
+  in a recycle bin on the share, which then keeps pruned backups until it is emptied.
 - **Changing a destination**: saved credentials are only kept while the type, address and username stay the same.
   Otherwise you must enter them again, so a destination can't be re-pointed at another server to collect them.
 
@@ -137,11 +142,14 @@ Authelia and similar) get no offer.
 
 ### Using a NAS (TrueNAS, Unraid, Synology)
 
-The simplest option is an **SFTP** destination pointing at a dataset on the NAS (enable the SSH service and give a user
-write access). **WebDAV** and **S3-compatible** (MinIO) work as well.
+Most NAS systems offer several ways in. Use whichever you already have set up:
 
-If you would rather use a share you already mount (NFS or SMB), make it available to the container and point
-`HBOX_BACKUP_LOCAL_ROOT` at it:
+- **SMB**: point an SMB destination at a share on the NAS (`smb://truenas.lan/backups/homebox`).
+- **SFTP**: enable the SSH service and point an SFTP destination at a dataset.
+- **WebDAV** and **S3-compatible** (MinIO) work as well.
+- **NFS**: Homebox has no built-in NFS client. Mount the export on the host and use a local directory:
+
+Make the mounted share available to the container and point `HBOX_BACKUP_LOCAL_ROOT` at it:
 
 ```yaml
 services:
@@ -163,8 +171,12 @@ Turn on **Automatic backups** for a destination and choose how often it runs:
 - **Daily**: at a chosen time.
 - **Weekly**: on a chosen weekday and time.
 - **Monthly**: on a chosen day (1 to 28) and time.
+- **Custom (cron)**: a standard five-field cron expression (`minute hour day month weekday`) or a descriptor such as
+  `@daily`. For example `0 3 * * 1-5` runs at 03:00 on weekdays, and `30 2 1,15 * *` at 02:30 on the 1st and 15th.
 
-Times use the server's time zone (set `TZ` in the container to change it).
+Times use the server's time zone (set `TZ` in the container to change it). A cron expression can start with
+`CRON_TZ=Europe/Paris ` to use another zone. To protect the server, cron schedules must be at least five minutes apart,
+and an expression that runs more often (or never) is rejected when you save it.
 
 By default a scheduled run is **skipped when nothing has changed** since the last successful backup. Homebox compares a
 fingerprint of the collection's data and settings (row counts and the newest change in every backed-up table), so edits,
@@ -213,11 +225,10 @@ Problems also show as a banner above the destination list. Messages go to the co
 ## Limits
 
 - Deleting a destination removes it and its history, but **does not delete files** already written to it.
-- Native SMB/NFS is not supported. Mount an SMB/NFS share and use a local directory, or use SFTP or WebDAV. See the
-  [discussion](https://github.com/sysadminsmedia/homebox/discussions/1767) for what is planned.
+- There is no built-in NFS client. Mount the export on the host and use a local directory, or use SMB, SFTP or WebDAV.
+  See the [discussion](https://github.com/sysadminsmedia/homebox/discussions/1767) for what is planned.
 - Each cloud drive needs an OAuth app registered by the server operator. An OIDC login only suggests the matching drive
   and preselects the account; it does not skip the approval step.
 - Deleting a cloud-drive destination does not revoke Homebox's access in the provider's account settings; remove it there
   as well if you no longer want it.
-- SFTP private keys must be unencrypted (no passphrase).
 - Scheduled backups are not available in demo mode.

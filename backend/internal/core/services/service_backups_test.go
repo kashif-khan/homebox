@@ -323,3 +323,76 @@ func TestBackupDestinationGroupIsolation(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, list)
 }
+
+func TestCronSchedules(t *testing.T) {
+	now := at(2026, 10, 2, 10, 30) // a Friday
+
+	t.Run("NextRun follows the expression", func(t *testing.T) {
+		cases := []struct {
+			expr string
+			want time.Time
+		}{
+			{"0 3 * * *", at(2026, 10, 3, 3, 0)},
+			{"*/15 * * * *", at(2026, 10, 2, 10, 45)},
+			{"30 10 * * *", at(2026, 10, 3, 10, 30)}, // not now: strictly after
+			{"0 4 * * 0", at(2026, 10, 4, 4, 0)},     // Sunday
+			{"0 2 1 * *", at(2026, 11, 1, 2, 0)},
+			{"@daily", at(2026, 10, 3, 0, 0)},
+			{"@hourly", at(2026, 10, 2, 11, 0)},
+			{"0 6 * * 1-5", at(2026, 10, 5, 6, 0)}, // weekdays: next is Monday
+		}
+		for _, tc := range cases {
+			got := NextRun(repo.BackupSettings{Frequency: "cron", CronExpr: tc.expr}, now)
+			assert.True(t, got.Equal(tc.want), "%s: got %s want %s", tc.expr, got, tc.want)
+		}
+	})
+
+	t.Run("a time zone prefix is honoured", func(t *testing.T) {
+		loc, err := time.LoadLocation("Asia/Tokyo")
+		require.NoError(t, err)
+		got := NextRun(repo.BackupSettings{Frequency: "cron", CronExpr: "CRON_TZ=Asia/Tokyo 0 3 * * *"}, now)
+		h, m, _ := got.In(loc).Clock()
+		assert.Equal(t, 3, h)
+		assert.Equal(t, 0, m)
+	})
+
+	t.Run("validation", func(t *testing.T) {
+		svc := &BackupService{cfg: config.BackupConf{Enabled: true}}
+		base := repo.BackupSettings{Name: "x", Type: destTypePrimary, Frequency: "cron"}
+		ok := func(expr string) {
+			in := base
+			in.CronExpr = expr
+			out, err := svc.NormalizeSettings(in)
+			require.NoError(t, err, expr)
+			assert.Equal(t, expr, out.CronExpr)
+		}
+		bad := func(expr string) {
+			in := base
+			in.CronExpr = expr
+			_, err := svc.NormalizeSettings(in)
+			require.ErrorIs(t, err, ErrBackupInvalid, expr)
+		}
+		ok("0 3 * * *")
+		ok("*/5 * * * *")
+		ok("@weekly")
+		ok("CRON_TZ=Europe/Paris 30 2 * * *")
+
+		bad("")
+		bad("not cron")
+		bad("0 3 * *")     // too few fields
+		bad("* * * * *")   // every minute
+		bad("*/2 * * * *") // every 2 minutes
+		bad("0,1 * * * *") // a 1-minute gap hidden in a pair
+		bad("@every 1s")   // sub-minute descriptor
+		bad("@every 2m")   // below the minimum gap
+		bad("0 0 31 2 *")  // never matches
+		bad("CRON_TZ=Nowhere/X 0 3 * * *")
+
+		// The expression is dropped for other frequencies.
+		in := base
+		in.Frequency, in.CronExpr = freqDaily, "garbage"
+		out, err := svc.NormalizeSettings(in)
+		require.NoError(t, err)
+		assert.Empty(t, out.CronExpr)
+	})
+}

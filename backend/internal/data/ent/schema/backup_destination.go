@@ -35,7 +35,7 @@ func (BackupDestination) Mixin() []ent.Mixin {
 func (BackupDestination) Fields() []ent.Field {
 	return []ent.Field{
 		field.Enum("type").
-			Values("primary", "local", "s3", "gcs", "azblob", "sftp", "webdav", "gdrive", "onedrive", "dropbox").
+			Values("primary", "local", "s3", "gcs", "azblob", "sftp", "webdav", "gdrive", "onedrive", "dropbox", "smb").
 			Default("primary"),
 		// conn_string is a sub-directory of the configured local backup root
 		// for type=local, and a gocloud URL (s3://bucket?region=...) for the
@@ -68,8 +68,13 @@ func (BackupDestination) Fields() []ent.Field {
 		field.Bool("schedule_enabled").
 			Default(false),
 		field.Enum("frequency").
-			Values("hourly", "daily", "weekly", "monthly").
+			Values("hourly", "daily", "weekly", "monthly", "cron").
 			Default("daily"),
+		// cron_expr is a standard 5-field cron expression (or descriptor such
+		// as @daily), used when frequency is "cron".
+		field.String("cron_expr").
+			MaxLen(255).
+			Optional(),
 		field.Int("interval_hours").
 			Default(1),
 		field.Int("at_hour").

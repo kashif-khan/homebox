@@ -3,6 +3,7 @@ package services
 import (
 	"bytes"
 	"context"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io"
@@ -16,12 +17,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hirochachacha/go-smb2"
 	"github.com/pkg/sftp"
 	"github.com/studio-b12/gowebdav"
 	"gocloud.dev/blob"
 	"gocloud.dev/gcerrors"
 	"golang.org/x/crypto/ssh"
 )
+
+// x509IncorrectPassword is what x/crypto returns for a wrong key passphrase.
+var x509IncorrectPassword = x509.IncorrectPasswordError
 
 // objectStore is the small slice of storage the backup service needs. The
 // gocloud buckets, SFTP and WebDAV all sit behind it.
@@ -110,6 +115,35 @@ func parseSFTPURL(raw string) (sftpTarget, error) {
 	return sftpTarget{addr: net.JoinHostPort(u.Hostname(), port), base: base}, nil
 }
 
+// parsePrivateKey reads a PEM private key, unlocking it with passphrase when it
+// is encrypted. The errors are written for the user and never echo the key.
+func parsePrivateKey(pemKey, passphrase string) (ssh.Signer, error) {
+	key := []byte(pemKey)
+	if passphrase != "" {
+		signer, err := ssh.ParsePrivateKeyWithPassphrase(key, []byte(passphrase))
+		if err == nil {
+			return signer, nil
+		}
+		if errors.Is(err, x509IncorrectPassword) {
+			return nil, errors.New("the private key's passphrase is wrong")
+		}
+		// An unencrypted key given a passphrase is still usable.
+		if signer, perr := ssh.ParsePrivateKey(key); perr == nil {
+			return signer, nil
+		}
+		return nil, errors.New("the private key could not be read (check the key and its passphrase)")
+	}
+	signer, err := ssh.ParsePrivateKey(key)
+	if err != nil {
+		var missing *ssh.PassphraseMissingError
+		if errors.As(err, &missing) {
+			return nil, errors.New("the private key is passphrase-protected; enter its passphrase")
+		}
+		return nil, errors.New("the private key could not be read (it must be a PEM private key)")
+	}
+	return signer, nil
+}
+
 type sftpStore struct {
 	ssh    *ssh.Client
 	client *sftp.Client
@@ -122,9 +156,9 @@ type sftpStore struct {
 func dialSFTP(t sftpTarget, user string, sec backupSecret, expectedHostKey string) (*sftpStore, error) {
 	var methods []ssh.AuthMethod
 	if sec.PrivateKey != "" {
-		signer, err := ssh.ParsePrivateKey([]byte(sec.PrivateKey))
+		signer, err := parsePrivateKey(sec.PrivateKey, sec.Passphrase)
 		if err != nil {
-			return nil, errors.New("the private key could not be read (it must be an unencrypted PEM key)")
+			return nil, err
 		}
 		methods = append(methods, ssh.PublicKeys(signer))
 	}
@@ -313,3 +347,140 @@ func (s *davStore) Close() error { return nil }
 
 // probeBytes is the 1 KB payload health checks write.
 func probeBytes() *bytes.Reader { return bytes.NewReader(make([]byte, 1024)) }
+
+// ---------------------------------------------------------------------------
+// SMB
+
+// smbTarget is a parsed smb://host[:port]/share/path destination.
+type smbTarget struct {
+	addr  string // host:port
+	share string
+	base  string // directory inside the share, "" for the share root
+}
+
+func parseSMBURL(raw string) (smbTarget, error) {
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme != "smb" || u.Hostname() == "" {
+		return smbTarget{}, errors.New("expected smb://host[:port]/share[/folder]")
+	}
+	if u.User != nil {
+		return smbTarget{}, errors.New("enter the username in its own field, not in the URL")
+	}
+	port := u.Port()
+	if port == "" {
+		port = "445"
+	}
+	segs := strings.Split(strings.Trim(path.Clean("/"+u.Path), "/"), "/")
+	if len(segs) == 0 || segs[0] == "" {
+		return smbTarget{}, errors.New("name the share: smb://host/share")
+	}
+	return smbTarget{addr: net.JoinHostPort(u.Hostname(), port), share: segs[0], base: strings.Join(segs[1:], "/")}, nil
+}
+
+type smbStore struct {
+	conn    net.Conn
+	session *smb2.Session
+	share   *smb2.Share
+	base    string
+}
+
+// dialSMB connects with NTLM. user may be "name", "DOMAIN\\name" or an email-style
+// "name@domain" (sent as written, which servers accept as a UPN).
+func dialSMB(t smbTarget, user, password string) (*smbStore, error) {
+	domain := ""
+	if i := strings.IndexAny(user, `\/`); i > 0 {
+		domain, user = user[:i], user[i+1:]
+	}
+	conn, err := net.DialTimeout("tcp", t.addr, dialTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("smb connect: %w", err)
+	}
+	_ = conn.SetDeadline(time.Now().Add(2 * dialTimeout)) // bound the handshake only
+	d := &smb2.Dialer{Initiator: &smb2.NTLMInitiator{User: user, Password: password, Domain: domain}}
+	sess, err := d.Dial(conn)
+	if err != nil {
+		_ = conn.Close()
+		return nil, fmt.Errorf("smb login: %w", err)
+	}
+	share, err := sess.Mount(t.share)
+	if err != nil {
+		_ = sess.Logoff()
+		_ = conn.Close()
+		return nil, fmt.Errorf("smb share %q: %w", t.share, err)
+	}
+	_ = conn.SetDeadline(time.Time{})
+	return &smbStore{conn: conn, session: sess, share: share, base: t.base}, nil
+}
+
+func (s *smbStore) full(key string) (string, error) {
+	p := strings.TrimPrefix(path.Clean(path.Join("/", s.base, key)), "/")
+	b := strings.Trim(s.base, "/")
+	if b != "" && p != b && !strings.HasPrefix(p, b+"/") {
+		return "", errors.New("path escapes the destination folder")
+	}
+	if p == "" {
+		return "", errors.New("empty path")
+	}
+	return p, nil
+}
+
+func (s *smbStore) Write(_ context.Context, key string, r io.Reader, _ int64, _ string) error {
+	p, err := s.full(key)
+	if err != nil {
+		return err
+	}
+	if dir := path.Dir(p); dir != "." {
+		if err := s.share.MkdirAll(dir, 0o755); err != nil {
+			return fmt.Errorf("create folder: %w", err)
+		}
+	}
+	tmp := p + partSuffix
+	f, err := s.share.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	if err != nil {
+		return fmt.Errorf("open remote file: %w", err)
+	}
+	if _, err := io.Copy(f, r); err != nil {
+		_ = f.Close()
+		_ = s.share.Remove(tmp)
+		return fmt.Errorf("upload: %w", err)
+	}
+	if err := f.Close(); err != nil {
+		_ = s.share.Remove(tmp)
+		return fmt.Errorf("finish upload: %w", err)
+	}
+	// SMB rename does not replace an existing file.
+	if err := s.share.Remove(p); err != nil && !os.IsNotExist(err) {
+		_ = s.share.Remove(tmp)
+		return fmt.Errorf("replace existing file: %w", err)
+	}
+	if err := s.share.Rename(tmp, p); err != nil {
+		_ = s.share.Remove(tmp)
+		return fmt.Errorf("finalize upload: %w", err)
+	}
+	return nil
+}
+
+func (s *smbStore) Open(_ context.Context, key string) (io.ReadCloser, error) {
+	p, err := s.full(key)
+	if err != nil {
+		return nil, err
+	}
+	return s.share.Open(p)
+}
+
+func (s *smbStore) Delete(_ context.Context, key string) error {
+	p, err := s.full(key)
+	if err != nil {
+		return err
+	}
+	if err := s.share.Remove(p); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
+}
+
+func (s *smbStore) Close() error {
+	_ = s.share.Umount()
+	_ = s.session.Logoff()
+	return s.conn.Close()
+}

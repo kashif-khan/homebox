@@ -47,6 +47,8 @@ type BackupDestination struct {
 	ScheduleEnabled bool `json:"schedule_enabled,omitempty"`
 	// Frequency holds the value of the "frequency" field.
 	Frequency backupdestination.Frequency `json:"frequency,omitempty"`
+	// CronExpr holds the value of the "cron_expr" field.
+	CronExpr string `json:"cron_expr,omitempty"`
 	// IntervalHours holds the value of the "interval_hours" field.
 	IntervalHours int `json:"interval_hours,omitempty"`
 	// AtHour holds the value of the "at_hour" field.
@@ -134,7 +136,7 @@ func (*BackupDestination) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case backupdestination.FieldIntervalHours, backupdestination.FieldAtHour, backupdestination.FieldAtMinute, backupdestination.FieldWeekday, backupdestination.FieldDayOfMonth, backupdestination.FieldKeepDaily, backupdestination.FieldKeepWeekly, backupdestination.FieldKeepMonthly, backupdestination.FieldHealthFailures, backupdestination.FieldHealthIntervalMinutes, backupdestination.FieldAlertFailureThreshold, backupdestination.FieldAlertStaleHours:
 			values[i] = new(sql.NullInt64)
-		case backupdestination.FieldName, backupdestination.FieldDescription, backupdestination.FieldType, backupdestination.FieldConnString, backupdestination.FieldUsername, backupdestination.FieldSecret, backupdestination.FieldHostKey, backupdestination.FieldPrefix, backupdestination.FieldFrequency, backupdestination.FieldLastFingerprint, backupdestination.FieldLastError, backupdestination.FieldHealthStatus, backupdestination.FieldHealthError:
+		case backupdestination.FieldName, backupdestination.FieldDescription, backupdestination.FieldType, backupdestination.FieldConnString, backupdestination.FieldUsername, backupdestination.FieldSecret, backupdestination.FieldHostKey, backupdestination.FieldPrefix, backupdestination.FieldFrequency, backupdestination.FieldCronExpr, backupdestination.FieldLastFingerprint, backupdestination.FieldLastError, backupdestination.FieldHealthStatus, backupdestination.FieldHealthError:
 			values[i] = new(sql.NullString)
 		case backupdestination.FieldCreatedAt, backupdestination.FieldUpdatedAt, backupdestination.FieldNextRunAt, backupdestination.FieldLastRunAt, backupdestination.FieldLastSuccessAt, backupdestination.FieldLastSkippedAt, backupdestination.FieldHealthCheckedAt:
 			values[i] = new(sql.NullTime)
@@ -244,6 +246,12 @@ func (_m *BackupDestination) assignValues(columns []string, values []any) error 
 				return fmt.Errorf("unexpected type %T for field frequency", values[i])
 			} else if value.Valid {
 				_m.Frequency = backupdestination.Frequency(value.String)
+			}
+		case backupdestination.FieldCronExpr:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field cron_expr", values[i])
+			} else if value.Valid {
+				_m.CronExpr = value.String
 			}
 		case backupdestination.FieldIntervalHours:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -487,6 +495,9 @@ func (_m *BackupDestination) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("frequency=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Frequency))
+	builder.WriteString(", ")
+	builder.WriteString("cron_expr=")
+	builder.WriteString(_m.CronExpr)
 	builder.WriteString(", ")
 	builder.WriteString("interval_hours=")
 	builder.WriteString(fmt.Sprintf("%v", _m.IntervalHours))

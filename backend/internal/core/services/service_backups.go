@@ -41,6 +41,7 @@ const (
 	destTypeLocal   = "local"
 	destTypeSFTP    = "sftp"
 	destTypeWebDAV  = "webdav"
+	destTypeSMB     = "smb"
 
 	originManual    = "manual"
 	originScheduled = "scheduled"
@@ -126,7 +127,11 @@ func (s *BackupService) NormalizeSettings(in repo.BackupSettings) (repo.BackupSe
 	return s.normalize(in, true)
 }
 
-func isRemoteType(t string) bool { return t == destTypeSFTP || t == destTypeWebDAV }
+// isRemoteType reports whether a type needs a stored username and password.
+func isRemoteType(t string) bool { return t == destTypeSFTP || t == destTypeWebDAV || t == destTypeSMB }
+
+// passwordOnly reports whether a remote type authenticates by password alone.
+func passwordOnly(t string) bool { return t == destTypeWebDAV || t == destTypeSMB }
 
 func (s *BackupService) requireRemote() error {
 	if s.secrets == nil {
@@ -151,6 +156,15 @@ func (s *BackupService) normalize(in repo.BackupSettings, requireHostKey bool) (
 		return in, err
 	}
 	in.Prefix = prefix
+
+	if in.Frequency == "cron" {
+		in.CronExpr = strings.TrimSpace(in.CronExpr)
+		if _, err := parseCron(in.CronExpr); err != nil {
+			return in, invalid("schedule: %v", err)
+		}
+	} else {
+		in.CronExpr = ""
+	}
 
 	in.ConnString = strings.TrimSpace(in.ConnString)
 	in.Username = strings.TrimSpace(in.Username)
@@ -197,6 +211,22 @@ func (s *BackupService) normalize(in repo.BackupSettings, requireHostKey bool) (
 			return in, invalid("address: %v", err)
 		}
 		in.ConnString = u.String()
+		in.HostKey = "" // SSH only
+		if in.Username == "" {
+			return in, invalid("a username is required")
+		}
+	case destTypeSMB:
+		if err := s.requireRemote(); err != nil {
+			return in, err
+		}
+		t, err := parseSMBURL(in.ConnString)
+		if err != nil {
+			return in, invalid("address: %v", err)
+		}
+		in.ConnString = "smb://" + t.addr + "/" + t.share
+		if t.base != "" {
+			in.ConnString += "/" + t.base
+		}
 		in.HostKey = "" // SSH only
 		if in.Username == "" {
 			return in, invalid("a username is required")
@@ -326,10 +356,21 @@ func (s *BackupService) openStore(ctx context.Context, d repo.BackupDestinationO
 			return nil, nil, errors.New(s.redact(err.Error()))
 		}
 		return blobStore{b}, identity, nil
-	case destTypeSFTP, destTypeWebDAV:
+	case destTypeSFTP, destTypeWebDAV, destTypeSMB:
 		cred, err := s.credentials(d, sec)
 		if err != nil {
 			return nil, nil, err
+		}
+		if d.Type == destTypeSMB {
+			t, err := parseSMBURL(d.ConnString)
+			if err != nil {
+				return nil, nil, err
+			}
+			st, err := dialSMB(t, d.Username, cred.Password)
+			if err != nil {
+				return nil, nil, err
+			}
+			return st, identity, nil
 		}
 		if d.Type == destTypeWebDAV {
 			st, err := newDAVStore(d.ConnString, d.Username, cred.Password)
@@ -384,12 +425,12 @@ func secretAAD(gid, id uuid.UUID) string { return gid.String() + "/" + id.String
 
 // sealSecret seals the credentials in in for a remote destination of type typ.
 func (s *BackupService) sealSecret(gid, id uuid.UUID, typ string, in repo.BackupInput) (string, error) {
-	sec := backupSecret{Password: in.Password, PrivateKey: in.PrivateKey}
-	if typ == destTypeWebDAV {
-		sec.PrivateKey = ""
+	sec := backupSecret{Password: in.Password, PrivateKey: in.PrivateKey, Passphrase: in.Passphrase}
+	if passwordOnly(typ) {
+		sec.PrivateKey, sec.Passphrase = "", ""
 	}
 	if sec.empty() {
-		if typ == destTypeWebDAV {
+		if passwordOnly(typ) {
 			return "", invalid("a password is required")
 		}
 		return "", invalid("a password or private key is required")
@@ -725,9 +766,9 @@ func (s *BackupService) TestSettings(ctx context.Context, gid uuid.UUID, in repo
 	if isRemoteType(st.Type) {
 		switch {
 		case in.Password != "" || in.PrivateKey != "":
-			sec = &backupSecret{Password: in.Password, PrivateKey: in.PrivateKey}
-			if st.Type == destTypeWebDAV {
-				sec.PrivateKey = ""
+			sec = &backupSecret{Password: in.Password, PrivateKey: in.PrivateKey, Passphrase: in.Passphrase}
+			if passwordOnly(st.Type) {
+				sec.PrivateKey, sec.Passphrase = "", ""
 			}
 		case in.DestinationID != "":
 			id, perr := uuid.Parse(in.DestinationID)
@@ -807,6 +848,11 @@ func NextRun(c repo.BackupSettings, after time.Time) time.Time {
 	y, m, day := after.Date()
 
 	switch c.Frequency {
+	case "cron":
+		if sched, err := parseCron(c.CronExpr); err == nil {
+			return sched.Next(after)
+		}
+		return after.Add(time.Hour) // unreachable for validated settings
 	case "hourly":
 		t := time.Date(y, m, day, after.Hour(), c.AtMinute, 0, 0, loc)
 		if !t.After(after) {

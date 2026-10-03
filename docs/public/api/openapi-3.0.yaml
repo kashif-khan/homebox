@@ -2362,12 +2362,14 @@ components:
         - daily
         - weekly
         - monthly
+        - cron
       x-enum-varnames:
         - DefaultFrequency
         - FrequencyHourly
         - FrequencyDaily
         - FrequencyWeekly
         - FrequencyMonthly
+        - FrequencyCron
     backupdestination.HealthStatus:
       type: string
       enum:
@@ -2394,6 +2396,7 @@ components:
         - gdrive
         - onedrive
         - dropbox
+        - smb
       x-enum-varnames:
         - DefaultType
         - TypePrimary
@@ -2406,6 +2409,7 @@ components:
         - TypeGdrive
         - TypeOnedrive
         - TypeDropbox
+        - TypeSmb
     currencies.Currency:
       type: object
       properties:
@@ -2599,6 +2603,9 @@ components:
           type: string
         created_at:
           description: CreatedAt holds the value of the "created_at" field.
+          type: string
+        cron_expr:
+          description: CronExpr holds the value of the "cron_expr" field.
           type: string
         day_of_month:
           description: DayOfMonth holds the value of the "day_of_month" field.
@@ -3660,6 +3667,14 @@ components:
           maxLength: 2048
         createdAt:
           type: string
+        cronExpr:
+          description: >-
+            CronExpr is a 5-field cron expression or descriptor, used when
+            Frequency
+
+            is "cron". It may start with CRON_TZ=Zone to schedule in another zone.
+          type: string
+          maxLength: 255
         dayOfMonth:
           type: integer
           maximum: 28
@@ -3670,13 +3685,14 @@ components:
         enabled:
           type: boolean
         frequency:
-          description: Frequency is one of hourly, daily, weekly, monthly.
+          description: Frequency is one of hourly, daily, weekly, monthly, cron.
           type: string
           enum:
             - hourly
             - daily
             - weekly
             - monthly
+            - cron
         groupId:
           type: string
         hasSecret:
@@ -3746,7 +3762,7 @@ components:
             Type is one of primary, local, s3, gcs, azblob, sftp, webdav,
             gdrive,
 
-            onedrive, dropbox.
+            onedrive, dropbox, smb.
           type: string
           enum:
             - primary
@@ -3759,6 +3775,7 @@ components:
             - gdrive
             - onedrive
             - dropbox
+            - smb
         updatedAt:
           type: string
         username:
@@ -3801,6 +3818,14 @@ components:
         connString:
           type: string
           maxLength: 2048
+        cronExpr:
+          description: >-
+            CronExpr is a 5-field cron expression or descriptor, used when
+            Frequency
+
+            is "cron". It may start with CRON_TZ=Zone to schedule in another zone.
+          type: string
+          maxLength: 255
         dayOfMonth:
           type: integer
           maximum: 28
@@ -3818,13 +3843,14 @@ components:
         enabled:
           type: boolean
         frequency:
-          description: Frequency is one of hourly, daily, weekly, monthly.
+          description: Frequency is one of hourly, daily, weekly, monthly, cron.
           type: string
           enum:
             - hourly
             - daily
             - weekly
             - monthly
+            - cron
         healthIntervalMinutes:
           type: integer
           maximum: 1440
@@ -3861,6 +3887,9 @@ components:
 
             consumed when the destination is saved.
           type: string
+        passphrase:
+          description: Passphrase unlocks a passphrase-protected PrivateKey.
+          type: string
         password:
           description: >-
             Password is the sftp or webdav password. Leave empty to keep the
@@ -3872,7 +3901,8 @@ components:
           type: string
           maxLength: 255
         privateKey:
-          description: PrivateKey is an unencrypted PEM private key for sftp.
+          description: PrivateKey is a PEM private key for sftp, optionally
+            passphrase-protected.
           type: string
         scheduleEnabled:
           type: boolean
@@ -3883,7 +3913,7 @@ components:
             Type is one of primary, local, s3, gcs, azblob, sftp, webdav,
             gdrive,
 
-            onedrive, dropbox.
+            onedrive, dropbox, smb.
           type: string
           enum:
             - primary
@@ -3896,6 +3926,7 @@ components:
             - gdrive
             - onedrive
             - dropbox
+            - smb
         username:
           description: |-
             Username and HostKey serve the sftp and webdav types. HostKey is the
