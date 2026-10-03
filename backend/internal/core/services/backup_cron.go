@@ -47,3 +47,23 @@ func parseCron(expr string) (cron.Schedule, error) {
 	}
 	return sched, nil
 }
+
+// cronPeriod is the longest gap between consecutive runs over the next stretch of
+// a schedule. It sizes the no-recent-backup alert: a cron that runs weekdays only
+// has a three-day gap every weekend, which must not look like a problem.
+func cronPeriod(sched cron.Schedule) time.Duration {
+	prev := sched.Next(time.Now())
+	var longest time.Duration
+	for i := 0; i < 64 && !prev.IsZero(); i++ {
+		next := sched.Next(prev)
+		if next.IsZero() {
+			break
+		}
+		longest = max(longest, next.Sub(prev))
+		prev = next
+	}
+	if longest == 0 {
+		return 24 * time.Hour
+	}
+	return longest
+}
