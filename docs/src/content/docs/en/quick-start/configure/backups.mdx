@@ -85,7 +85,8 @@ only a **refresh token**, sealed with the encryption key, and asks for the narro
 Google's `drive.file` (only files Homebox created), OneDrive's app folder, and Dropbox's app folder.
 
 A provider only appears in the destination form once the server operator has registered an OAuth app for it. This is a
-one-time setup per provider, and you need `HBOX_BACKUP_ENCRYPTION_KEY` as well:
+one-time setup per provider, and you need `HBOX_BACKUP_ENCRYPTION_KEY` as well. The
+[`backup-config` helper](#generating-the-settings) can generate all of the settings below and print these steps for you:
 
 1. Create the app at the provider (see below) and add this **redirect URI**, using the address you reach Homebox on:
    `https://homebox.example.com/api/v1/group/backup-oauth/callback`
@@ -209,6 +210,61 @@ Problems also show as a banner above the destination list. Messages go to the co
 > [!NOTE]
 > Alerts use the normal notifier network rules. If your notification server is on your LAN, you may need to allow it with
 > `HBOX_NOTIFIER_ALLOW_NETS` or the `HBOX_NOTIFIER_BLOCK_*` settings.
+
+## Generating the settings
+
+Scheduled backups need a few settings (see [Settings](#settings) below). `backup-config`, built into the Homebox
+binary, asks for what you want to use and writes them for you: it generates the encryption key, checks your values,
+prints the exact redirect URI and console steps for each cloud provider, and shows the matching `docker compose` lines.
+
+```bash
+# In a container, writing the file to the current folder:
+docker run --rm -it --user "$(id -u):$(id -g)" -v "$PWD:/out" \
+  ghcr.io/sysadminsmedia/homebox:latest backup-config --output /out/backup.env
+
+# With the binary:
+./homebox backup-config --output backup.env
+```
+
+It walks you through the local backup folder, your public address, and each cloud drive you want. Secrets are typed
+hidden, never printed (previews show only the first characters) and the file is created readable by you alone. Then load
+the file in compose with `env_file: [backup.env]` and restart Homebox.
+
+A few things it does for you:
+
+- **Keeps your key.** If the file already has an encryption key it is reused. Replacing it makes every stored SFTP, WebDAV,
+  SMB and cloud-drive login unreadable, so that only happens with `--rotate-key`, with a warning.
+- **Edits in place.** Running it again to add a provider updates only the backup settings. Comments and other variables in
+  the file are kept, and the previous file is saved as `backup.env.bak`.
+- **Catches mistakes before you do.** It rejects a provider ID without a secret, a public `http://` address (providers
+  require HTTPS), values that are unsafe in a `.env` file, a relative backup folder, and an HTTPS address without
+  `--behind-proxy`. Homebox itself serves plain HTTP, so an HTTPS address means a reverse proxy sits in front, and Homebox
+  must trust its `X-Forwarded-*` headers to build the right redirect URI.
+
+For scripts, pass everything as flags and add `--non-interactive`. Prefer the prompt for secrets, since flags are visible in
+shell history and process lists.
+
+```bash
+./homebox backup-config --non-interactive --yes --output backup.env \
+  --base-url https://homebox.example.com --behind-proxy \
+  --local-root /backups \
+  --google-client-id "$GOOGLE_ID" --google-client-secret "$GOOGLE_SECRET"
+```
+
+| Flag                                                   | Meaning                                                                          |
+|--------------------------------------------------------|----------------------------------------------------------------------------------|
+| `--output FILE`                                        | The env file to create or update (default `.env`).                               |
+| `--stdout`                                             | Print the file to stdout instead (prompts go to stderr). With `--output`, an existing file is merged but not changed. |
+| `--dry-run`                                            | Show what would change and write nothing.                                        |
+| `--yes`, `--non-interactive`                           | Skip the confirmation, or never prompt.                                          |
+| `--base-url`, `--behind-proxy`                         | How users reach Homebox, and that a TLS proxy is in front.                        |
+| `--local-root`                                         | Folder inside the container for local-directory backups.                         |
+| `--no-custom-endpoints`                                | Restrict cloud URLs to default endpoints and turn off SFTP, WebDAV and SMB.      |
+| `--encryption-key`, `--rotate-key`                     | Use your own key, or replace an existing one.                                    |
+| `--google-*`, `--microsoft-*`, `--microsoft-tenant`, `--dropbox-*` | The OAuth app credentials for each cloud drive.                      |
+
+> [!CAUTION]
+> The generated file contains secrets. Keep it out of version control, and keep a separate backup of the encryption key.
 
 ## Settings
 
