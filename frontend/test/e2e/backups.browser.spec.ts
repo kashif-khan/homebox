@@ -1,4 +1,4 @@
-import type { Page, Route } from "@playwright/test";
+import type { Page, Response, Route } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
 // The e2e server runs in demo mode, where backup destinations cannot be
@@ -95,11 +95,36 @@ async function mockBackups(page: Page, opts: MockOptions = {}) {
   return { posted };
 }
 
+// The API sets its session cookies with `Domain=localhost`, which WebKit
+// refuses to store. Without them the next full page load is unauthenticated and
+// lands back on the login form, so replay them as host-only cookies. Other
+// browsers already hold them and are unaffected.
+async function keepSessionCookies(page: Page, login: Response) {
+  const origin = new URL(page.url()).origin;
+  const cookies = (await login.headersArray())
+    .filter(h => h.name.toLowerCase() === "set-cookie")
+    .map(h => {
+      const [pair = "", ...attrs] = h.value.split(";").map(part => part.trim());
+      const eq = pair.indexOf("=");
+      const expires = attrs.find(a => a.toLowerCase().startsWith("expires="));
+      return {
+        name: pair.slice(0, eq),
+        value: pair.slice(eq + 1),
+        url: origin,
+        httpOnly: attrs.some(a => a.toLowerCase() === "httponly"),
+        ...(expires ? { expires: new Date(expires.slice("expires=".length)).getTime() / 1000 } : {}),
+      };
+    });
+  await page.context().addCookies(cookies);
+}
+
 async function login(page: Page) {
   await page.goto("/home");
   await page.fill("input[type='text']", "demo@example.com");
   await page.fill("input[type='password']", "demodemo");
+  const loggedIn = page.waitForResponse(r => r.url().endsWith("/api/v1/users/login") && r.ok());
   await page.click("button[type='submit']");
+  await keepSessionCookies(page, await loggedIn);
   await slow(page).toHaveURL("/home");
   // Let the session settle before navigating away, or the auth guard can bounce
   // the next page load back to the login form.
