@@ -97,6 +97,10 @@ func main() {
 
 	// Subcommand dispatch happens before config.New so the conf package never
 	// sees positional args (which it would treat as an error).
+	if handled, code := runBackupConfigCLI(os.Args); handled {
+		os.Exit(code)
+	}
+
 	if handled, code := runResetPasswordCLI(os.Args); handled {
 		os.Exit(code)
 	}
