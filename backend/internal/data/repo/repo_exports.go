@@ -108,6 +108,37 @@ func (r *ExportRepository) ListByDestination(ctx context.Context, gid, destID uu
 	return out, nil
 }
 
+// CountArtifactsForDestination returns how many stored backup files the
+// destination's history points at. Each row records its artifact path relative
+// to the destination's location, so the location must not change while any exist.
+func (r *ExportRepository) CountArtifactsForDestination(ctx context.Context, gid, destID uuid.UUID) (int, error) {
+	return r.db.Export.Query().
+		Where(
+			export.GroupID(gid),
+			export.DestinationID(destID),
+			export.ArtifactPathNotNil(),
+			export.ArtifactPathNEQ(""),
+		).
+		Count(ctx)
+}
+
+// FailStaleActive marks pending or running exports for the destination that have
+// not changed since cutoff as failed, and returns how many. A run that was
+// interrupted (a crash or restart mid-backup) would otherwise stay "running"
+// forever and block every later scheduled and manual backup to the destination.
+func (r *ExportRepository) FailStaleActive(ctx context.Context, gid, destID uuid.UUID, cutoff time.Time) (int, error) {
+	return r.db.Export.Update().
+		Where(
+			export.GroupID(gid),
+			export.DestinationID(destID),
+			export.StatusIn(export.StatusPending, export.StatusRunning),
+			export.UpdatedAtLT(cutoff),
+		).
+		SetStatus(export.StatusFailed).
+		SetError("interrupted: the backup stopped before it finished (the server may have restarted)").
+		Save(ctx)
+}
+
 // HasActiveForDestination reports whether a pending or running export exists
 // for destID, so the scheduler never stacks runs.
 func (r *ExportRepository) HasActiveForDestination(ctx context.Context, gid, destID uuid.UUID) (bool, error) {

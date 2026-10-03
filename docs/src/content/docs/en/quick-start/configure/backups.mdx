@@ -16,6 +16,9 @@ record and notifier in the collection. Restore it with **Upload & Restore** into
 
 ## Destinations
 
+Only collection owners can see and manage destinations and the backups they hold. Other members cannot list, download or
+delete those backups, even through the general export endpoints.
+
 A destination is a place to write backups to, together with its own schedule, retention, health check and alert
 settings. A collection can have up to 20.
 
@@ -29,8 +32,10 @@ settings. A collection can have up to 20.
 | SFTP                 | A folder on any SSH server: TrueNAS, Unraid, Synology, a Linux box.              | Username and password or key, stored encrypted        |
 | WebDAV               | A WebDAV share: Nextcloud, ownCloud, Synology, an Apache or nginx DAV folder.    | Username and password, stored encrypted               |
 
-The cloud types use the same connection strings and parameters as [Storage](./storage), including `endpoint`,
-`region` and `use_path_style` for S3-compatible servers.
+The cloud types use the same connection strings and parameters as [Storage](./storage), including `region` for AWS.
+S3-compatible servers (MinIO, a NAS) need the `endpoint` and `use_path_style` parameters, and an **operator must turn
+on custom endpoints** with `HBOX_BACKUP_ALLOW_CUSTOM_ENDPOINTS=true`. A custom endpoint makes the Homebox server
+connect to whatever address a collection owner types in, wherever the server can reach, so it is off by default.
 
 > [!IMPORTANT]
 > The S3, Google Cloud Storage and Azure types never store credentials: they read them from the server's environment, and
@@ -39,7 +44,8 @@ The cloud types use the same connection strings and parameters as [Storage](./st
 
 ### SFTP and WebDAV
 
-These two types need a login, so they are only available once you set an encryption key:
+These two types need a login, so they are only available once an operator has set an encryption key, and they make
+the Homebox server connect to an address a collection owner enters, so custom endpoints must be switched on too:
 
 ```yaml
 services:
@@ -47,6 +53,7 @@ services:
     environment:
       # openssl rand -base64 32
       HBOX_BACKUP_ENCRYPTION_KEY: "<generated key>"
+      HBOX_BACKUP_ALLOW_CUSTOM_ENDPOINTS: "true"
 ```
 
 Passwords and private keys are sealed with AES-256-GCM before they are saved, are bound to their destination, and are
@@ -124,7 +131,9 @@ Alerts are sent once per problem, not repeatedly, and a recovery notice follows:
 
 - a backup fails
 - a destination fails the configured number of consecutive health checks
-- no backup has succeeded for the configured number of hours (set `0` to turn this off)
+- no backup has succeeded for the configured number of hours (set `0` to turn this off). A run skipped because nothing
+  changed counts as a success here, and the limit is never shorter than two schedule periods, so a weekly or monthly
+  schedule does not alert between its runs even with the default 48 hours
 
 Problems also show as a banner above the destination list. Messages go to the collection's active
 [Notifiers](/user-guide/notifiers/).
@@ -139,11 +148,16 @@ Problems also show as a banner above the destination list. Messages go to the co
 |--------------------------------------|---------|----------------------------------------------------------------------------------------------|
 | `HBOX_BACKUP_ENABLED`                | `true`  | Turns destinations, the scheduler and health checks on or off. Manual exports are unaffected. |
 | `HBOX_BACKUP_LOCAL_ROOT`             |         | Directory local destinations live under. Empty disables local destinations.                  |
-| `HBOX_BACKUP_ALLOW_CUSTOM_ENDPOINTS` | `true`  | Allow cloud URLs with a custom `endpoint`, and SFTP/WebDAV servers. Turn off to restrict to default provider endpoints. |
+| `HBOX_BACKUP_ALLOW_CUSTOM_ENDPOINTS` | `false` | Let collection owners use cloud URLs with a custom `endpoint`, and SFTP and WebDAV servers. Off by default: it makes the server connect to addresses owners enter. |
 | `HBOX_BACKUP_ENCRYPTION_KEY`         |         | Seals SFTP and WebDAV logins at rest. Required to use those types. Keep it stable.           |
 
 ## Limits
 
+- A destination's **type, address and folder prefix cannot be changed while it holds backups**, because each stored file
+  is found again through those settings. Delete its backups first, or add a new destination. The name, schedule,
+  retention and alert settings can always be edited.
+- A backup that stops partway (a crash or restart) is marked failed after six hours without progress, so it cannot block
+  the destination forever.
 - Deleting a destination removes it and its history, but **does not delete files** already written to it.
 - Native SMB/NFS and consumer cloud drives (Google Drive, OneDrive, Dropbox) are not supported yet. Mount an SMB/NFS share
   and use a local directory, or use SFTP or WebDAV. See the

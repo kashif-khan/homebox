@@ -15,7 +15,10 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/sys/config"
 )
 
-const freqDaily = "daily"
+const (
+	freqDaily  = "daily"
+	freqWeekly = "weekly"
+)
 
 func at(y int, m time.Month, d, h, mi int) time.Time {
 	return time.Date(y, m, d, h, mi, 0, 0, time.Local)
@@ -36,9 +39,9 @@ func TestNextRun(t *testing.T) {
 		{"daily later today", repo.BackupSettings{Frequency: freqDaily, AtHour: 23, AtMinute: 0}, at(2026, 10, 2, 23, 0)},
 		{"daily tomorrow", repo.BackupSettings{Frequency: freqDaily, AtHour: 3, AtMinute: 0}, at(2026, 10, 3, 3, 0)},
 		{"daily exactly now moves on", repo.BackupSettings{Frequency: freqDaily, AtHour: 10, AtMinute: 30}, at(2026, 10, 3, 10, 30)},
-		{"weekly same weekday later", repo.BackupSettings{Frequency: "weekly", Weekday: 5, AtHour: 20}, at(2026, 10, 2, 20, 0)},
-		{"weekly same weekday passed", repo.BackupSettings{Frequency: "weekly", Weekday: 5, AtHour: 3}, at(2026, 10, 9, 3, 0)},
-		{"weekly sunday", repo.BackupSettings{Frequency: "weekly", Weekday: 0, AtHour: 4}, at(2026, 10, 4, 4, 0)},
+		{"weekly same weekday later", repo.BackupSettings{Frequency: freqWeekly, Weekday: 5, AtHour: 20}, at(2026, 10, 2, 20, 0)},
+		{"weekly same weekday passed", repo.BackupSettings{Frequency: freqWeekly, Weekday: 5, AtHour: 3}, at(2026, 10, 9, 3, 0)},
+		{"weekly sunday", repo.BackupSettings{Frequency: freqWeekly, Weekday: 0, AtHour: 4}, at(2026, 10, 4, 4, 0)},
 		{"monthly later this month", repo.BackupSettings{Frequency: "monthly", DayOfMonth: 15, AtHour: 3}, at(2026, 10, 15, 3, 0)},
 		{"monthly next month", repo.BackupSettings{Frequency: "monthly", DayOfMonth: 1, AtHour: 3}, at(2026, 11, 1, 3, 0)},
 		{"monthly rolls the year", repo.BackupSettings{Frequency: "monthly", DayOfMonth: 1, AtHour: 3}, at(2027, 1, 1, 3, 0)},

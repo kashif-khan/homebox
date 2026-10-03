@@ -95,6 +95,7 @@ type BackupDestinationOut struct {
 	AlertedStale       bool   `json:"-"`
 }
 
+// mapBackupDestination converts a stored destination to its API shape. Sealed credentials are carried internally and never serialized.
 func mapBackupDestination(d *ent.BackupDestination) BackupDestinationOut {
 	return BackupDestinationOut{
 		ID:        d.ID,
@@ -144,6 +145,7 @@ func mapBackupDestination(d *ent.BackupDestination) BackupDestinationOut {
 	}
 }
 
+// mapBackupDestinations converts a list of stored destinations.
 func mapBackupDestinations(rows []*ent.BackupDestination) []BackupDestinationOut {
 	out := make([]BackupDestinationOut, len(rows))
 	for i, d := range rows {
@@ -152,6 +154,7 @@ func mapBackupDestinations(rows []*ent.BackupDestination) []BackupDestinationOut
 	return out
 }
 
+// ListByGroup returns a group's destinations, oldest first.
 func (r *BackupDestinationRepository) ListByGroup(ctx context.Context, gid uuid.UUID) ([]BackupDestinationOut, error) {
 	rows, err := r.db.BackupDestination.Query().
 		Where(backupdestination.GroupID(gid)).
@@ -187,6 +190,7 @@ func (r *BackupDestinationRepository) ListScheduled(ctx context.Context) ([]Back
 	return mapBackupDestinations(rows), nil
 }
 
+// Get returns a destination only if it belongs to the group.
 func (r *BackupDestinationRepository) Get(ctx context.Context, gid, id uuid.UUID) (BackupDestinationOut, error) {
 	d, err := r.db.BackupDestination.Query().
 		Where(backupdestination.ID(id), backupdestination.GroupID(gid)).
@@ -197,6 +201,7 @@ func (r *BackupDestinationRepository) Get(ctx context.Context, gid, id uuid.UUID
 	return mapBackupDestination(d), nil
 }
 
+// Create stores a new destination for the group.
 func (r *BackupDestinationRepository) Create(ctx context.Context, gid, id uuid.UUID, in BackupSettings, secret string, nextRun *time.Time) (BackupDestinationOut, error) {
 	c := r.db.BackupDestination.Create().
 		SetID(id).
@@ -282,6 +287,7 @@ func (r *BackupDestinationRepository) Update(ctx context.Context, gid, id uuid.U
 	return mapBackupDestination(d), nil
 }
 
+// Delete removes a destination, returning how many rows were deleted.
 func (r *BackupDestinationRepository) Delete(ctx context.Context, gid, id uuid.UUID) (int, error) {
 	return r.db.BackupDestination.Delete().
 		Where(backupdestination.ID(id), backupdestination.GroupID(gid)).
@@ -298,10 +304,12 @@ func (r *BackupDestinationRepository) SetNextRun(ctx context.Context, id uuid.UU
 	return u.Exec(ctx)
 }
 
+// MarkSkipped records that a scheduled run was skipped because nothing had changed.
 func (r *BackupDestinationRepository) MarkSkipped(ctx context.Context, id uuid.UUID, at time.Time) error {
 	return r.db.BackupDestination.UpdateOneID(id).SetLastSkippedAt(at).Exec(ctx)
 }
 
+// SetFingerprint stores the data fingerprint of the last successful backup.
 func (r *BackupDestinationRepository) SetFingerprint(ctx context.Context, id uuid.UUID, fp string) error {
 	return r.db.BackupDestination.UpdateOneID(id).SetLastFingerprint(fp).Exec(ctx)
 }
@@ -317,6 +325,7 @@ func (r *BackupDestinationRepository) MarkRunSucceeded(ctx context.Context, id u
 		Exec(ctx)
 }
 
+// MarkRunFailed records a failed run and its (truncated) error.
 func (r *BackupDestinationRepository) MarkRunFailed(ctx context.Context, id uuid.UUID, at time.Time, msg string) error {
 	if len(msg) > 1000 {
 		msg = msg[:1000]
@@ -327,6 +336,7 @@ func (r *BackupDestinationRepository) MarkRunFailed(ctx context.Context, id uuid
 		Exec(ctx)
 }
 
+// SetHealth stores the result of a health probe.
 func (r *BackupDestinationRepository) SetHealth(ctx context.Context, id uuid.UUID, status string, checkedAt time.Time, errMsg string, failures int) error {
 	if len(errMsg) > 1000 {
 		errMsg = errMsg[:1000]
@@ -339,11 +349,19 @@ func (r *BackupDestinationRepository) SetHealth(ctx context.Context, id uuid.UUI
 		Exec(ctx)
 }
 
-// SetAlertFlags persists the alert de-duplication flags.
-func (r *BackupDestinationRepository) SetAlertFlags(ctx context.Context, id uuid.UUID, unreachable, failure, stale bool) error {
-	return r.db.BackupDestination.UpdateOneID(id).
-		SetAlertedUnreachable(unreachable).
-		SetAlertedFailure(failure).
-		SetAlertedStale(stale).
-		Exec(ctx)
+// SetAlertedUnreachable records whether the unreachable alert has been sent.
+// Each alert flag has its own setter so a writer only ever changes the flag it
+// owns: two writers holding stale copies of the row cannot undo each other.
+func (r *BackupDestinationRepository) SetAlertedUnreachable(ctx context.Context, id uuid.UUID, v bool) error {
+	return r.db.BackupDestination.UpdateOneID(id).SetAlertedUnreachable(v).Exec(ctx)
+}
+
+// SetAlertedFailure records whether the backup-failed alert has been sent.
+func (r *BackupDestinationRepository) SetAlertedFailure(ctx context.Context, id uuid.UUID, v bool) error {
+	return r.db.BackupDestination.UpdateOneID(id).SetAlertedFailure(v).Exec(ctx)
+}
+
+// SetAlertedStale records whether the no-recent-backup alert has been sent.
+func (r *BackupDestinationRepository) SetAlertedStale(ctx context.Context, id uuid.UUID, v bool) error {
+	return r.db.BackupDestination.UpdateOneID(id).SetAlertedStale(v).Exec(ctx)
 }
