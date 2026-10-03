@@ -1231,7 +1231,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/repo.BackupSettings"
+                            "$ref": "#/definitions/repo.BackupInput"
                         }
                     }
                 ],
@@ -1269,7 +1269,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/repo.BackupSettings"
+                            "$ref": "#/definitions/repo.BackupInput"
                         }
                     }
                 ],
@@ -1345,7 +1345,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/repo.BackupSettings"
+                            "$ref": "#/definitions/repo.BackupInput"
                         }
                     }
                 ],
@@ -3629,7 +3629,9 @@ const docTemplate = `{
                 "local",
                 "s3",
                 "gcs",
-                "azblob"
+                "azblob",
+                "sftp",
+                "webdav"
             ],
             "x-enum-varnames": [
                 "DefaultType",
@@ -3637,7 +3639,9 @@ const docTemplate = `{
                 "TypeLocal",
                 "TypeS3",
                 "TypeGcs",
-                "TypeAzblob"
+                "TypeAzblob",
+                "TypeSftp",
+                "TypeWebdav"
             ]
         },
         "currencies.Currency": {
@@ -3978,6 +3982,10 @@ const docTemplate = `{
                         }
                     ]
                 },
+                "host_key": {
+                    "description": "HostKey holds the value of the \"host_key\" field.",
+                    "type": "string"
+                },
                 "id": {
                     "description": "ID of the ent.",
                     "type": "string"
@@ -4048,6 +4056,10 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                },
+                "username": {
+                    "description": "Username holds the value of the \"username\" field.",
                     "type": "string"
                 },
                 "weekday": {
@@ -5441,6 +5453,10 @@ const docTemplate = `{
                 "groupId": {
                     "type": "string"
                 },
+                "hasSecret": {
+                    "description": "HasSecret reports whether credentials are stored for the destination.",
+                    "type": "boolean"
+                },
                 "healthCheckedAt": {
                     "type": "string",
                     "x-nullable": true
@@ -5458,6 +5474,10 @@ const docTemplate = `{
                 },
                 "healthStatus": {
                     "type": "string"
+                },
+                "hostKey": {
+                    "type": "string",
+                    "maxLength": 255
                 },
                 "id": {
                     "type": "string"
@@ -5517,18 +5537,25 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "type": {
-                    "description": "Type is one of primary, local, s3, gcs, azblob.",
+                    "description": "Type is one of primary, local, s3, gcs, azblob, sftp, webdav.",
                     "type": "string",
                     "enum": [
                         "primary",
                         "local",
                         "s3",
                         "gcs",
-                        "azblob"
+                        "azblob",
+                        "sftp",
+                        "webdav"
                     ]
                 },
                 "updatedAt": {
                     "type": "string"
+                },
+                "username": {
+                    "description": "Username and HostKey serve the sftp and webdav types. HostKey is the\nSSH host key fingerprint (SHA256:...) an sftp server must present.",
+                    "type": "string",
+                    "maxLength": 255
                 },
                 "weekday": {
                     "type": "integer",
@@ -5537,7 +5564,7 @@ const docTemplate = `{
                 }
             }
         },
-        "repo.BackupSettings": {
+        "repo.BackupInput": {
             "type": "object",
             "required": [
                 "frequency",
@@ -5582,6 +5609,10 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 1000
                 },
+                "destinationId": {
+                    "description": "DestinationID is only used when testing unsaved settings: it lets the\ntest reuse the stored credentials of that destination.",
+                    "type": "string"
+                },
                 "enabled": {
                     "type": "boolean"
                 },
@@ -5599,6 +5630,10 @@ const docTemplate = `{
                     "type": "integer",
                     "maximum": 1440,
                     "minimum": 1
+                },
+                "hostKey": {
+                    "type": "string",
+                    "maxLength": 255
                 },
                 "intervalHours": {
                     "type": "integer",
@@ -5625,9 +5660,17 @@ const docTemplate = `{
                     "maxLength": 255,
                     "minLength": 1
                 },
+                "password": {
+                    "description": "Password is the sftp or webdav password. Leave empty to keep the stored\ncredentials of an existing destination.",
+                    "type": "string"
+                },
                 "prefix": {
                     "type": "string",
                     "maxLength": 255
+                },
+                "privateKey": {
+                    "description": "PrivateKey is an unencrypted PEM private key for sftp.",
+                    "type": "string"
                 },
                 "scheduleEnabled": {
                     "type": "boolean"
@@ -5636,15 +5679,22 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "type": {
-                    "description": "Type is one of primary, local, s3, gcs, azblob.",
+                    "description": "Type is one of primary, local, s3, gcs, azblob, sftp, webdav.",
                     "type": "string",
                     "enum": [
                         "primary",
                         "local",
                         "s3",
                         "gcs",
-                        "azblob"
+                        "azblob",
+                        "sftp",
+                        "webdav"
                     ]
+                },
+                "username": {
+                    "description": "Username and HostKey serve the sftp and webdav types. HostKey is the\nSSH host key fingerprint (SHA256:...) an sftp server must present.",
+                    "type": "string",
+                    "maxLength": 255
                 },
                 "weekday": {
                     "type": "integer",
@@ -7243,6 +7293,10 @@ const docTemplate = `{
         "services.TestResult": {
             "type": "object",
             "properties": {
+                "hostKey": {
+                    "description": "HostKey is the SSH host key fingerprint the server presented when it\nwas missing or did not match, so the UI can offer to trust it.",
+                    "type": "string"
+                },
                 "latencyMs": {
                     "type": "integer"
                 },
@@ -7358,6 +7412,9 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "localEnabled": {
+                    "type": "boolean"
+                },
+                "remoteEnabled": {
                     "type": "boolean"
                 }
             }

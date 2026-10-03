@@ -21,6 +21,7 @@ type BackupOptions struct {
 	Enabled              bool `json:"enabled"`
 	LocalEnabled         bool `json:"localEnabled"`
 	AllowCustomEndpoints bool `json:"allowCustomEndpoints"`
+	RemoteEnabled        bool `json:"remoteEnabled"`
 }
 
 // backupError maps service errors onto HTTP statuses. Settings problems the
@@ -59,7 +60,7 @@ func (ctrl *V1Controller) denyDemoBackupChange() error {
 func (ctrl *V1Controller) HandleBackupOptions() errchain.HandlerFunc {
 	fn := func(r *http.Request) (BackupOptions, error) {
 		o := ctrl.svc.Backups.Options()
-		return BackupOptions{Enabled: o.Enabled, LocalEnabled: o.LocalEnabled, AllowCustomEndpoints: o.AllowCustomEndpoints}, nil
+		return BackupOptions{Enabled: o.Enabled, LocalEnabled: o.LocalEnabled, AllowCustomEndpoints: o.AllowCustomEndpoints, RemoteEnabled: o.RemoteEnabled}, nil
 	}
 	return adapters.Command(fn, http.StatusOK)
 }
@@ -92,12 +93,12 @@ func (ctrl *V1Controller) HandleBackupDestinationsList() errchain.HandlerFunc {
 //	@Tags			Backups
 //	@Accept			json
 //	@Produce		json
-//	@Param			payload	body		repo.BackupSettings	true	"Destination settings"
+//	@Param			payload	body		repo.BackupInput	true	"Destination settings"
 //	@Success		201		{object}	repo.BackupDestinationOut
 //	@Router			/v1/group/backup-destinations [POST]
 //	@Security		Bearer
 func (ctrl *V1Controller) HandleBackupDestinationCreate() errchain.HandlerFunc {
-	fn := func(r *http.Request, in repo.BackupSettings) (repo.BackupDestinationOut, error) {
+	fn := func(r *http.Request, in repo.BackupInput) (repo.BackupDestinationOut, error) {
 		if err := ctrl.denyDemoBackupChange(); err != nil {
 			return repo.BackupDestinationOut{}, err
 		}
@@ -133,12 +134,12 @@ func (ctrl *V1Controller) HandleBackupDestinationGet() errchain.HandlerFunc {
 //	@Accept		json
 //	@Produce	json
 //	@Param		id		path		string				true	"Destination ID"
-//	@Param		payload	body		repo.BackupSettings	true	"Destination settings"
+//	@Param		payload	body		repo.BackupInput	true	"Destination settings"
 //	@Success	200		{object}	repo.BackupDestinationOut
 //	@Router		/v1/group/backup-destinations/{id} [PUT]
 //	@Security	Bearer
 func (ctrl *V1Controller) HandleBackupDestinationUpdate() errchain.HandlerFunc {
-	fn := func(r *http.Request, id uuid.UUID, in repo.BackupSettings) (repo.BackupDestinationOut, error) {
+	fn := func(r *http.Request, id uuid.UUID, in repo.BackupInput) (repo.BackupDestinationOut, error) {
 		if err := ctrl.denyDemoBackupChange(); err != nil {
 			return repo.BackupDestinationOut{}, err
 		}
@@ -197,12 +198,12 @@ func (ctrl *V1Controller) HandleBackupDestinationTest() errchain.HandlerFunc {
 //	@Tags		Backups
 //	@Accept		json
 //	@Produce	json
-//	@Param		payload	body		repo.BackupSettings	true	"Destination settings"
+//	@Param		payload	body		repo.BackupInput	true	"Destination settings"
 //	@Success	200		{object}	services.TestResult
 //	@Router		/v1/group/backup-destinations/test [POST]
 //	@Security	Bearer
 func (ctrl *V1Controller) HandleBackupSettingsTest() errchain.HandlerFunc {
-	fn := func(r *http.Request, in repo.BackupSettings) (services.TestResult, error) {
+	fn := func(r *http.Request, in repo.BackupInput) (services.TestResult, error) {
 		if err := ctrl.denyDemoBackupChange(); err != nil {
 			return services.TestResult{}, err
 		}

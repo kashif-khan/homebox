@@ -183,7 +183,7 @@ func TestScheduledBackupLifecycle(t *testing.T) {
 		SkipIfUnchanged: true, KeepDaily: 1, KeepWeekly: 0, KeepMonthly: 0,
 		HealthIntervalMinutes: 15, AlertsEnabled: false, AlertFailureThreshold: 2, AlertStaleHours: 0,
 	}
-	dest, err := tSvc.Backups.CreateDestination(ctx, grp.ID, settings)
+	dest, err := tSvc.Backups.CreateDestination(ctx, grp.ID, repo.BackupInput{BackupSettings: settings})
 	require.NoError(t, err)
 	require.NotNil(t, dest.NextRunAt, "enabled schedule gets a next run")
 
@@ -267,10 +267,10 @@ func TestBackupHealthAndAlertDedup(t *testing.T) {
 	require.NoError(t, os.MkdirAll(root, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(root, sub), []byte("x"), 0o600))
 
-	dest, err := tSvc.Backups.CreateDestination(ctx, grp.ID, repo.BackupSettings{
+	dest, err := tSvc.Backups.CreateDestination(ctx, grp.ID, repo.BackupInput{BackupSettings: repo.BackupSettings{
 		Name: "blocked", Type: destTypeLocal, ConnString: sub, Prefix: "p", Enabled: true, Frequency: freqDaily,
 		IntervalHours: 1, DayOfMonth: 1, HealthIntervalMinutes: 15, AlertsEnabled: true, AlertFailureThreshold: 2,
-	})
+	}})
 	require.NoError(t, err)
 
 	res, err := tSvc.Backups.TestDestination(ctx, grp.ID, dest.ID)
@@ -306,17 +306,17 @@ func TestBackupDestinationGroupIsolation(t *testing.T) {
 	b, err := tRepos.Groups.GroupCreate(ctx, "iso-b-"+fk.Str(4), uuid.Nil)
 	require.NoError(t, err)
 
-	dest, err := tSvc.Backups.CreateDestination(ctx, a.ID, repo.BackupSettings{
+	dest, err := tSvc.Backups.CreateDestination(ctx, a.ID, repo.BackupInput{BackupSettings: repo.BackupSettings{
 		Name: "primary", Type: destTypePrimary, Enabled: true, Frequency: freqDaily, IntervalHours: 1, DayOfMonth: 1,
 		HealthIntervalMinutes: 15, AlertFailureThreshold: 2,
-	})
+	}})
 	require.NoError(t, err)
 
 	_, err = tSvc.Backups.GetDestination(ctx, b.ID, dest.ID)
 	require.Error(t, err)
 	_, err = tSvc.Backups.RunNow(ctx, b.ID, dest.ID)
 	require.Error(t, err)
-	_, err = tSvc.Backups.UpdateDestination(ctx, b.ID, dest.ID, repo.BackupSettings{Name: "x", Type: destTypePrimary, Frequency: freqDaily})
+	_, err = tSvc.Backups.UpdateDestination(ctx, b.ID, dest.ID, repo.BackupInput{BackupSettings: repo.BackupSettings{Name: "x", Type: destTypePrimary, Frequency: freqDaily}})
 	require.Error(t, err)
 
 	list, err := tSvc.Backups.ListDestinations(ctx, b.ID)

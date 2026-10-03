@@ -18,7 +18,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"gocloud.dev/blob"
-	"gocloud.dev/gcerrors"
 
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services/reporting/eventbus"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent"
@@ -38,6 +37,8 @@ var ErrBackupDisabled = errors.New("scheduled backups are disabled")
 const (
 	destTypePrimary = "primary"
 	destTypeLocal   = "local"
+	destTypeSFTP    = "sftp"
+	destTypeWebDAV  = "webdav"
 
 	originManual    = "manual"
 	originScheduled = "scheduled"
@@ -65,6 +66,9 @@ type BackupService struct {
 	notifierConfig *config.NotifierConf
 	dialect        string
 	bus            *eventbus.EventBus
+	// secrets seals sftp/webdav credentials; nil when no encryption key is
+	// configured, which disables those destination types.
+	secrets *secretBox
 }
 
 // Enabled reports whether scheduled backups are switched on.
@@ -75,6 +79,9 @@ type BackupOptions struct {
 	Enabled              bool
 	LocalEnabled         bool
 	AllowCustomEndpoints bool
+	// RemoteEnabled reports whether sftp and webdav destinations can be used:
+	// they need an encryption key for their credentials and custom endpoints.
+	RemoteEnabled bool
 }
 
 // Options returns the server-side backup switches.
@@ -83,6 +90,7 @@ func (s *BackupService) Options() BackupOptions {
 		Enabled:              s.cfg.Enabled,
 		LocalEnabled:         s.cfg.LocalRoot != "",
 		AllowCustomEndpoints: s.cfg.AllowCustomEndpoints,
+		RemoteEnabled:        s.secrets != nil && s.cfg.AllowCustomEndpoints,
 	}
 }
 
@@ -91,15 +99,34 @@ type TestResult struct {
 	OK        bool   `json:"ok"`
 	LatencyMs int64  `json:"latencyMs"`
 	Message   string `json:"message"`
+	// HostKey is the SSH host key fingerprint the server presented when it
+	// was missing or did not match, so the UI can offer to trust it.
+	HostKey string `json:"hostKey,omitempty"`
 }
 
 func invalid(format string, a ...any) error {
 	return fmt.Errorf("%w: %s", ErrBackupInvalid, fmt.Sprintf(format, a...))
 }
 
-// NormalizeSettings validates in and fills defaults. It returns the cleaned
-// settings; the input is not modified.
 func (s *BackupService) NormalizeSettings(in repo.BackupSettings) (repo.BackupSettings, error) {
+	return s.normalize(in, true)
+}
+
+func isRemoteType(t string) bool { return t == destTypeSFTP || t == destTypeWebDAV }
+
+func (s *BackupService) requireRemote() error {
+	if s.secrets == nil {
+		return invalid("set HBOX_BACKUP_ENCRYPTION_KEY to use SFTP or WebDAV destinations")
+	}
+	if !s.cfg.AllowCustomEndpoints {
+		return invalid("custom endpoints are disabled on this server")
+	}
+	return nil
+}
+
+// normalize validates in and fills defaults. requireHostKey is false only when
+// testing, so a first connection can read the server's host key.
+func (s *BackupService) normalize(in repo.BackupSettings, requireHostKey bool) (repo.BackupSettings, error) {
 	in.Name = strings.TrimSpace(in.Name)
 	if in.Name == "" {
 		return in, invalid("name is required")
@@ -112,6 +139,12 @@ func (s *BackupService) NormalizeSettings(in repo.BackupSettings) (repo.BackupSe
 	in.Prefix = prefix
 
 	in.ConnString = strings.TrimSpace(in.ConnString)
+	in.Username = strings.TrimSpace(in.Username)
+	in.HostKey = strings.TrimSpace(in.HostKey)
+	if !isRemoteType(in.Type) {
+		in.Username, in.HostKey = "", ""
+	}
+
 	switch in.Type {
 	case destTypePrimary:
 		in.ConnString = ""
@@ -125,6 +158,34 @@ func (s *BackupService) NormalizeSettings(in repo.BackupSettings) (repo.BackupSe
 	case "s3", "gcs", "azblob":
 		if err := s.validateCloudURL(in.Type, in.ConnString); err != nil {
 			return in, err
+		}
+	case destTypeSFTP:
+		if err := s.requireRemote(); err != nil {
+			return in, err
+		}
+		t, err := parseSFTPURL(in.ConnString)
+		if err != nil {
+			return in, invalid("address: %v", err)
+		}
+		in.ConnString = "sftp://" + t.addr + t.base
+		if in.Username == "" {
+			return in, invalid("a username is required")
+		}
+		if requireHostKey && !strings.HasPrefix(in.HostKey, "SHA256:") {
+			return in, invalid("the SSH host key fingerprint is required; run Test connection to read it and confirm it")
+		}
+	case destTypeWebDAV:
+		if err := s.requireRemote(); err != nil {
+			return in, err
+		}
+		u, err := parseWebDAVURL(in.ConnString)
+		if err != nil {
+			return in, invalid("address: %v", err)
+		}
+		in.ConnString = u.String()
+		in.HostKey = "" // SSH only
+		if in.Username == "" {
+			return in, invalid("a username is required")
 		}
 	default:
 		return in, invalid("unknown destination type %q", in.Type)
@@ -217,16 +278,15 @@ func (s *BackupService) redact(msg string) string {
 	return strings.ReplaceAll(msg, root, "<backup root>")
 }
 
-// openBucket opens the destination's bucket and returns it with a function
-// mapping artifact paths to bucket keys.
-func (s *BackupService) openBucket(ctx context.Context, d repo.BackupDestinationOut) (*blob.Bucket, func(string) string, error) {
+func (s *BackupService) openStore(ctx context.Context, d repo.BackupDestinationOut, sec *backupSecret) (objectStore, func(string) string, error) {
+	identity := func(p string) string { return p }
 	switch d.Type {
 	case destTypePrimary:
 		b, err := blob.OpenBucket(ctx, s.repos.Attachments.GetConnString())
 		if err != nil {
 			return nil, nil, err
 		}
-		return b, s.repos.Attachments.GetFullPath, nil
+		return blobStore{b}, s.repos.Attachments.GetFullPath, nil
 	case destTypeLocal:
 		dir, err := s.localDir(d.ConnString)
 		if err != nil {
@@ -244,7 +304,28 @@ func (s *BackupService) openBucket(ctx context.Context, d repo.BackupDestination
 		if err != nil {
 			return nil, nil, errors.New(s.redact(err.Error()))
 		}
-		return b, func(p string) string { return p }, nil
+		return blobStore{b}, identity, nil
+	case destTypeSFTP, destTypeWebDAV:
+		cred, err := s.credentials(d, sec)
+		if err != nil {
+			return nil, nil, err
+		}
+		if d.Type == destTypeWebDAV {
+			st, err := newDAVStore(d.ConnString, d.Username, cred.Password)
+			if err != nil {
+				return nil, nil, err
+			}
+			return st, identity, nil
+		}
+		t, err := parseSFTPURL(d.ConnString)
+		if err != nil {
+			return nil, nil, err
+		}
+		st, err := dialSFTP(t, d.Username, cred, d.HostKey)
+		if err != nil {
+			return nil, nil, err
+		}
+		return st, identity, nil
 	default:
 		if err := s.validateCloudURL(d.Type, d.ConnString); err != nil {
 			return nil, nil, err
@@ -253,8 +334,40 @@ func (s *BackupService) openBucket(ctx context.Context, d repo.BackupDestination
 		if err != nil {
 			return nil, nil, err
 		}
-		return b, func(p string) string { return p }, nil
+		return blobStore{b}, identity, nil
 	}
+}
+
+// credentials returns the login for an sftp or webdav destination: sec when
+// supplied (a test of unsaved settings), otherwise the decrypted stored secret.
+func (s *BackupService) credentials(d repo.BackupDestinationOut, sec *backupSecret) (backupSecret, error) {
+	if sec != nil {
+		return *sec, nil
+	}
+	if s.secrets == nil {
+		return backupSecret{}, errors.New("HBOX_BACKUP_ENCRYPTION_KEY is not set, so stored credentials cannot be read")
+	}
+	if d.Secret == "" {
+		return backupSecret{}, errors.New("no credentials are stored for this destination")
+	}
+	return s.secrets.open(secretAAD(d.GroupID, d.ID), d.Secret)
+}
+
+func secretAAD(gid, id uuid.UUID) string { return gid.String() + "/" + id.String() }
+
+// sealSecret seals the credentials in in for a remote destination of type typ.
+func (s *BackupService) sealSecret(gid, id uuid.UUID, typ string, in repo.BackupInput) (string, error) {
+	sec := backupSecret{Password: in.Password, PrivateKey: in.PrivateKey}
+	if typ == destTypeWebDAV {
+		sec.PrivateKey = ""
+	}
+	if sec.empty() {
+		if typ == destTypeWebDAV {
+			return "", invalid("a password is required")
+		}
+		return "", invalid("a password or private key is required")
+	}
+	return s.secrets.seal(secretAAD(gid, id), sec)
 }
 
 // artifactPath builds the artifact path recorded on the export row. Primary
@@ -278,8 +391,8 @@ func artifactPrefix(d repo.BackupDestinationOut, gid uuid.UUID) string {
 }
 
 // ArtifactLocation resolves where an export's artifact lives. The caller owns
-// the returned bucket and must Close it.
-func (s *BackupService) ArtifactLocation(ctx context.Context, gid uuid.UUID, exp repo.ExportOut) (*blob.Bucket, string, error) {
+// the returned store and must Close it.
+func (s *BackupService) ArtifactLocation(ctx context.Context, gid uuid.UUID, exp repo.ExportOut) (objectStore, string, error) {
 	if exp.ArtifactPath == "" {
 		return nil, "", errors.New("export has no artifact")
 	}
@@ -297,28 +410,37 @@ func (s *BackupService) ArtifactLocation(ctx context.Context, gid uuid.UUID, exp
 	if !strings.HasPrefix(clean, artifactPrefix(dest, gid)) {
 		return nil, "", errors.New("artifact outside the expected prefix")
 	}
-	b, key, err := s.openBucket(ctx, dest)
+	st, key, err := s.openStore(ctx, dest, nil)
 	if err != nil {
 		return nil, "", err
 	}
-	return b, key(clean), nil
+	return st, key(clean), nil
 }
 
-// Check probes a destination by writing and deleting a small object.
 func (s *BackupService) Check(ctx context.Context, d repo.BackupDestinationOut, gid uuid.UUID) TestResult {
+	return s.check(ctx, d, gid, nil)
+}
+
+// check probes d. sec supplies credentials for unsaved settings.
+func (s *BackupService) check(ctx context.Context, d repo.BackupDestinationOut, gid uuid.UUID, sec *backupSecret) TestResult {
 	ctx, cancel := context.WithTimeout(ctx, checkTimeout)
 	defer cancel()
 
 	start := time.Now()
 	fail := func(err error) TestResult {
-		return TestResult{OK: false, LatencyMs: time.Since(start).Milliseconds(), Message: s.redact(err.Error())}
+		res := TestResult{OK: false, LatencyMs: time.Since(start).Milliseconds(), Message: s.redact(err.Error())}
+		var hk *hostKeyError
+		if errors.As(err, &hk) {
+			res.HostKey = hk.Fingerprint
+		}
+		return res
 	}
 
-	b, key, err := s.openBucket(ctx, d)
+	st, key, err := s.openStore(ctx, d, sec)
 	if err != nil {
 		return fail(err)
 	}
-	defer func() { _ = b.Close() }()
+	defer func() { _ = st.Close() }()
 
 	probe := fmt.Sprintf(".homebox-healthcheck-%s", uuid.NewString())
 	if d.Type == destTypePrimary {
@@ -327,10 +449,10 @@ func (s *BackupService) Check(ctx context.Context, d repo.BackupDestinationOut, 
 		probe = d.Prefix + "/" + probe
 	}
 	k := key(probe)
-	if err := b.WriteAll(ctx, k, make([]byte, 1024), &blob.WriterOptions{ContentType: "application/octet-stream"}); err != nil {
+	if err := st.Write(ctx, k, probeBytes(), 1024, "application/octet-stream"); err != nil {
 		return fail(fmt.Errorf("write test object: %w", err))
 	}
-	if err := b.Delete(ctx, k); err != nil && gcerrors.Code(err) != gcerrors.NotFound {
+	if err := st.Delete(ctx, k); err != nil {
 		return fail(fmt.Errorf("delete test object: %w", err))
 	}
 	return TestResult{OK: true, LatencyMs: time.Since(start).Milliseconds(), Message: "Wrote and deleted a 1 KB test file"}
@@ -347,7 +469,7 @@ func (s *BackupService) GetDestination(ctx context.Context, gid, id uuid.UUID) (
 	return s.repos.BackupDestinations.Get(ctx, gid, id)
 }
 
-func (s *BackupService) CreateDestination(ctx context.Context, gid uuid.UUID, in repo.BackupSettings) (repo.BackupDestinationOut, error) {
+func (s *BackupService) CreateDestination(ctx context.Context, gid uuid.UUID, in repo.BackupInput) (repo.BackupDestinationOut, error) {
 	if !s.cfg.Enabled {
 		return repo.BackupDestinationOut{}, ErrBackupDisabled
 	}
@@ -358,14 +480,21 @@ func (s *BackupService) CreateDestination(ctx context.Context, gid uuid.UUID, in
 	if len(existing) >= maxDestinationsPerGroup {
 		return repo.BackupDestinationOut{}, invalid("a collection can have at most %d backup destinations", maxDestinationsPerGroup)
 	}
-	in, err = s.NormalizeSettings(in)
+	st, err := s.normalize(in.BackupSettings, true)
 	if err != nil {
 		return repo.BackupDestinationOut{}, err
 	}
-	return s.repos.BackupDestinations.Create(ctx, gid, in, s.initialNextRun(in))
+	id := uuid.New()
+	var secret string
+	if isRemoteType(st.Type) {
+		if secret, err = s.sealSecret(gid, id, st.Type, in); err != nil {
+			return repo.BackupDestinationOut{}, err
+		}
+	}
+	return s.repos.BackupDestinations.Create(ctx, gid, id, st, secret, s.initialNextRun(st))
 }
 
-func (s *BackupService) UpdateDestination(ctx context.Context, gid, id uuid.UUID, in repo.BackupSettings) (repo.BackupDestinationOut, error) {
+func (s *BackupService) UpdateDestination(ctx context.Context, gid, id uuid.UUID, in repo.BackupInput) (repo.BackupDestinationOut, error) {
 	if !s.cfg.Enabled {
 		return repo.BackupDestinationOut{}, ErrBackupDisabled
 	}
@@ -373,12 +502,30 @@ func (s *BackupService) UpdateDestination(ctx context.Context, gid, id uuid.UUID
 	if err != nil {
 		return repo.BackupDestinationOut{}, err
 	}
-	in, err = s.NormalizeSettings(in)
+	st, err := s.normalize(in.BackupSettings, true)
 	if err != nil {
 		return repo.BackupDestinationOut{}, err
 	}
-	moved := cur.Type != in.Type || cur.ConnString != in.ConnString || cur.Prefix != in.Prefix
-	out, err := s.repos.BackupDestinations.Update(ctx, gid, id, in, s.initialNextRun(in), moved)
+	moved := cur.Type != st.Type || cur.ConnString != st.ConnString || cur.Prefix != st.Prefix ||
+		cur.Username != st.Username || cur.HostKey != st.HostKey
+
+	var secret string
+	if isRemoteType(st.Type) {
+		switch {
+		case in.Password != "" || in.PrivateKey != "":
+			if secret, err = s.sealSecret(gid, id, st.Type, in); err != nil {
+				return repo.BackupDestinationOut{}, err
+			}
+		case cur.Secret != "" && cur.Type == st.Type && cur.ConnString == st.ConnString && cur.Username == st.Username:
+			// Unchanged target: keep the stored credentials. They are never
+			// carried over to a different address or login, so a changed
+			// destination cannot be pointed at a server that harvests them.
+			secret = cur.Secret
+		default:
+			return repo.BackupDestinationOut{}, invalid("re-enter the credentials when changing the type, address or username")
+		}
+	}
+	out, err := s.repos.BackupDestinations.Update(ctx, gid, id, st, secret, s.initialNextRun(st), moved)
 	if err == nil {
 		s.publishMutation(gid)
 	}
@@ -412,17 +559,42 @@ func (s *BackupService) DeleteDestination(ctx context.Context, gid, id uuid.UUID
 	return nil
 }
 
-// TestSettings checks unsaved settings, so the UI can verify a destination
-// before it is stored.
-func (s *BackupService) TestSettings(ctx context.Context, gid uuid.UUID, in repo.BackupSettings) (TestResult, error) {
+func (s *BackupService) TestSettings(ctx context.Context, gid uuid.UUID, in repo.BackupInput) (TestResult, error) {
 	if !s.cfg.Enabled {
 		return TestResult{}, ErrBackupDisabled
 	}
-	in, err := s.NormalizeSettings(in)
+	st, err := s.normalize(in.BackupSettings, false)
 	if err != nil {
 		return TestResult{}, err
 	}
-	return s.Check(ctx, repo.BackupDestinationOut{BackupSettings: in}, gid), nil
+	d := repo.BackupDestinationOut{GroupID: gid, BackupSettings: st}
+
+	var sec *backupSecret
+	if isRemoteType(st.Type) {
+		switch {
+		case in.Password != "" || in.PrivateKey != "":
+			sec = &backupSecret{Password: in.Password, PrivateKey: in.PrivateKey}
+			if st.Type == destTypeWebDAV {
+				sec.PrivateKey = ""
+			}
+		case in.DestinationID != "":
+			id, perr := uuid.Parse(in.DestinationID)
+			if perr != nil {
+				return TestResult{}, invalid("invalid destination id")
+			}
+			cur, gerr := s.repos.BackupDestinations.Get(ctx, gid, id)
+			if gerr != nil {
+				return TestResult{}, gerr
+			}
+			if cur.Secret == "" || cur.Type != st.Type || cur.ConnString != st.ConnString || cur.Username != st.Username {
+				return TestResult{}, invalid("re-enter the credentials to test a changed type, address or username")
+			}
+			d.ID, d.Secret = cur.ID, cur.Secret
+		default:
+			return TestResult{}, invalid("enter a password or private key to test the connection")
+		}
+	}
+	return s.check(ctx, d, gid, sec), nil
 }
 
 // TestDestination checks a saved destination and records the result as its
@@ -784,13 +956,13 @@ func (s *BackupService) Prune(ctx context.Context, d repo.BackupDestinationOut) 
 // artifact counts as already deleted.
 func (s *BackupService) DeleteVersion(ctx context.Context, gid uuid.UUID, exp repo.ExportOut) error {
 	if exp.ArtifactPath != "" {
-		b, key, err := s.ArtifactLocation(ctx, gid, exp)
+		st, key, err := s.ArtifactLocation(ctx, gid, exp)
 		if err != nil {
 			return err
 		}
-		err = b.Delete(ctx, key)
-		_ = b.Close()
-		if err != nil && gcerrors.Code(err) != gcerrors.NotFound {
+		err = st.Delete(ctx, key)
+		_ = st.Close()
+		if err != nil {
 			return err
 		}
 	}

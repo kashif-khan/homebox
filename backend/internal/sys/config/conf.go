@@ -80,6 +80,20 @@ type BackupConf struct {
 	// endpoint (S3-compatible servers, NAS gateways, emulators). Turn off to
 	// restrict destinations to the providers' default endpoints.
 	AllowCustomEndpoints bool `yaml:"allow_custom_endpoints" conf:"default:true"`
+	// EncryptionKey seals the credentials of SFTP and WebDAV destinations at
+	// rest. Without it those destination types are unavailable. Keep it
+	// stable: changing it makes stored credentials unreadable. Generate one
+	// with `openssl rand -base64 32`.
+	EncryptionKey string `yaml:"encryption_key" conf:"mask"`
+}
+
+func (c BackupConf) MarshalJSON() ([]byte, error) {
+	type alias BackupConf
+	a := alias(c)
+	if a.EncryptionKey != "" {
+		a.EncryptionKey = redactedValue
+	}
+	return json.Marshal(a)
 }
 
 // SearchConf selects and configures the free-text search engine. The default

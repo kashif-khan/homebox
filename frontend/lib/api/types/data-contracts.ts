@@ -69,6 +69,8 @@ export enum BackupdestinationType {
   TypeS3 = "s3",
   TypeGcs = "gcs",
   TypeAzblob = "azblob",
+  TypeSftp = "sftp",
+  TypeWebdav = "webdav",
 }
 
 export enum BackupdestinationHealthStatus {
@@ -257,6 +259,8 @@ export interface EntBackupDestination {
   health_interval_minutes: number;
   /** HealthStatus holds the value of the "health_status" field. */
   health_status: BackupdestinationHealthStatus;
+  /** HostKey holds the value of the "host_key" field. */
+  host_key: string;
   /** ID of the ent. */
   id: string;
   /** IntervalHours holds the value of the "interval_hours" field. */
@@ -291,6 +295,8 @@ export interface EntBackupDestination {
   type: BackupdestinationType;
   /** UpdatedAt holds the value of the "updated_at" field. */
   updated_at: string;
+  /** Username holds the value of the "username" field. */
+  username: string;
   /** Weekday holds the value of the "weekday" field. */
   weekday: number;
 }
@@ -887,6 +893,8 @@ export interface BackupDestinationOut {
   /** Frequency is one of hourly, daily, weekly, monthly. */
   frequency: "hourly" | "daily" | "weekly" | "monthly";
   groupId: string;
+  /** HasSecret reports whether credentials are stored for the destination. */
+  hasSecret: boolean;
   healthCheckedAt?: string | null;
   healthError: string;
   healthFailures: number;
@@ -896,6 +904,8 @@ export interface BackupDestinationOut {
    */
   healthIntervalMinutes: number;
   healthStatus: string;
+  /** @maxLength 255 */
+  hostKey: string;
   id: string;
   /**
    * @min 1
@@ -931,9 +941,15 @@ export interface BackupDestinationOut {
   prefix: string;
   scheduleEnabled: boolean;
   skipIfUnchanged: boolean;
-  /** Type is one of primary, local, s3, gcs, azblob. */
-  type: "primary" | "local" | "s3" | "gcs" | "azblob";
+  /** Type is one of primary, local, s3, gcs, azblob, sftp, webdav. */
+  type: "primary" | "local" | "s3" | "gcs" | "azblob" | "sftp" | "webdav";
   updatedAt: Date | string;
+  /**
+   * Username and HostKey serve the sftp and webdav types. HostKey is the
+   * SSH host key fingerprint (SHA256:...) an sftp server must present.
+   * @maxLength 255
+   */
+  username: string;
   /**
    * @min 0
    * @max 6
@@ -941,7 +957,7 @@ export interface BackupDestinationOut {
   weekday: number;
 }
 
-export interface BackupSettings {
+export interface BackupInput {
   /**
    * @min 1
    * @max 100
@@ -973,6 +989,11 @@ export interface BackupSettings {
   dayOfMonth: number;
   /** @maxLength 1000 */
   description: string;
+  /**
+   * DestinationID is only used when testing unsaved settings: it lets the
+   * test reuse the stored credentials of that destination.
+   */
+  destinationId: string;
   enabled: boolean;
   /** Frequency is one of hourly, daily, weekly, monthly. */
   frequency: "hourly" | "daily" | "weekly" | "monthly";
@@ -981,6 +1002,8 @@ export interface BackupSettings {
    * @max 1440
    */
   healthIntervalMinutes: number;
+  /** @maxLength 255 */
+  hostKey: string;
   /**
    * @min 1
    * @max 168
@@ -1006,12 +1029,25 @@ export interface BackupSettings {
    * @maxLength 255
    */
   name: string;
+  /**
+   * Password is the sftp or webdav password. Leave empty to keep the stored
+   * credentials of an existing destination.
+   */
+  password: string;
   /** @maxLength 255 */
   prefix: string;
+  /** PrivateKey is an unencrypted PEM private key for sftp. */
+  privateKey: string;
   scheduleEnabled: boolean;
   skipIfUnchanged: boolean;
-  /** Type is one of primary, local, s3, gcs, azblob. */
-  type: "primary" | "local" | "s3" | "gcs" | "azblob";
+  /** Type is one of primary, local, s3, gcs, azblob, sftp, webdav. */
+  type: "primary" | "local" | "s3" | "gcs" | "azblob" | "sftp" | "webdav";
+  /**
+   * Username and HostKey serve the sftp and webdav types. HostKey is the
+   * SSH host key fingerprint (SHA256:...) an sftp server must present.
+   * @maxLength 255
+   */
+  username: string;
   /**
    * @min 0
    * @max 6
@@ -1637,6 +1673,11 @@ export interface Latest {
 }
 
 export interface TestResult {
+  /**
+   * HostKey is the SSH host key fingerprint the server presented when it
+   * was missing or did not match, so the UI can offer to trust it.
+   */
+  hostKey: string;
   latencyMs: number;
   message: string;
   ok: boolean;
@@ -1671,6 +1712,7 @@ export interface BackupOptions {
   allowCustomEndpoints: boolean;
   enabled: boolean;
   localEnabled: boolean;
+  remoteEnabled: boolean;
 }
 
 export interface Build {

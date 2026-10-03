@@ -991,6 +991,7 @@
         "backup_destinations": {
             "add": "Add destination",
             "add_title": "Add backup destination",
+            "address": "Address",
             "alerts_enabled": "Send alerts",
             "alerts_help": "Alerts go to this banner and to your active notifiers when a backup fails, a destination stays unreachable, or no backup has succeeded for too long.",
             "at_minute": "At minute",
@@ -1016,6 +1017,9 @@
                 "unreachable": "Unreachable"
             },
             "health_interval": "Health check every (min)",
+            "host_key": "SSH host key fingerprint",
+            "host_key_confirm": "Check that this matches your server's host key (for example with ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub), then trust it.",
+            "host_key_help": "Pins the server's identity so backups can't be sent to an impostor. Run Test connection to read it from the server.",
             "keep_daily": "Daily versions",
             "keep_monthly": "Monthly versions",
             "keep_weekly": "Weekly versions",
@@ -1026,10 +1030,15 @@
             "name": "Name",
             "never": "never",
             "next_run": "Next run",
+            "password": "Password",
+            "password_keep": "Leave blank to keep the saved password",
             "paused": "Paused",
             "prefix": "Folder prefix",
+            "private_key": "Private key (optional)",
+            "private_key_help": "An unencrypted PEM key can be used instead of a password.",
             "problem_failed": "The last backup to \"{name}\" failed",
             "problem_unreachable": "\"{name}\" is unreachable",
+            "remote_help": "Credentials are stored encrypted on the server and are never shown again.",
             "request_failed": "The request failed. Check the settings and try again.",
             "retention": "Version retention",
             "retention_help": "Keeps the newest backup of each of the last N days, weeks and months. Set a value to 0 to ignore it; all zeros keeps everything.",
@@ -1052,21 +1061,27 @@
             "test_ok": "Connection OK ({ms} ms)",
             "time": "Time",
             "title": "Automatic backups & destinations",
+            "trust_host_key": "Trust this host key",
             "type": "Type",
             "type_help": {
                 "azblob": "An Azure Blob container. Credentials come from the AZURE_STORAGE_* environment variables.",
                 "gcs": "A Google Cloud Storage bucket. Credentials come from GOOGLE_APPLICATION_CREDENTIALS.",
                 "local": "A directory under the server's configured backup root, for example a mounted NAS share.",
                 "primary": "The instance's main storage, the same place manual backups and attachments go.",
-                "s3": "An S3 or S3-compatible bucket (AWS, MinIO, Backblaze B2, Cloudflare R2). Credentials come from the AWS_* environment variables."
+                "s3": "An S3 or S3-compatible bucket (AWS, MinIO, Backblaze B2, Cloudflare R2). Credentials come from the AWS_* environment variables.",
+                "sftp": "Any server with SSH and SFTP, such as TrueNAS, Unraid or Synology. Needs HBOX_BACKUP_ENCRYPTION_KEY to store the login.",
+                "webdav": "A WebDAV share such as Nextcloud, ownCloud or a Synology NAS. Needs HBOX_BACKUP_ENCRYPTION_KEY to store the login."
             },
             "types": {
                 "azblob": "Azure Blob",
                 "gcs": "Google Cloud Storage",
                 "local": "Local directory",
                 "primary": "Primary storage",
-                "s3": "S3-compatible"
+                "s3": "S3-compatible",
+                "sftp": "SFTP (NAS, SSH server)",
+                "webdav": "WebDAV (Nextcloud, Synology)"
             },
+            "username": "Username",
             "versions": "Versions",
             "weekday": "Weekday"
         },

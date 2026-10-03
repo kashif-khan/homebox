@@ -55,3 +55,52 @@ func TestSqliteMigrationsApplyAndMatchEnt(t *testing.T) {
 	require.NoError(t, err)
 	require.Zero(t, n)
 }
+
+// TestSqliteBackupDestinationRebuildKeepsRows applies the migrations up to the
+// first backup_destinations schema, stores a row, then applies the SFTP/WebDAV
+// migration, which rebuilds the table to widen the type CHECK constraint.
+func TestSqliteBackupDestinationRebuildKeepsRows(t *testing.T) {
+	ctx := context.Background()
+	c, err := ent.Open("sqlite3", "file:migrebuild?mode=memory&cache=shared&_fk=1&_time_format=sqlite")
+	require.NoError(t, err)
+	defer func() { _ = c.Close() }()
+
+	fs, err := migrations.Migrations("sqlite3")
+	require.NoError(t, err)
+	goose.SetBaseFS(fs)
+	require.NoError(t, goose.SetDialect("sqlite3"))
+	require.NoError(t, goose.UpTo(c.Sql(), "sqlite3", 20261002000000))
+
+	gid, did := uuid.New(), uuid.New()
+	_, err = c.Sql().ExecContext(ctx, `insert into groups (id, created_at, updated_at, name, currency) values (?, datetime('now'), datetime('now'), 'g', 'USD')`, gid)
+	require.NoError(t, err)
+	_, err = c.Sql().ExecContext(ctx, `insert into backup_destinations (id, created_at, updated_at, name, type, conn_string, keep_daily, group_id)
+		values (?, datetime('now'), datetime('now'), 'old', 's3', 's3://bucket', 11, ?)`, did, gid)
+	require.NoError(t, err)
+
+	// The old CHECK constraint refuses the new type.
+	_, err = c.Sql().ExecContext(ctx, `update backup_destinations set type = 'sftp' where id = ?`, did)
+	require.Error(t, err)
+
+	require.NoError(t, goose.Up(c.Sql(), "sqlite3"))
+
+	d, err := c.BackupDestination.Get(ctx, did)
+	require.NoError(t, err)
+	require.Equal(t, "old", d.Name)
+	require.Equal(t, "s3://bucket", d.ConnString)
+	require.Equal(t, 11, d.KeepDaily)
+	require.Equal(t, gid, d.GroupID)
+
+	// The widened constraint and the new columns work.
+	_, err = c.BackupDestination.UpdateOneID(did).
+		SetType("sftp").SetUsername("u").SetSecret("sealed").SetHostKey("SHA256:x").Save(ctx)
+	require.NoError(t, err)
+	_, err = c.BackupDestination.UpdateOneID(did).SetType("webdav").Save(ctx)
+	require.NoError(t, err)
+
+	// The group cascade survived the rebuild.
+	require.NoError(t, c.Group.DeleteOneID(gid).Exec(ctx))
+	n, err := c.BackupDestination.Query().Count(ctx)
+	require.NoError(t, err)
+	require.Zero(t, n)
+}

@@ -101,6 +101,7 @@ func MainNoExit(m *testing.M) int {
 			Enabled:              true,
 			LocalRoot:            os.TempDir() + "/homebox-backup-root",
 			AllowCustomEndpoints: true,
+			EncryptionKey:        "test-backup-encryption-key",
 		}),
 	)
 	defer func() { _ = client.Close() }()

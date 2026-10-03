@@ -24,6 +24,7 @@ require (
 	github.com/nicholas-fedor/shoutrrr v0.21.1
 	github.com/olahol/melody v1.4.0
 	github.com/pkg/errors v0.9.1
+	github.com/pkg/sftp v1.13.11
 	github.com/pressly/goose/v3 v3.28.0
 	github.com/riandyrn/otelchi v0.12.3
 	github.com/rs/zerolog v1.35.1
@@ -31,6 +32,7 @@ require (
 	github.com/shirou/gopsutil/v4 v4.26.9
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/stretchr/testify v1.12.1
+	github.com/studio-b12/gowebdav v0.13.0
 	github.com/swaggo/http-swagger/v2 v2.0.2
 	github.com/swaggo/swag v1.16.6
 	github.com/yeqown/go-qrcode/v2 v2.3.0
@@ -61,6 +63,7 @@ require (
 	gocloud.dev/pubsub/rabbitpubsub v0.46.0
 	golang.org/x/crypto v0.57.0
 	golang.org/x/image v0.46.0
+	golang.org/x/net v0.59.0
 	golang.org/x/oauth2 v0.37.0
 	golang.org/x/text v0.42.0
 	google.golang.org/grpc v1.84.0
@@ -168,6 +171,7 @@ require (
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/klauspost/compress v1.20.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.4.0 // indirect
+	github.com/kr/fs v0.1.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/leodido/go-urn v1.5.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
@@ -207,7 +211,6 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/mod v0.41.0 // indirect
-	golang.org/x/net v0.59.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/term v0.46.0 // indirect
