@@ -234,6 +234,26 @@ func (_u *BackupDestinationUpdate) SetNillableFrequency(v *backupdestination.Fre
 	return _u
 }
 
+// SetCronExpr sets the "cron_expr" field.
+func (_u *BackupDestinationUpdate) SetCronExpr(v string) *BackupDestinationUpdate {
+	_u.mutation.SetCronExpr(v)
+	return _u
+}
+
+// SetNillableCronExpr sets the "cron_expr" field if the given value is not nil.
+func (_u *BackupDestinationUpdate) SetNillableCronExpr(v *string) *BackupDestinationUpdate {
+	if v != nil {
+		_u.SetCronExpr(*v)
+	}
+	return _u
+}
+
+// ClearCronExpr clears the value of the "cron_expr" field.
+func (_u *BackupDestinationUpdate) ClearCronExpr() *BackupDestinationUpdate {
+	_u.mutation.ClearCronExpr()
+	return _u
+}
+
 // SetIntervalHours sets the "interval_hours" field.
 func (_u *BackupDestinationUpdate) SetIntervalHours(v int) *BackupDestinationUpdate {
 	_u.mutation.ResetIntervalHours()
@@ -824,6 +844,11 @@ func (_u *BackupDestinationUpdate) check() error {
 			return &ValidationError{Name: "frequency", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.frequency": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.CronExpr(); ok {
+		if err := backupdestination.CronExprValidator(v); err != nil {
+			return &ValidationError{Name: "cron_expr", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.cron_expr": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.LastFingerprint(); ok {
 		if err := backupdestination.LastFingerprintValidator(v); err != nil {
 			return &ValidationError{Name: "last_fingerprint", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.last_fingerprint": %w`, err)}
@@ -912,6 +937,12 @@ func (_u *BackupDestinationUpdate) sqlSave(ctx context.Context) (_node int, err 
 	}
 	if value, ok := _u.mutation.Frequency(); ok {
 		_spec.SetField(backupdestination.FieldFrequency, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.CronExpr(); ok {
+		_spec.SetField(backupdestination.FieldCronExpr, field.TypeString, value)
+	}
+	if _u.mutation.CronExprCleared() {
+		_spec.ClearField(backupdestination.FieldCronExpr, field.TypeString)
 	}
 	if value, ok := _u.mutation.IntervalHours(); ok {
 		_spec.SetField(backupdestination.FieldIntervalHours, field.TypeInt, value)
@@ -1301,6 +1332,26 @@ func (_u *BackupDestinationUpdateOne) SetNillableFrequency(v *backupdestination.
 	if v != nil {
 		_u.SetFrequency(*v)
 	}
+	return _u
+}
+
+// SetCronExpr sets the "cron_expr" field.
+func (_u *BackupDestinationUpdateOne) SetCronExpr(v string) *BackupDestinationUpdateOne {
+	_u.mutation.SetCronExpr(v)
+	return _u
+}
+
+// SetNillableCronExpr sets the "cron_expr" field if the given value is not nil.
+func (_u *BackupDestinationUpdateOne) SetNillableCronExpr(v *string) *BackupDestinationUpdateOne {
+	if v != nil {
+		_u.SetCronExpr(*v)
+	}
+	return _u
+}
+
+// ClearCronExpr clears the value of the "cron_expr" field.
+func (_u *BackupDestinationUpdateOne) ClearCronExpr() *BackupDestinationUpdateOne {
+	_u.mutation.ClearCronExpr()
 	return _u
 }
 
@@ -1907,6 +1958,11 @@ func (_u *BackupDestinationUpdateOne) check() error {
 			return &ValidationError{Name: "frequency", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.frequency": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.CronExpr(); ok {
+		if err := backupdestination.CronExprValidator(v); err != nil {
+			return &ValidationError{Name: "cron_expr", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.cron_expr": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.LastFingerprint(); ok {
 		if err := backupdestination.LastFingerprintValidator(v); err != nil {
 			return &ValidationError{Name: "last_fingerprint", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.last_fingerprint": %w`, err)}
@@ -2012,6 +2068,12 @@ func (_u *BackupDestinationUpdateOne) sqlSave(ctx context.Context) (_node *Backu
 	}
 	if value, ok := _u.mutation.Frequency(); ok {
 		_spec.SetField(backupdestination.FieldFrequency, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.CronExpr(); ok {
+		_spec.SetField(backupdestination.FieldCronExpr, field.TypeString, value)
+	}
+	if _u.mutation.CronExprCleared() {
+		_spec.ClearField(backupdestination.FieldCronExpr, field.TypeString)
 	}
 	if value, ok := _u.mutation.IntervalHours(); ok {
 		_spec.SetField(backupdestination.FieldIntervalHours, field.TypeInt, value)

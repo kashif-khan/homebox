@@ -63,7 +63,11 @@ func TestPostgresMigrationsAndBackupQueries(t *testing.T) {
 		_, err = c.BackupDestination.UpdateOneID(d.ID).SetType(backupdestination.Type(typ)).Save(ctx)
 		require.NoError(t, err, typ)
 	}
-	_, err = c.BackupDestination.UpdateOneID(d.ID).SetType("primary").Save(ctx)
+	_, err = c.BackupDestination.UpdateOneID(d.ID).SetType("smb").SetFrequency("cron").SetCronExpr("0 3 * * *").Save(ctx)
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, `update backup_destinations set frequency = 'yearly' where id = $1`, d.ID)
+	require.Error(t, err, "the frequency constraint still rejects unknown values")
+	_, err = c.BackupDestination.UpdateOneID(d.ID).SetType("primary").SetFrequency("daily").Save(ctx)
 	require.NoError(t, err)
 
 	// The raw-SQL change fingerprint must work on postgres placeholders too.

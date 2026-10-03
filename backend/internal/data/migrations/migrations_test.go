@@ -155,3 +155,53 @@ func TestSqliteCloudDriveRebuildKeepsCredentials(t *testing.T) {
 	require.NoError(t, err)
 	require.Zero(t, n)
 }
+
+// TestSqliteSMBCronRebuildKeepsRows checks the rebuild that adds the smb type,
+// the cron frequency and the cron_expr column keeps every earlier column.
+func TestSqliteSMBCronRebuildKeepsRows(t *testing.T) {
+	ctx := context.Background()
+	c, err := ent.Open("sqlite3", "file:migsmbcron?mode=memory&cache=shared&_fk=1&_time_format=sqlite")
+	require.NoError(t, err)
+	defer func() { _ = c.Close() }()
+
+	fs, err := migrations.Migrations("sqlite3")
+	require.NoError(t, err)
+	goose.SetBaseFS(fs)
+	require.NoError(t, goose.SetDialect("sqlite3"))
+	require.NoError(t, goose.UpTo(c.Sql(), "sqlite3", 20261004000000))
+
+	gid, did := uuid.New(), uuid.New()
+	_, err = c.Sql().ExecContext(ctx, `insert into groups (id, created_at, updated_at, name, currency) values (?, datetime('now'), datetime('now'), 'g', 'USD')`, gid)
+	require.NoError(t, err)
+	_, err = c.Sql().ExecContext(ctx, `insert into backup_destinations
+		(id, created_at, updated_at, name, type, conn_string, username, secret, host_key, frequency, keep_monthly, group_id)
+		values (?, datetime('now'), datetime('now'), 'drive', 'gdrive', '', 'me@example.com', 'sealed', '', 'weekly', 5, ?)`, did, gid)
+	require.NoError(t, err)
+
+	// The previous constraints refuse the new type and frequency.
+	_, err = c.Sql().ExecContext(ctx, `update backup_destinations set type = 'smb' where id = ?`, did)
+	require.Error(t, err)
+	_, err = c.Sql().ExecContext(ctx, `update backup_destinations set frequency = 'cron' where id = ?`, did)
+	require.Error(t, err)
+
+	require.NoError(t, goose.Up(c.Sql(), "sqlite3"))
+
+	d, err := c.BackupDestination.Get(ctx, did)
+	require.NoError(t, err)
+	require.Equal(t, "gdrive", string(d.Type))
+	require.Equal(t, "me@example.com", d.Username)
+	require.Equal(t, "sealed", d.Secret)
+	require.Equal(t, "weekly", string(d.Frequency))
+	require.Equal(t, 5, d.KeepMonthly)
+	require.Empty(t, d.CronExpr)
+
+	_, err = c.BackupDestination.UpdateOneID(did).SetType("smb").SetFrequency("cron").SetCronExpr("0 3 * * *").Save(ctx)
+	require.NoError(t, err)
+	_, err = c.Sql().ExecContext(ctx, `update backup_destinations set frequency = 'yearly' where id = ?`, did)
+	require.Error(t, err, "unknown frequencies are still rejected")
+
+	require.NoError(t, c.Group.DeleteOneID(gid).Exec(ctx))
+	n, err := c.BackupDestination.Query().Count(ctx)
+	require.NoError(t, err)
+	require.Zero(t, n)
+}

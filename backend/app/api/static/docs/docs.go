@@ -3672,14 +3672,16 @@ const docTemplate = `{
                 "hourly",
                 "daily",
                 "weekly",
-                "monthly"
+                "monthly",
+                "cron"
             ],
             "x-enum-varnames": [
                 "DefaultFrequency",
                 "FrequencyHourly",
                 "FrequencyDaily",
                 "FrequencyWeekly",
-                "FrequencyMonthly"
+                "FrequencyMonthly",
+                "FrequencyCron"
             ]
         },
         "backupdestination.HealthStatus": {
@@ -3710,7 +3712,8 @@ const docTemplate = `{
                 "webdav",
                 "gdrive",
                 "onedrive",
-                "dropbox"
+                "dropbox",
+                "smb"
             ],
             "x-enum-varnames": [
                 "DefaultType",
@@ -3723,7 +3726,8 @@ const docTemplate = `{
                 "TypeWebdav",
                 "TypeGdrive",
                 "TypeOnedrive",
-                "TypeDropbox"
+                "TypeDropbox",
+                "TypeSmb"
             ]
         },
         "currencies.Currency": {
@@ -4006,6 +4010,10 @@ const docTemplate = `{
                 },
                 "created_at": {
                     "description": "CreatedAt holds the value of the \"created_at\" field.",
+                    "type": "string"
+                },
+                "cron_expr": {
+                    "description": "CronExpr holds the value of the \"cron_expr\" field.",
                     "type": "string"
                 },
                 "day_of_month": {
@@ -5510,6 +5518,11 @@ const docTemplate = `{
                 "createdAt": {
                     "type": "string"
                 },
+                "cronExpr": {
+                    "description": "CronExpr is a 5-field cron expression or descriptor, used when Frequency\nis \"cron\". It may start with CRON_TZ=Zone to schedule in another zone.",
+                    "type": "string",
+                    "maxLength": 255
+                },
                 "dayOfMonth": {
                     "type": "integer",
                     "maximum": 28,
@@ -5523,13 +5536,14 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "frequency": {
-                    "description": "Frequency is one of hourly, daily, weekly, monthly.",
+                    "description": "Frequency is one of hourly, daily, weekly, monthly, cron.",
                     "type": "string",
                     "enum": [
                         "hourly",
                         "daily",
                         "weekly",
-                        "monthly"
+                        "monthly",
+                        "cron"
                     ]
                 },
                 "groupId": {
@@ -5619,7 +5633,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "type": {
-                    "description": "Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,\nonedrive, dropbox.",
+                    "description": "Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,\nonedrive, dropbox, smb.",
                     "type": "string",
                     "enum": [
                         "primary",
@@ -5631,7 +5645,8 @@ const docTemplate = `{
                         "webdav",
                         "gdrive",
                         "onedrive",
-                        "dropbox"
+                        "dropbox",
+                        "smb"
                     ]
                 },
                 "updatedAt": {
@@ -5685,6 +5700,11 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 2048
                 },
+                "cronExpr": {
+                    "description": "CronExpr is a 5-field cron expression or descriptor, used when Frequency\nis \"cron\". It may start with CRON_TZ=Zone to schedule in another zone.",
+                    "type": "string",
+                    "maxLength": 255
+                },
                 "dayOfMonth": {
                     "type": "integer",
                     "maximum": 28,
@@ -5702,13 +5722,14 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "frequency": {
-                    "description": "Frequency is one of hourly, daily, weekly, monthly.",
+                    "description": "Frequency is one of hourly, daily, weekly, monthly, cron.",
                     "type": "string",
                     "enum": [
                         "hourly",
                         "daily",
                         "weekly",
-                        "monthly"
+                        "monthly",
+                        "cron"
                     ]
                 },
                 "healthIntervalMinutes": {
@@ -5749,6 +5770,10 @@ const docTemplate = `{
                     "description": "OAuthTicket is the one-time ticket returned by the OAuth callback for a\ncloud-drive destination. It carries the connected account, and is\nconsumed when the destination is saved.",
                     "type": "string"
                 },
+                "passphrase": {
+                    "description": "Passphrase unlocks a passphrase-protected PrivateKey.",
+                    "type": "string"
+                },
                 "password": {
                     "description": "Password is the sftp or webdav password. Leave empty to keep the stored\ncredentials of an existing destination.",
                     "type": "string"
@@ -5758,7 +5783,7 @@ const docTemplate = `{
                     "maxLength": 255
                 },
                 "privateKey": {
-                    "description": "PrivateKey is an unencrypted PEM private key for sftp.",
+                    "description": "PrivateKey is a PEM private key for sftp, optionally passphrase-protected.",
                     "type": "string"
                 },
                 "scheduleEnabled": {
@@ -5768,7 +5793,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "type": {
-                    "description": "Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,\nonedrive, dropbox.",
+                    "description": "Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,\nonedrive, dropbox, smb.",
                     "type": "string",
                     "enum": [
                         "primary",
@@ -5780,7 +5805,8 @@ const docTemplate = `{
                         "webdav",
                         "gdrive",
                         "onedrive",
-                        "dropbox"
+                        "dropbox",
+                        "smb"
                     ]
                 },
                 "username": {

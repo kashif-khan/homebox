@@ -21,8 +21,8 @@ type BackupSettings struct {
 	Name        string `json:"name"        validate:"required,min=1,max=255"`
 	Description string `json:"description" validate:"max=1000"`
 	// Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,
-	// onedrive, dropbox.
-	Type       string `json:"type"       validate:"required,oneof=primary local s3 gcs azblob sftp webdav gdrive onedrive dropbox"`
+	// onedrive, dropbox, smb.
+	Type       string `json:"type"       validate:"required,oneof=primary local s3 gcs azblob sftp webdav gdrive onedrive dropbox smb"`
 	ConnString string `json:"connString" validate:"max=2048"`
 	// Username and HostKey serve the sftp and webdav types. HostKey is the
 	// SSH host key fingerprint (SHA256:...) an sftp server must present.
@@ -32,8 +32,11 @@ type BackupSettings struct {
 	Enabled  bool   `json:"enabled"`
 
 	ScheduleEnabled bool `json:"scheduleEnabled"`
-	// Frequency is one of hourly, daily, weekly, monthly.
-	Frequency       string `json:"frequency"       validate:"required,oneof=hourly daily weekly monthly"`
+	// Frequency is one of hourly, daily, weekly, monthly, cron.
+	Frequency string `json:"frequency" validate:"required,oneof=hourly daily weekly monthly cron"`
+	// CronExpr is a 5-field cron expression or descriptor, used when Frequency
+	// is "cron". It may start with CRON_TZ=Zone to schedule in another zone.
+	CronExpr        string `json:"cronExpr"        validate:"max=255"`
 	IntervalHours   int    `json:"intervalHours"   validate:"min=1,max=168"`
 	AtHour          int    `json:"atHour"          validate:"min=0,max=23"`
 	AtMinute        int    `json:"atMinute"        validate:"min=0,max=59"`
@@ -60,8 +63,10 @@ type BackupInput struct {
 	// Password is the sftp or webdav password. Leave empty to keep the stored
 	// credentials of an existing destination.
 	Password string `json:"password,omitempty"`
-	// PrivateKey is an unencrypted PEM private key for sftp.
+	// PrivateKey is a PEM private key for sftp, optionally passphrase-protected.
 	PrivateKey string `json:"privateKey,omitempty"`
+	// Passphrase unlocks a passphrase-protected PrivateKey.
+	Passphrase string `json:"passphrase,omitempty"`
 	// OAuthTicket is the one-time ticket returned by the OAuth callback for a
 	// cloud-drive destination. It carries the connected account, and is
 	// consumed when the destination is saved.
@@ -117,6 +122,7 @@ func mapBackupDestination(d *ent.BackupDestination) BackupDestinationOut {
 			Enabled:               d.Enabled,
 			ScheduleEnabled:       d.ScheduleEnabled,
 			Frequency:             string(d.Frequency),
+			CronExpr:              d.CronExpr,
 			IntervalHours:         d.IntervalHours,
 			AtHour:                d.AtHour,
 			AtMinute:              d.AtMinute,
@@ -217,6 +223,7 @@ func (r *BackupDestinationRepository) Create(ctx context.Context, gid, id uuid.U
 		SetEnabled(in.Enabled).
 		SetScheduleEnabled(in.ScheduleEnabled).
 		SetFrequency(backupdestination.Frequency(in.Frequency)).
+		SetCronExpr(in.CronExpr).
 		SetIntervalHours(in.IntervalHours).
 		SetAtHour(in.AtHour).
 		SetAtMinute(in.AtMinute).
@@ -255,6 +262,7 @@ func (r *BackupDestinationRepository) Update(ctx context.Context, gid, id uuid.U
 		SetEnabled(in.Enabled).
 		SetScheduleEnabled(in.ScheduleEnabled).
 		SetFrequency(backupdestination.Frequency(in.Frequency)).
+		SetCronExpr(in.CronExpr).
 		SetIntervalHours(in.IntervalHours).
 		SetAtHour(in.AtHour).
 		SetAtMinute(in.AtMinute).

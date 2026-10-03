@@ -74,6 +74,7 @@ export enum BackupdestinationType {
   TypeGdrive = "gdrive",
   TypeOnedrive = "onedrive",
   TypeDropbox = "dropbox",
+  TypeSmb = "smb",
 }
 
 export enum BackupdestinationHealthStatus {
@@ -89,6 +90,7 @@ export enum BackupdestinationFrequency {
   FrequencyDaily = "daily",
   FrequencyWeekly = "weekly",
   FrequencyMonthly = "monthly",
+  FrequencyCron = "cron",
 }
 
 export enum AuthrolesRole {
@@ -237,6 +239,8 @@ export interface EntBackupDestination {
   conn_string: string;
   /** CreatedAt holds the value of the "created_at" field. */
   created_at: string;
+  /** CronExpr holds the value of the "cron_expr" field. */
+  cron_expr: string;
   /** DayOfMonth holds the value of the "day_of_month" field. */
   day_of_month: number;
   /** Description holds the value of the "description" field. */
@@ -886,6 +890,12 @@ export interface BackupDestinationOut {
   connString: string;
   createdAt: Date | string;
   /**
+   * CronExpr is a 5-field cron expression or descriptor, used when Frequency
+   * is "cron". It may start with CRON_TZ=Zone to schedule in another zone.
+   * @maxLength 255
+   */
+  cronExpr: string;
+  /**
    * @min 1
    * @max 28
    */
@@ -893,8 +903,8 @@ export interface BackupDestinationOut {
   /** @maxLength 1000 */
   description: string;
   enabled: boolean;
-  /** Frequency is one of hourly, daily, weekly, monthly. */
-  frequency: "hourly" | "daily" | "weekly" | "monthly";
+  /** Frequency is one of hourly, daily, weekly, monthly, cron. */
+  frequency: "hourly" | "daily" | "weekly" | "monthly" | "cron";
   groupId: string;
   /** HasSecret reports whether credentials are stored for the destination. */
   hasSecret: boolean;
@@ -946,7 +956,7 @@ export interface BackupDestinationOut {
   skipIfUnchanged: boolean;
   /**
    * Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,
-   * onedrive, dropbox.
+   * onedrive, dropbox, smb.
    */
   type:
     | "primary"
@@ -958,7 +968,8 @@ export interface BackupDestinationOut {
     | "webdav"
     | "gdrive"
     | "onedrive"
-    | "dropbox";
+    | "dropbox"
+    | "smb";
   updatedAt: Date | string;
   /**
    * Username and HostKey serve the sftp and webdav types. HostKey is the
@@ -999,6 +1010,12 @@ export interface BackupInput {
   /** @maxLength 2048 */
   connString: string;
   /**
+   * CronExpr is a 5-field cron expression or descriptor, used when Frequency
+   * is "cron". It may start with CRON_TZ=Zone to schedule in another zone.
+   * @maxLength 255
+   */
+  cronExpr: string;
+  /**
    * @min 1
    * @max 28
    */
@@ -1011,8 +1028,8 @@ export interface BackupInput {
    */
   destinationId: string;
   enabled: boolean;
-  /** Frequency is one of hourly, daily, weekly, monthly. */
-  frequency: "hourly" | "daily" | "weekly" | "monthly";
+  /** Frequency is one of hourly, daily, weekly, monthly, cron. */
+  frequency: "hourly" | "daily" | "weekly" | "monthly" | "cron";
   /**
    * @min 1
    * @max 1440
@@ -1051,6 +1068,8 @@ export interface BackupInput {
    * consumed when the destination is saved.
    */
   oauthTicket: string;
+  /** Passphrase unlocks a passphrase-protected PrivateKey. */
+  passphrase: string;
   /**
    * Password is the sftp or webdav password. Leave empty to keep the stored
    * credentials of an existing destination.
@@ -1058,13 +1077,13 @@ export interface BackupInput {
   password: string;
   /** @maxLength 255 */
   prefix: string;
-  /** PrivateKey is an unencrypted PEM private key for sftp. */
+  /** PrivateKey is a PEM private key for sftp, optionally passphrase-protected. */
   privateKey: string;
   scheduleEnabled: boolean;
   skipIfUnchanged: boolean;
   /**
    * Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,
-   * onedrive, dropbox.
+   * onedrive, dropbox, smb.
    */
   type:
     | "primary"
@@ -1076,7 +1095,8 @@ export interface BackupInput {
     | "webdav"
     | "gdrive"
     | "onedrive"
-    | "dropbox";
+    | "dropbox"
+    | "smb";
   /**
    * Username and HostKey serve the sftp and webdav types. HostKey is the
    * SSH host key fingerprint (SHA256:...) an sftp server must present.

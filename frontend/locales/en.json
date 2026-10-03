@@ -1005,6 +1005,8 @@
                 "onedrive": "Backups are stored in the Homebox app folder in your OneDrive. You will be sent to Microsoft to approve access."
             },
             "connected_as": "Connected as",
+            "cron_expr": "Cron expression",
+            "cron_help": "Five fields (minute hour day month weekday), or @daily, @weekly and similar, in the server's time zone. Prefix with CRON_TZ=Europe/Paris to use another zone. Backups can run at most every 5 minutes.",
             "day_of_month": "Day of month",
             "delete_confirm": "Delete the destination \"{name}\" and its backup history? Files already written to the destination are not deleted.",
             "edit_title": "Edit backup destination",
@@ -1013,6 +1015,7 @@
             "every_hours": "Every N hours",
             "failure_threshold": "Alert after N failed checks",
             "frequencies": {
+                "cron": "Custom (cron)",
                 "daily": "Daily",
                 "hourly": "Hourly",
                 "monthly": "Monthly",
@@ -1043,13 +1046,14 @@
             "oidc_offer_text": "You signed in to Homebox as {email}. Store your backups in that account's {drive}? You will be asked to approve access, and you can pick any other destination instead.",
             "oidc_offer_title": "Back up to your {drive}?",
             "oidc_offer_use": "Use {drive}",
+            "passphrase": "Key passphrase",
             "password": "Password",
             "password_keep": "Leave blank to keep the saved password",
             "paused": "Paused",
             "popup_blocked": "The sign-in window was blocked. Allow pop-ups for this site and try again.",
             "prefix": "Folder prefix",
             "private_key": "Private key (optional)",
-            "private_key_help": "An unencrypted PEM key can be used instead of a password.",
+            "private_key_help": "A PEM private key can be used instead of a password. If it is protected by a passphrase, enter that below.",
             "problem_failed": "The last backup to \"{name}\" failed",
             "problem_unreachable": "\"{name}\" is unreachable",
             "reconnect": "Reconnect {name}",
@@ -1065,6 +1069,7 @@
             "skip_unchanged": "Skip when nothing has changed since the last backup",
             "stale_hours": "Alert if no backup in (h, 0 = off)",
             "subtitle": "Schedule automatic, versioned backups and store them in the primary storage, a local directory or a cloud bucket.",
+            "summary_cron": "Cron {expr}",
             "summary_daily": "Daily at {at}",
             "summary_hourly": "Every {n} h at minute {minute}",
             "summary_keep": "keeps {d} daily / {w} weekly / {m} monthly",
@@ -1088,6 +1093,7 @@
                 "primary": "The instance's main storage, the same place manual backups and attachments go.",
                 "s3": "An S3 or S3-compatible bucket (AWS, MinIO, Backblaze B2, Cloudflare R2). Credentials come from the AWS_* environment variables.",
                 "sftp": "Any server with SSH and SFTP, such as TrueNAS, Unraid or Synology. Needs HBOX_BACKUP_ENCRYPTION_KEY to store the login.",
+                "smb": "A Windows or Samba share, for example on a TrueNAS, Synology or Unraid box. Use DOMAIN\\user if your server needs a domain. Needs HBOX_BACKUP_ENCRYPTION_KEY to store the login.",
                 "webdav": "A WebDAV share such as Nextcloud, ownCloud or a Synology NAS. Needs HBOX_BACKUP_ENCRYPTION_KEY to store the login."
             },
             "types": {
@@ -1100,6 +1106,7 @@
                 "primary": "Primary storage",
                 "s3": "S3-compatible",
                 "sftp": "SFTP (NAS, SSH server)",
+                "smb": "SMB share (Windows, Samba, NAS)",
                 "webdav": "WebDAV (Nextcloud, Synology)"
             },
             "username": "Username",

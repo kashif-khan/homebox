@@ -17,6 +17,8 @@ import (
 type backupSecret struct {
 	Password   string `json:"password,omitempty"`
 	PrivateKey string `json:"privateKey,omitempty"`
+	// Passphrase unlocks a passphrase-protected PrivateKey.
+	Passphrase string `json:"passphrase,omitempty"`
 	// RefreshToken is the OAuth refresh token of a cloud-drive destination.
 	RefreshToken string `json:"refreshToken,omitempty"`
 

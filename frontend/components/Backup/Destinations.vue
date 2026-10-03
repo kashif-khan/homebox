@@ -232,6 +232,10 @@
               />
               <p class="text-xs text-muted-foreground">{{ $t("tools.backup_destinations.private_key_help") }}</p>
             </div>
+            <div v-if="form.type === 'sftp' && form.privateKey" class="grid gap-1.5">
+              <Label for="bd-passphrase">{{ $t("tools.backup_destinations.passphrase") }}</Label>
+              <Input id="bd-passphrase" v-model="form.passphrase" type="password" autocomplete="new-password" />
+            </div>
             <div v-if="form.type === 'sftp'" class="grid gap-1.5">
               <Label for="bd-hostkey">{{ $t("tools.backup_destinations.host_key") }}</Label>
               <Input
@@ -278,9 +282,22 @@
                   <Label for="bd-interval">{{ $t("tools.backup_destinations.every_hours") }}</Label>
                   <Input id="bd-interval" v-model.number="form.intervalHours" type="number" min="1" max="168" />
                 </div>
-                <div v-else class="grid gap-1.5">
+                <div v-else-if="form.frequency !== 'cron'" class="grid gap-1.5">
                   <Label for="bd-time">{{ $t("tools.backup_destinations.time") }}</Label>
                   <Input id="bd-time" v-model="time" type="time" required />
+                </div>
+                <div v-if="form.frequency === 'cron'" class="col-span-2 grid gap-1.5">
+                  <Label for="bd-cron">{{ $t("tools.backup_destinations.cron_expr") }}</Label>
+                  <Input
+                    id="bd-cron"
+                    v-model="form.cronExpr"
+                    required
+                    placeholder="0 3 * * *"
+                    autocomplete="off"
+                    spellcheck="false"
+                    class="font-mono"
+                  />
+                  <p class="text-xs text-muted-foreground">{{ $t("tools.backup_destinations.cron_help") }}</p>
                 </div>
                 <div v-if="form.frequency === 'hourly'" class="grid gap-1.5">
                   <Label for="bd-minute">{{ $t("tools.backup_destinations.at_minute") }}</Label>
@@ -430,7 +447,7 @@
   const expanded = ref<string | null>(null);
   const busy = ref<Record<string, boolean>>({});
 
-  const frequencies = ["hourly", "daily", "weekly", "monthly"] as const;
+  const frequencies = ["hourly", "daily", "weekly", "monthly", "cron"] as const;
 
   // Cloud drives are offered once the operator has configured their OAuth app.
   const driveProvider: Record<string, "google" | "microsoft" | "dropbox"> = {
@@ -440,16 +457,16 @@
   };
 
   const typeOptions = computed(() => {
-    const all = ["primary", "local", "s3", "gcs", "azblob", "sftp", "webdav", "gdrive", "onedrive", "dropbox"];
+    const all = ["primary", "local", "s3", "gcs", "azblob", "sftp", "webdav", "smb", "gdrive", "onedrive", "dropbox"];
     return all.filter(ty => {
       if (ty === "local") return options.value?.localEnabled;
-      if (ty === "sftp" || ty === "webdav") return options.value?.remoteEnabled || form.type === ty;
+      if (ty === "sftp" || ty === "webdav" || ty === "smb") return options.value?.remoteEnabled || form.type === ty;
       if (ty in driveProvider) return options.value?.oauthProviders?.includes(driveProvider[ty]!) || form.type === ty;
       return true;
     });
   });
 
-  const isRemote = computed(() => form.type === "sftp" || form.type === "webdav");
+  const isRemote = computed(() => form.type === "sftp" || form.type === "webdav" || form.type === "smb");
   const isDrive = computed(() => form.type in driveProvider);
 
   function typeLabel(ty: string) {
@@ -468,6 +485,8 @@
         return "sftp://nas.lan:22/mnt/tank/homebox-backups";
       case "webdav":
         return "https://cloud.example.com/remote.php/dav/files/me/";
+      case "smb":
+        return "smb://nas.lan/backups/homebox";
       default:
         return "s3://my-bucket?region=us-east-1";
     }
@@ -589,6 +608,9 @@
     const at = `${pad(d.atHour)}:${pad(d.atMinute)}`;
     let when: string;
     switch (d.frequency) {
+      case "cron":
+        when = t("tools.backup_destinations.summary_cron", { expr: d.cronExpr });
+        break;
       case "hourly":
         when = t("tools.backup_destinations.summary_hourly", { n: d.intervalHours, minute: pad(d.atMinute) });
         break;
@@ -621,6 +643,8 @@
       hostKey: "",
       password: "",
       privateKey: "",
+      passphrase: "",
+      cronExpr: "",
       destinationId: "",
       oauthTicket: "",
       prefix: "homebox-backups",
@@ -690,6 +714,7 @@
       enabled,
       scheduleEnabled,
       frequency,
+      cronExpr: d.cronExpr,
       intervalHours: d.intervalHours,
       atHour: d.atHour,
       atMinute: d.atMinute,

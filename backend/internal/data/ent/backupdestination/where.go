@@ -116,6 +116,11 @@ func ScheduleEnabled(v bool) predicate.BackupDestination {
 	return predicate.BackupDestination(sql.FieldEQ(FieldScheduleEnabled, v))
 }
 
+// CronExpr applies equality check predicate on the "cron_expr" field. It's identical to CronExprEQ.
+func CronExpr(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldEQ(FieldCronExpr, v))
+}
+
 // IntervalHours applies equality check predicate on the "interval_hours" field. It's identical to IntervalHoursEQ.
 func IntervalHours(v int) predicate.BackupDestination {
 	return predicate.BackupDestination(sql.FieldEQ(FieldIntervalHours, v))
@@ -904,6 +909,81 @@ func FrequencyIn(vs ...Frequency) predicate.BackupDestination {
 // FrequencyNotIn applies the NotIn predicate on the "frequency" field.
 func FrequencyNotIn(vs ...Frequency) predicate.BackupDestination {
 	return predicate.BackupDestination(sql.FieldNotIn(FieldFrequency, vs...))
+}
+
+// CronExprEQ applies the EQ predicate on the "cron_expr" field.
+func CronExprEQ(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldEQ(FieldCronExpr, v))
+}
+
+// CronExprNEQ applies the NEQ predicate on the "cron_expr" field.
+func CronExprNEQ(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldNEQ(FieldCronExpr, v))
+}
+
+// CronExprIn applies the In predicate on the "cron_expr" field.
+func CronExprIn(vs ...string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldIn(FieldCronExpr, vs...))
+}
+
+// CronExprNotIn applies the NotIn predicate on the "cron_expr" field.
+func CronExprNotIn(vs ...string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldNotIn(FieldCronExpr, vs...))
+}
+
+// CronExprGT applies the GT predicate on the "cron_expr" field.
+func CronExprGT(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldGT(FieldCronExpr, v))
+}
+
+// CronExprGTE applies the GTE predicate on the "cron_expr" field.
+func CronExprGTE(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldGTE(FieldCronExpr, v))
+}
+
+// CronExprLT applies the LT predicate on the "cron_expr" field.
+func CronExprLT(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldLT(FieldCronExpr, v))
+}
+
+// CronExprLTE applies the LTE predicate on the "cron_expr" field.
+func CronExprLTE(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldLTE(FieldCronExpr, v))
+}
+
+// CronExprContains applies the Contains predicate on the "cron_expr" field.
+func CronExprContains(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldContains(FieldCronExpr, v))
+}
+
+// CronExprHasPrefix applies the HasPrefix predicate on the "cron_expr" field.
+func CronExprHasPrefix(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldHasPrefix(FieldCronExpr, v))
+}
+
+// CronExprHasSuffix applies the HasSuffix predicate on the "cron_expr" field.
+func CronExprHasSuffix(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldHasSuffix(FieldCronExpr, v))
+}
+
+// CronExprIsNil applies the IsNil predicate on the "cron_expr" field.
+func CronExprIsNil() predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldIsNull(FieldCronExpr))
+}
+
+// CronExprNotNil applies the NotNil predicate on the "cron_expr" field.
+func CronExprNotNil() predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldNotNull(FieldCronExpr))
+}
+
+// CronExprEqualFold applies the EqualFold predicate on the "cron_expr" field.
+func CronExprEqualFold(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldEqualFold(FieldCronExpr, v))
+}
+
+// CronExprContainsFold applies the ContainsFold predicate on the "cron_expr" field.
+func CronExprContainsFold(v string) predicate.BackupDestination {
+	return predicate.BackupDestination(sql.FieldContainsFold(FieldCronExpr, v))
 }
 
 // IntervalHoursEQ applies the EQ predicate on the "interval_hours" field.

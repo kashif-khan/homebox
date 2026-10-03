@@ -44,6 +44,8 @@ const (
 	FieldScheduleEnabled = "schedule_enabled"
 	// FieldFrequency holds the string denoting the frequency field in the database.
 	FieldFrequency = "frequency"
+	// FieldCronExpr holds the string denoting the cron_expr field in the database.
+	FieldCronExpr = "cron_expr"
 	// FieldIntervalHours holds the string denoting the interval_hours field in the database.
 	FieldIntervalHours = "interval_hours"
 	// FieldAtHour holds the string denoting the at_hour field in the database.
@@ -126,6 +128,7 @@ var Columns = []string{
 	FieldEnabled,
 	FieldScheduleEnabled,
 	FieldFrequency,
+	FieldCronExpr,
 	FieldIntervalHours,
 	FieldAtHour,
 	FieldAtMinute,
@@ -189,6 +192,8 @@ var (
 	DefaultEnabled bool
 	// DefaultScheduleEnabled holds the default value on creation for the "schedule_enabled" field.
 	DefaultScheduleEnabled bool
+	// CronExprValidator is a validator for the "cron_expr" field. It is called by the builders before save.
+	CronExprValidator func(string) error
 	// DefaultIntervalHours holds the default value on creation for the "interval_hours" field.
 	DefaultIntervalHours int
 	// DefaultAtHour holds the default value on creation for the "at_hour" field.
@@ -251,6 +256,7 @@ const (
 	TypeGdrive   Type = "gdrive"
 	TypeOnedrive Type = "onedrive"
 	TypeDropbox  Type = "dropbox"
+	TypeSmb      Type = "smb"
 )
 
 func (_type Type) String() string {
@@ -260,7 +266,7 @@ func (_type Type) String() string {
 // TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
 func TypeValidator(_type Type) error {
 	switch _type {
-	case TypePrimary, TypeLocal, TypeS3, TypeGcs, TypeAzblob, TypeSftp, TypeWebdav, TypeGdrive, TypeOnedrive, TypeDropbox:
+	case TypePrimary, TypeLocal, TypeS3, TypeGcs, TypeAzblob, TypeSftp, TypeWebdav, TypeGdrive, TypeOnedrive, TypeDropbox, TypeSmb:
 		return nil
 	default:
 		return fmt.Errorf("backupdestination: invalid enum value for type field: %q", _type)
@@ -279,6 +285,7 @@ const (
 	FrequencyDaily   Frequency = "daily"
 	FrequencyWeekly  Frequency = "weekly"
 	FrequencyMonthly Frequency = "monthly"
+	FrequencyCron    Frequency = "cron"
 )
 
 func (f Frequency) String() string {
@@ -288,7 +295,7 @@ func (f Frequency) String() string {
 // FrequencyValidator is a validator for the "frequency" field enum values. It is called by the builders before save.
 func FrequencyValidator(f Frequency) error {
 	switch f {
-	case FrequencyHourly, FrequencyDaily, FrequencyWeekly, FrequencyMonthly:
+	case FrequencyHourly, FrequencyDaily, FrequencyWeekly, FrequencyMonthly, FrequencyCron:
 		return nil
 	default:
 		return fmt.Errorf("backupdestination: invalid enum value for frequency field: %q", f)
@@ -398,6 +405,11 @@ func ByScheduleEnabled(opts ...sql.OrderTermOption) OrderOption {
 // ByFrequency orders the results by the frequency field.
 func ByFrequency(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldFrequency, opts...).ToFunc()
+}
+
+// ByCronExpr orders the results by the cron_expr field.
+func ByCronExpr(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCronExpr, opts...).ToFunc()
 }
 
 // ByIntervalHours orders the results by the interval_hours field.
