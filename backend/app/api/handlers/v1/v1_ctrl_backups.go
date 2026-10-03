@@ -1,8 +1,12 @@
 package v1
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
+	"html/template"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/hay-kot/httpkit/errchain"
@@ -22,6 +26,8 @@ type BackupOptions struct {
 	LocalEnabled         bool `json:"localEnabled"`
 	AllowCustomEndpoints bool `json:"allowCustomEndpoints"`
 	RemoteEnabled        bool `json:"remoteEnabled"`
+	// OAuthProviders lists the configured cloud drives: google, microsoft, dropbox.
+	OAuthProviders []string `json:"oauthProviders"`
 }
 
 // backupError maps service errors onto HTTP statuses. Settings problems the
@@ -60,7 +66,7 @@ func (ctrl *V1Controller) denyDemoBackupChange() error {
 func (ctrl *V1Controller) HandleBackupOptions() errchain.HandlerFunc {
 	fn := func(r *http.Request) (BackupOptions, error) {
 		o := ctrl.svc.Backups.Options()
-		return BackupOptions{Enabled: o.Enabled, LocalEnabled: o.LocalEnabled, AllowCustomEndpoints: o.AllowCustomEndpoints, RemoteEnabled: o.RemoteEnabled}, nil
+		return BackupOptions{Enabled: o.Enabled, LocalEnabled: o.LocalEnabled, AllowCustomEndpoints: o.AllowCustomEndpoints, RemoteEnabled: o.RemoteEnabled, OAuthProviders: o.OAuthProviders}, nil
 	}
 	return adapters.Command(fn, http.StatusOK)
 }
@@ -262,4 +268,114 @@ func (ctrl *V1Controller) HandleBackupDestinationVersions() errchain.HandlerFunc
 		return WrapResults(rows), nil
 	}
 	return adapters.CommandID("id", fn, http.StatusOK)
+}
+
+// BackupOAuthStartIn selects the cloud provider to connect.
+type BackupOAuthStartIn struct {
+	Provider string `json:"provider" validate:"required,oneof=google microsoft dropbox"`
+}
+
+// BackupOAuthStartOut is where to send the user to authorize access.
+type BackupOAuthStartOut struct {
+	AuthURL string `json:"authUrl"`
+}
+
+const backupOAuthCallbackPath = "/api/v1/group/backup-oauth/callback"
+
+// oauthRedirectURI is where the provider returns the user. It must match the
+// redirect URI registered with the OAuth app, so a forged Host header cannot
+// make a provider send a code anywhere that was not registered.
+func (ctrl *V1Controller) oauthRedirectURI(r *http.Request) string {
+	base := SecureBaseURL(r, &ctrl.config.Options)
+	if base == "" {
+		base = GetHBURL(r, &ctrl.config.Options, ctrl.url)
+	}
+	if base == "" {
+		scheme := "http"
+		if r.TLS != nil {
+			scheme = "https"
+		}
+		base = scheme + "://" + r.Host
+	}
+	return strings.TrimSuffix(base, "/") + backupOAuthCallbackPath
+}
+
+// HandleBackupOAuthStart godoc
+//
+//	@Summary		Start Connecting a Cloud Drive
+//	@Description	Returns the provider's authorization URL. Open it in a popup; the callback page reports the result to the opener window.
+//	@Tags			Backups
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		v1.BackupOAuthStartIn	true	"Provider"
+//	@Success		200		{object}	v1.BackupOAuthStartOut
+//	@Router			/v1/group/backup-oauth/start [POST]
+//	@Security		Bearer
+func (ctrl *V1Controller) HandleBackupOAuthStart() errchain.HandlerFunc {
+	fn := func(r *http.Request, in BackupOAuthStartIn) (BackupOAuthStartOut, error) {
+		if err := ctrl.denyDemoBackupChange(); err != nil {
+			return BackupOAuthStartOut{}, err
+		}
+		ctx := services.NewContext(r.Context())
+		u, err := ctrl.svc.Backups.OAuthStart(ctx.GID, ctx.UID, in.Provider, ctrl.oauthRedirectURI(r))
+		if err != nil {
+			return BackupOAuthStartOut{}, backupError(err)
+		}
+		return BackupOAuthStartOut{AuthURL: u}, nil
+	}
+	return adapters.Action(fn, http.StatusOK)
+}
+
+var backupOAuthPage = template.Must(template.New("oauth").Parse(`<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Homebox</title></head>
+<body style="font-family:system-ui,sans-serif;max-width:32rem;margin:3rem auto;padding:0 1rem">
+<h1>{{if .OK}}Account connected{{else}}Connection failed{{end}}</h1>
+<p>{{if .OK}}{{.Account}} is connected. You can close this window.{{else}}{{.Error}}{{end}}</p>
+<script nonce="{{.Nonce}}">
+(function () {
+  var m = {{.Msg}};
+  // The app is served with Cross-Origin-Opener-Policy: same-origin, which cuts
+  // window.opener once the popup has visited the provider. A same-origin
+  // BroadcastChannel is unaffected, so it is the primary channel.
+  try { var ch = new BroadcastChannel("homebox-backup-oauth"); ch.postMessage(m); ch.close(); } catch (e) {}
+  try { if (window.opener) { window.opener.postMessage(m, window.location.origin); } } catch (e) {}
+  if (m.ok) { setTimeout(function () { window.close(); }, 800); }
+})();
+</script></body></html>`))
+
+// HandleBackupOAuthCallback godoc
+//
+//	@Summary		Cloud Drive Authorization Callback
+//	@Description	The redirect target for cloud providers. Public: access is authorized by the single-use state created when the flow started.
+//	@Tags			Backups
+//	@Produce		html
+//	@Param			state	query	string	false	"State"
+//	@Param			code	query	string	false	"Authorization code"
+//	@Param			error	query	string	false	"Provider error"
+//	@Success		200
+//	@Router			/v1/group/backup-oauth/callback [GET]
+func (ctrl *V1Controller) HandleBackupOAuthCallback() errchain.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		q := r.URL.Query()
+		out := ctrl.svc.Backups.OAuthCallback(r.Context(), ctrl.oauthRedirectURI(r), q.Get("state"), q.Get("code"), q.Get("error"))
+
+		nb := make([]byte, 16)
+		_, _ = rand.Read(nb)
+		nonce := base64.RawURLEncoding.EncodeToString(nb)
+
+		h := w.Header()
+		h.Set("Content-Type", "text/html; charset=utf-8")
+		h.Set("Cache-Control", "no-store")
+		h.Set("Referrer-Policy", "no-referrer")
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("Content-Security-Policy", "default-src 'none'; script-src 'nonce-"+nonce+"'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'")
+
+		msg := struct {
+			Type string `json:"type"`
+			services.OAuthOutcome
+		}{Type: "homebox-backup-oauth", OAuthOutcome: out}
+		return backupOAuthPage.Execute(w, map[string]any{
+			"OK": out.OK, "Account": out.Account, "Error": out.Error, "Nonce": nonce, "Msg": msg,
+		})
+	}
 }

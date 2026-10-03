@@ -28,6 +28,9 @@ settings. A collection can have up to 20.
 | Azure Blob           | An `azblob://container` URL.                                                     | `AZURE_STORAGE_ACCOUNT` and `AZURE_STORAGE_KEY`       |
 | SFTP                 | A folder on any SSH server: TrueNAS, Unraid, Synology, a Linux box.              | Username and password or key, stored encrypted        |
 | WebDAV               | A WebDAV share: Nextcloud, ownCloud, Synology, an Apache or nginx DAV folder.    | Username and password, stored encrypted               |
+| Google Drive         | A folder in a Google account's Drive.                                            | The account is connected in the browser (OAuth)       |
+| OneDrive             | The Homebox app folder in a Microsoft account's OneDrive.                        | The account is connected in the browser (OAuth)       |
+| Dropbox              | A folder in a Dropbox account.                                                   | The account is connected in the browser (OAuth)       |
 
 The cloud types use the same connection strings and parameters as [Storage](./storage), including `endpoint`,
 `region` and `use_path_style` for S3-compatible servers.
@@ -69,6 +72,55 @@ good one.
 ![Add an SFTP backup destination](../../../../../assets/user-guide/backups-add-sftp.png)
 
 ![Add backup destination dialog](../../../../../assets/user-guide/backups-add-destination.png)
+
+### Cloud drives (Google Drive, OneDrive, Dropbox)
+
+Cloud drives use OAuth, so you sign in to the provider in a pop-up window and Homebox never sees your password. It keeps
+only a **refresh token**, sealed with the encryption key, and asks for the narrowest access each provider offers:
+Google's `drive.file` (only files Homebox created), OneDrive's app folder, and Dropbox's app folder.
+
+A provider only appears in the destination form once the server operator has registered an OAuth app for it. This is a
+one-time setup per provider, and you need `HBOX_BACKUP_ENCRYPTION_KEY` as well:
+
+1. Create the app at the provider (see below) and add this **redirect URI**, using the address you reach Homebox on:
+   `https://homebox.example.com/api/v1/group/backup-oauth/callback`
+2. Set the app's ID and secret as environment variables, and set `HBOX_OPTIONS_HOSTNAME` (or `HBOX_OPTIONS_TRUST_PROXY`
+   behind a proxy) so the redirect URI Homebox sends matches the one you registered.
+
+| Provider    | Variables                                                                                              |
+|-------------|--------------------------------------------------------------------------------------------------------|
+| Google      | `HBOX_BACKUP_GOOGLE_CLIENT_ID`, `HBOX_BACKUP_GOOGLE_CLIENT_SECRET`                                      |
+| Microsoft   | `HBOX_BACKUP_MICROSOFT_CLIENT_ID`, `HBOX_BACKUP_MICROSOFT_CLIENT_SECRET`, `HBOX_BACKUP_MICROSOFT_TENANT` |
+| Dropbox     | `HBOX_BACKUP_DROPBOX_CLIENT_ID`, `HBOX_BACKUP_DROPBOX_CLIENT_SECRET`                                    |
+
+**Google.** In the Google Cloud console, enable the *Google Drive API*, configure the OAuth consent screen, and create an
+*OAuth client ID* of type *Web application* with the redirect URI above. Add the `.../auth/drive.file` scope. Publish the
+consent screen ("In production"): while it is in *Testing*, Google expires refresh tokens after 7 days and backups would
+stop. `drive.file` is a non-sensitive scope, so no Google verification review is needed.
+
+**Microsoft.** In the Microsoft Entra admin center, register an application. Choose the supported account types you want
+(personal and work accounts, or just one), add a *Web* redirect URI, and create a client secret. Under API permissions add
+the delegated Microsoft Graph permissions `Files.ReadWrite.AppFolder` and `offline_access`. Leave
+`HBOX_BACKUP_MICROSOFT_TENANT` as `common` to allow any account, or set a tenant ID, `consumers` or `organizations`. Client
+secrets expire (at most after 24 months), so renew yours before then.
+
+**Dropbox.** In the Dropbox App Console, create a *Scoped access* app with the *App folder* access type. On the
+Permissions tab enable `files.content.write`, `files.content.read` and `account_info.read`, and on the Settings tab add the
+redirect URI.
+
+To add a destination, pick the provider, click **Connect**, approve access in the pop-up, then **Test connection** and
+**Save**. Use **Reconnect** if you want a different account or access was revoked.
+
+![Connecting a Google Drive account](../../../../../assets/user-guide/backups-add-gdrive.png)
+
+If the account's access is revoked, the destination becomes unreachable and the usual alert is sent. Edit it and
+reconnect. Some providers (Microsoft) issue a new refresh token each time one is used; Homebox stores the new one
+automatically.
+
+> [!NOTE]
+> The connection pop-up stays open only while you approve access, and the sign-in is held in the server's memory for
+> 10 minutes. If you run several Homebox replicas behind a load balancer, make sure a connection attempt reaches the same
+> instance for both steps.
 
 ### Using a NAS (TrueNAS, Unraid, Synology)
 
@@ -140,13 +192,19 @@ Problems also show as a banner above the destination list. Messages go to the co
 | `HBOX_BACKUP_ENABLED`                | `true`  | Turns destinations, the scheduler and health checks on or off. Manual exports are unaffected. |
 | `HBOX_BACKUP_LOCAL_ROOT`             |         | Directory local destinations live under. Empty disables local destinations.                  |
 | `HBOX_BACKUP_ALLOW_CUSTOM_ENDPOINTS` | `true`  | Allow cloud URLs with a custom `endpoint`, and SFTP/WebDAV servers. Turn off to restrict to default provider endpoints. |
-| `HBOX_BACKUP_ENCRYPTION_KEY`         |         | Seals SFTP and WebDAV logins at rest. Required to use those types. Keep it stable.           |
+| `HBOX_BACKUP_ENCRYPTION_KEY`         |         | Seals SFTP, WebDAV and cloud-drive logins at rest. Required for those types. Keep it stable. |
+| `HBOX_BACKUP_GOOGLE_CLIENT_ID` / `_SECRET` |   | OAuth app for Google Drive destinations.                                                     |
+| `HBOX_BACKUP_MICROSOFT_CLIENT_ID` / `_SECRET` / `_TENANT` | `common` for the tenant | OAuth app for OneDrive destinations.                              |
+| `HBOX_BACKUP_DROPBOX_CLIENT_ID` / `_SECRET` |  | OAuth app for Dropbox destinations.                                                          |
 
 ## Limits
 
 - Deleting a destination removes it and its history, but **does not delete files** already written to it.
-- Native SMB/NFS and consumer cloud drives (Google Drive, OneDrive, Dropbox) are not supported yet. Mount an SMB/NFS share
-  and use a local directory, or use SFTP or WebDAV. See the
+- Native SMB/NFS is not supported. Mount an SMB/NFS share and use a local directory, or use SFTP or WebDAV. See the
   [discussion](https://github.com/sysadminsmedia/homebox/discussions/1767) for what is planned.
+- Each cloud drive needs an OAuth app registered by the server operator. Using your Homebox login (OIDC) to pick a
+  drive automatically is not available yet.
+- Deleting a cloud-drive destination does not revoke Homebox's access in the provider's account settings; remove it there
+  as well if you no longer want it.
 - SFTP private keys must be unencrypted (no passphrase).
 - Scheduled backups are not available in demo mode.

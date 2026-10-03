@@ -85,13 +85,30 @@ type BackupConf struct {
 	// stable: changing it makes stored credentials unreadable. Generate one
 	// with `openssl rand -base64 32`.
 	EncryptionKey string `yaml:"encryption_key" conf:"mask"`
+
+	// OAuth apps for the cloud-drive destination types. Register one app per
+	// provider and set its redirect URI to
+	// {your Homebox URL}/api/v1/group/backup-oauth/callback. A provider is
+	// offered only when its client ID and secret are set, and the cloud-drive
+	// types also need EncryptionKey to store the refresh token.
+	GoogleClientID        string `yaml:"google_client_id"`
+	GoogleClientSecret    string `yaml:"google_client_secret"    conf:"mask"`
+	MicrosoftClientID     string `yaml:"microsoft_client_id"`
+	MicrosoftClientSecret string `yaml:"microsoft_client_secret" conf:"mask"`
+	// MicrosoftTenant is the Entra tenant: "common" for any account, or a
+	// tenant ID / "consumers" / "organizations" to restrict sign-in.
+	MicrosoftTenant     string `yaml:"microsoft_tenant"      conf:"default:common"`
+	DropboxClientID     string `yaml:"dropbox_client_id"`
+	DropboxClientSecret string `yaml:"dropbox_client_secret" conf:"mask"`
 }
 
 func (c BackupConf) MarshalJSON() ([]byte, error) {
 	type alias BackupConf
 	a := alias(c)
-	if a.EncryptionKey != "" {
-		a.EncryptionKey = redactedValue
+	for _, v := range []*string{&a.EncryptionKey, &a.GoogleClientSecret, &a.MicrosoftClientSecret, &a.DropboxClientSecret} {
+		if *v != "" {
+			*v = redactedValue
+		}
 	}
 	return json.Marshal(a)
 }

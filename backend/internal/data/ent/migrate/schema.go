@@ -136,7 +136,7 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString, Size: 255},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 1000},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"primary", "local", "s3", "gcs", "azblob", "sftp", "webdav"}, Default: "primary"},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"primary", "local", "s3", "gcs", "azblob", "sftp", "webdav", "gdrive", "onedrive", "dropbox"}, Default: "primary"},
 		{Name: "conn_string", Type: field.TypeString, Nullable: true, Size: 2048},
 		{Name: "username", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "secret", Type: field.TypeString, Nullable: true, Size: 2147483647},

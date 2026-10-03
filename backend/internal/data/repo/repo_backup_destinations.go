@@ -20,8 +20,9 @@ type BackupDestinationRepository struct {
 type BackupSettings struct {
 	Name        string `json:"name"        validate:"required,min=1,max=255"`
 	Description string `json:"description" validate:"max=1000"`
-	// Type is one of primary, local, s3, gcs, azblob, sftp, webdav.
-	Type       string `json:"type"       validate:"required,oneof=primary local s3 gcs azblob sftp webdav"`
+	// Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,
+	// onedrive, dropbox.
+	Type       string `json:"type"       validate:"required,oneof=primary local s3 gcs azblob sftp webdav gdrive onedrive dropbox"`
 	ConnString string `json:"connString" validate:"max=2048"`
 	// Username and HostKey serve the sftp and webdav types. HostKey is the
 	// SSH host key fingerprint (SHA256:...) an sftp server must present.
@@ -61,6 +62,10 @@ type BackupInput struct {
 	Password string `json:"password,omitempty"`
 	// PrivateKey is an unencrypted PEM private key for sftp.
 	PrivateKey string `json:"privateKey,omitempty"`
+	// OAuthTicket is the one-time ticket returned by the OAuth callback for a
+	// cloud-drive destination. It carries the connected account, and is
+	// consumed when the destination is saved.
+	OAuthTicket string `json:"oauthTicket,omitempty"`
 	// DestinationID is only used when testing unsaved settings: it lets the
 	// test reuse the stored credentials of that destination.
 	DestinationID string `json:"destinationId,omitempty"`
@@ -346,4 +351,10 @@ func (r *BackupDestinationRepository) SetAlertFlags(ctx context.Context, id uuid
 		SetAlertedFailure(failure).
 		SetAlertedStale(stale).
 		Exec(ctx)
+}
+
+// SetSecret replaces a destination's sealed credentials, used when a provider
+// rotates the OAuth refresh token.
+func (r *BackupDestinationRepository) SetSecret(ctx context.Context, id uuid.UUID, secret string) error {
+	return r.db.BackupDestination.UpdateOneID(id).SetSecret(secret).Exec(ctx)
 }

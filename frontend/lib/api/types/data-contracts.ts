@@ -71,6 +71,9 @@ export enum BackupdestinationType {
   TypeAzblob = "azblob",
   TypeSftp = "sftp",
   TypeWebdav = "webdav",
+  TypeGdrive = "gdrive",
+  TypeOnedrive = "onedrive",
+  TypeDropbox = "dropbox",
 }
 
 export enum BackupdestinationHealthStatus {
@@ -941,8 +944,21 @@ export interface BackupDestinationOut {
   prefix: string;
   scheduleEnabled: boolean;
   skipIfUnchanged: boolean;
-  /** Type is one of primary, local, s3, gcs, azblob, sftp, webdav. */
-  type: "primary" | "local" | "s3" | "gcs" | "azblob" | "sftp" | "webdav";
+  /**
+   * Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,
+   * onedrive, dropbox.
+   */
+  type:
+    | "primary"
+    | "local"
+    | "s3"
+    | "gcs"
+    | "azblob"
+    | "sftp"
+    | "webdav"
+    | "gdrive"
+    | "onedrive"
+    | "dropbox";
   updatedAt: Date | string;
   /**
    * Username and HostKey serve the sftp and webdav types. HostKey is the
@@ -1030,6 +1046,12 @@ export interface BackupInput {
    */
   name: string;
   /**
+   * OAuthTicket is the one-time ticket returned by the OAuth callback for a
+   * cloud-drive destination. It carries the connected account, and is
+   * consumed when the destination is saved.
+   */
+  oauthTicket: string;
+  /**
    * Password is the sftp or webdav password. Leave empty to keep the stored
    * credentials of an existing destination.
    */
@@ -1040,8 +1062,21 @@ export interface BackupInput {
   privateKey: string;
   scheduleEnabled: boolean;
   skipIfUnchanged: boolean;
-  /** Type is one of primary, local, s3, gcs, azblob, sftp, webdav. */
-  type: "primary" | "local" | "s3" | "gcs" | "azblob" | "sftp" | "webdav";
+  /**
+   * Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,
+   * onedrive, dropbox.
+   */
+  type:
+    | "primary"
+    | "local"
+    | "s3"
+    | "gcs"
+    | "azblob"
+    | "sftp"
+    | "webdav"
+    | "gdrive"
+    | "onedrive"
+    | "dropbox";
   /**
    * Username and HostKey serve the sftp and webdav types. HostKey is the
    * SSH host key fingerprint (SHA256:...) an sftp server must present.
@@ -1708,10 +1743,20 @@ export interface ActionAmountResult {
   completed: number;
 }
 
+export interface BackupOAuthStartIn {
+  provider: "google" | "microsoft" | "dropbox";
+}
+
+export interface BackupOAuthStartOut {
+  authUrl: string;
+}
+
 export interface BackupOptions {
   allowCustomEndpoints: boolean;
   enabled: boolean;
   localEnabled: boolean;
+  /** OAuthProviders lists the configured cloud drives: google, microsoft, dropbox. */
+  oauthProviders: string[];
   remoteEnabled: boolean;
 }
 
