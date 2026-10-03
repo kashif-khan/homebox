@@ -7633,6 +7633,20 @@
                     }
                 }
             },
+            "services.OIDCSuggestion": {
+                "type": "object",
+                "properties": {
+                    "destType": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "provider": {
+                        "type": "string"
+                    }
+                }
+            },
             "services.TestResult": {
                 "type": "object",
                 "properties": {
@@ -7758,6 +7772,10 @@
                             "microsoft",
                             "dropbox"
                         ]
+                    },
+                    "useLoginAccount": {
+                        "description": "UseLoginAccount asks the provider to preselect the account the user\nsigned in to Homebox with. Honoured only when that login came from the\nsame provider.",
+                        "type": "boolean"
                     }
                 }
             },
@@ -7787,6 +7805,15 @@
                         "items": {
                             "type": "string"
                         }
+                    },
+                    "oidcSuggestion": {
+                        "description": "OIDCSuggestion offers the cloud drive matching the identity provider the\ncurrent user signed in with, when there is one.",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/services.OIDCSuggestion"
+                            }
+                        ],
+                        "nullable": true
                     },
                     "remoteEnabled": {
                         "type": "boolean"

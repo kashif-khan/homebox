@@ -5013,6 +5013,15 @@ components:
           type: string
         version:
           type: string
+    services.OIDCSuggestion:
+      type: object
+      properties:
+        destType:
+          type: string
+        email:
+          type: string
+        provider:
+          type: string
     services.TestResult:
       type: object
       properties:
@@ -5103,6 +5112,14 @@ components:
             - google
             - microsoft
             - dropbox
+        useLoginAccount:
+          description: >-
+            UseLoginAccount asks the provider to preselect the account the user
+
+            signed in to Homebox with. Honoured only when that login came from the
+
+            same provider.
+          type: boolean
     v1.BackupOAuthStartOut:
       type: object
       properties:
@@ -5123,6 +5140,15 @@ components:
           type: array
           items:
             type: string
+        oidcSuggestion:
+          description: >-
+            OIDCSuggestion offers the cloud drive matching the identity provider
+            the
+
+            current user signed in with, when there is one.
+          allOf:
+            - $ref: "#/components/schemas/services.OIDCSuggestion"
+          nullable: true
         remoteEnabled:
           type: boolean
     v1.Build:

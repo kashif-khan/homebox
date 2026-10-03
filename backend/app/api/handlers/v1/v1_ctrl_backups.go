@@ -28,6 +28,9 @@ type BackupOptions struct {
 	RemoteEnabled        bool `json:"remoteEnabled"`
 	// OAuthProviders lists the configured cloud drives: google, microsoft, dropbox.
 	OAuthProviders []string `json:"oauthProviders"`
+	// OIDCSuggestion offers the cloud drive matching the identity provider the
+	// current user signed in with, when there is one.
+	OIDCSuggestion *services.OIDCSuggestion `json:"oidcSuggestion,omitempty" extensions:"x-nullable"`
 }
 
 // backupError maps service errors onto HTTP statuses. Settings problems the
@@ -66,7 +69,12 @@ func (ctrl *V1Controller) denyDemoBackupChange() error {
 func (ctrl *V1Controller) HandleBackupOptions() errchain.HandlerFunc {
 	fn := func(r *http.Request) (BackupOptions, error) {
 		o := ctrl.svc.Backups.Options()
-		return BackupOptions{Enabled: o.Enabled, LocalEnabled: o.LocalEnabled, AllowCustomEndpoints: o.AllowCustomEndpoints, RemoteEnabled: o.RemoteEnabled, OAuthProviders: o.OAuthProviders}, nil
+		ctx := services.NewContext(r.Context())
+		var offer *services.OIDCSuggestion
+		if ctx.User != nil {
+			offer = ctrl.svc.Backups.OIDCSuggestionFor(ctx.User.OidcIssuer, ctx.User.Email)
+		}
+		return BackupOptions{OIDCSuggestion: offer, Enabled: o.Enabled, LocalEnabled: o.LocalEnabled, AllowCustomEndpoints: o.AllowCustomEndpoints, RemoteEnabled: o.RemoteEnabled, OAuthProviders: o.OAuthProviders}, nil
 	}
 	return adapters.Command(fn, http.StatusOK)
 }
@@ -273,6 +281,10 @@ func (ctrl *V1Controller) HandleBackupDestinationVersions() errchain.HandlerFunc
 // BackupOAuthStartIn selects the cloud provider to connect.
 type BackupOAuthStartIn struct {
 	Provider string `json:"provider" validate:"required,oneof=google microsoft dropbox"`
+	// UseLoginAccount asks the provider to preselect the account the user
+	// signed in to Homebox with. Honoured only when that login came from the
+	// same provider.
+	UseLoginAccount bool `json:"useLoginAccount"`
 }
 
 // BackupOAuthStartOut is where to send the user to authorize access.
@@ -317,7 +329,15 @@ func (ctrl *V1Controller) HandleBackupOAuthStart() errchain.HandlerFunc {
 			return BackupOAuthStartOut{}, err
 		}
 		ctx := services.NewContext(r.Context())
-		u, err := ctrl.svc.Backups.OAuthStart(ctx.GID, ctx.UID, in.Provider, ctrl.oauthRedirectURI(r))
+		var hint string
+		if in.UseLoginAccount && ctx.User != nil {
+			// The hint comes from the server's record of the user, never from the
+			// request, and only when their login matches the provider.
+			if offer := ctrl.svc.Backups.OIDCSuggestionFor(ctx.User.OidcIssuer, ctx.User.Email); offer != nil && offer.Provider == in.Provider {
+				hint = offer.Email
+			}
+		}
+		u, err := ctrl.svc.Backups.OAuthStart(ctx.GID, ctx.UID, in.Provider, ctrl.oauthRedirectURI(r), hint)
 		if err != nil {
 			return BackupOAuthStartOut{}, backupError(err)
 		}

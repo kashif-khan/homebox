@@ -12,6 +12,33 @@
     </div>
 
     <div
+      v-if="showOfferBanner && options?.oidcSuggestion"
+      class="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-md border bg-accent p-3 text-sm text-accent-foreground"
+    >
+      <div>
+        <p class="font-semibold">
+          {{ $t("tools.backup_destinations.oidc_offer_title", { drive: typeLabel(options.oidcSuggestion.destType) }) }}
+        </p>
+        <p>
+          {{
+            $t("tools.backup_destinations.oidc_offer_text", {
+              drive: typeLabel(options.oidcSuggestion.destType),
+              email: options.oidcSuggestion.email,
+            })
+          }}
+        </p>
+      </div>
+      <div class="flex gap-2">
+        <Button size="sm" @click="acceptOffer">
+          {{ $t("tools.backup_destinations.oidc_offer_use", { drive: typeLabel(options.oidcSuggestion.destType) }) }}
+        </Button>
+        <Button size="sm" variant="outline" @click="dismissOffer">
+          {{ $t("tools.backup_destinations.oidc_offer_dismiss") }}
+        </Button>
+      </div>
+    </div>
+
+    <div
       v-for="d in problems"
       :key="d.id"
       class="mb-2 flex items-start gap-2 rounded-md border border-destructive bg-destructive/10 p-3 text-sm"
@@ -446,6 +473,35 @@
     }
   });
 
+  // The OIDC-assisted offer: shown once per provider until accepted or dismissed,
+  // and never when a destination of that type already exists.
+  const offerDismissed = ref(false);
+  const offerKey = () => `homebox.backup.oidc-offer.${options.value?.oidcSuggestion?.provider ?? ""}`;
+  const showOfferBanner = computed(() => {
+    const offer = options.value?.oidcSuggestion;
+    return !!offer && !offerDismissed.value && !destinations.value.some(d => d.type === offer.destType);
+  });
+
+  function dismissOffer() {
+    offerDismissed.value = true;
+    try {
+      localStorage.setItem(offerKey(), "1");
+    } catch {
+      // storage can be unavailable (private mode); the banner just returns next visit
+    }
+  }
+
+  async function acceptOffer() {
+    const offer = options.value?.oidcSuggestion;
+    if (!offer) {
+      return;
+    }
+    openCreate();
+    form.type = offer.destType as typeof form.type;
+    form.name = typeLabel(offer.destType);
+    await connect();
+  }
+
   const problems = computed(() =>
     destinations.value.filter(d => d.enabled && (d.healthStatus === "unreachable" || d.lastError))
   );
@@ -463,6 +519,11 @@
       return;
     }
     options.value = opts.data;
+    try {
+      offerDismissed.value = localStorage.getItem(offerKey()) === "1";
+    } catch {
+      offerDismissed.value = false;
+    }
     const list = await api.backups.listDestinations();
     if (list.error || !list.data) {
       available.value = false;
@@ -712,7 +773,7 @@
     }
     stopListening();
     connecting.value = true;
-    const res = await api.backups.startOAuth(provider);
+    const res = await api.backups.startOAuth(provider, options.value?.oidcSuggestion?.provider === provider);
     if (res.error || !res.data) {
       stopListening();
       toast.error(errorMessage(res.data));

@@ -117,6 +117,19 @@ If the account's access is revoked, the destination becomes unreachable and the 
 reconnect. Some providers (Microsoft) issue a new refresh token each time one is used; Homebox stores the new one
 automatically.
 
+#### Using your Google or Microsoft login
+
+If you sign in to Homebox with [OIDC](./oidc) through **Google** or **Microsoft**, and the matching OAuth app above is
+configured, the destinations section offers to back up to that account's Google Drive or OneDrive. Accepting opens the
+usual connect pop-up with your login's email preselected, so you only have to approve access. It is only an offer: pick
+**Not now** (it will not come back), or choose any other destination.
+
+![Offer to back up to Google Drive after an OIDC login](../../../../../assets/user-guide/backups-oidc-offer.png)
+
+Homebox does not reuse the tokens from your login. Sign-in tokens are not kept, and backups need their own long-lived
+access with a much narrower scope than "sign in". Identity providers without cloud storage (Authentik, Keycloak,
+Authelia and similar) get no offer.
+
 > [!NOTE]
 > The connection pop-up stays open only while you approve access, and the sign-in is held in the server's memory for
 > 10 minutes. If you run several Homebox replicas behind a load balancer, make sure a connection attempt reaches the same
@@ -202,8 +215,8 @@ Problems also show as a banner above the destination list. Messages go to the co
 - Deleting a destination removes it and its history, but **does not delete files** already written to it.
 - Native SMB/NFS is not supported. Mount an SMB/NFS share and use a local directory, or use SFTP or WebDAV. See the
   [discussion](https://github.com/sysadminsmedia/homebox/discussions/1767) for what is planned.
-- Each cloud drive needs an OAuth app registered by the server operator. Using your Homebox login (OIDC) to pick a
-  drive automatically is not available yet.
+- Each cloud drive needs an OAuth app registered by the server operator. An OIDC login only suggests the matching drive
+  and preselects the account; it does not skip the approval step.
 - Deleting a cloud-drive destination does not revoke Homebox's access in the provider's account settings; remove it there
   as well if you no longer want it.
 - SFTP private keys must be unencrypted (no passphrase).

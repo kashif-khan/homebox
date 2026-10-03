@@ -1707,6 +1707,12 @@ export interface Latest {
   version: string;
 }
 
+export interface OIDCSuggestion {
+  destType: string;
+  email: string;
+  provider: string;
+}
+
 export interface TestResult {
   /**
    * HostKey is the SSH host key fingerprint the server presented when it
@@ -1745,6 +1751,12 @@ export interface ActionAmountResult {
 
 export interface BackupOAuthStartIn {
   provider: "google" | "microsoft" | "dropbox";
+  /**
+   * UseLoginAccount asks the provider to preselect the account the user
+   * signed in to Homebox with. Honoured only when that login came from the
+   * same provider.
+   */
+  useLoginAccount: boolean;
 }
 
 export interface BackupOAuthStartOut {
@@ -1757,6 +1769,11 @@ export interface BackupOptions {
   localEnabled: boolean;
   /** OAuthProviders lists the configured cloud drives: google, microsoft, dropbox. */
   oauthProviders: string[];
+  /**
+   * OIDCSuggestion offers the cloud drive matching the identity provider the
+   * current user signed in with, when there is one.
+   */
+  oidcSuggestion?: OIDCSuggestion | null;
   remoteEnabled: boolean;
 }
 
