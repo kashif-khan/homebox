@@ -60,8 +60,13 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
         -ldflags "-s -w -X main.commit=$COMMIT -X main.buildTime=$BUILD_TIME -X main.version=$VERSION" \
         -tags nodynamic -o /go/bin/api -v ./app/api/*.go; \
     else \
+         case "$TARGETARCH" in \
+             arm64) INTERP="-I /lib/ld-musl-aarch64.so.1" ;; \
+             amd64) INTERP="-I /lib/ld-musl-x86_64.so.1" ;; \
+             *) INTERP="" ;; \
+         esac; \
          echo $TARGETOS $TARGETARCH; CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build \
-        -ldflags "-s -w -X main.commit=$COMMIT -X main.buildTime=$BUILD_TIME -X main.version=$VERSION" \
+        -ldflags "-s -w $INTERP -X main.commit=$COMMIT -X main.buildTime=$BUILD_TIME -X main.version=$VERSION" \
         -o /go/bin/api -v ./app/api/*.go; \
     fi
 
