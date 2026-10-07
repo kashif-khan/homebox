@@ -5,13 +5,14 @@ draft: true
 ---
 
 > [!NOTE]
-> **Phase 1 is implemented**: scheduled backups, skip-if-unchanged, versioning and retention, destinations on the primary
-> storage, a local directory and S3 / Google Cloud Storage / Azure Blob, test connection, health checks, and alerts
-> through the existing Notifiers. See [Backups](/quick-start/configure/backups/).
+> **Everything except NFS is implemented**: scheduled backups, skip-if-unchanged, versioning and retention, destinations on the
+> primary storage, a local directory, S3 / Google Cloud Storage / Azure Blob, SFTP and WebDAV (with encrypted login
+> storage and SSH host key pinning), Google Drive / OneDrive / Dropbox through OAuth, test connection, health checks, and
+> alerts through the existing Notifiers, and an offer to use the matching Drive or OneDrive after a Google or Microsoft
+> OIDC login. See [Backups](/quick-start/configure/backups/).
 >
-> **Everything else on this page is still a proposal**: SFTP, WebDAV, SMB/NFS, Google Drive / OneDrive / Dropbox, the
-> OIDC-assisted cloud offer, cron schedules and encrypted credential storage. The mockups and the demo show the target
-> design, so they include items that do not exist yet.
+> **Not implemented**: a built-in NFS client (mount the export and use a local directory instead). The mockups and the
+> demo show the target design, so they may show details that differ from what shipped.
 > Discussion: [sysadminsmedia/homebox#1767](https://github.com/sysadminsmedia/homebox/discussions/1767).
 
 ## Status
@@ -23,11 +24,12 @@ draft: true
 | Versioning and retention                            | Implemented |
 | Primary storage, local directory, S3, GCS, Azure    | Implemented |
 | Test connection, health checks, alerts, UI banner   | Implemented |
-| Custom cron expressions                             | Planned     |
-| SFTP, WebDAV, SMB/NFS                               | Planned     |
-| Google Drive, OneDrive, Dropbox                     | Planned     |
-| OIDC-assisted cloud destination                     | Planned     |
-| Encrypted credential storage                        | Planned     |
+| SFTP and WebDAV, encrypted credentials, host key pin | Implemented |
+| Google Drive, OneDrive, Dropbox (OAuth)             | Implemented |
+| OIDC-assisted cloud destination                     | Implemented |
+| Custom cron expressions                             | Implemented |
+| Native SMB                                          | Implemented |
+| Native NFS                                          | Not planned (use a mount) |
 
 ## How it looked before Phase 1
 

@@ -123,7 +123,7 @@ func (ctrl *V1Controller) HandleExportDownload() errchain.HandlerFunc {
 		// Defence in depth: the service refuses any artifact that lives outside
 		// the prefix its destination (or the primary storage) allows for this
 		// group, which catches a stale row whose artifact_path was tampered with.
-		bucket, key, err := ctrl.svc.Backups.ArtifactLocation(r.Context(), ctx.GID, out)
+		store, key, err := ctrl.svc.Backups.ArtifactLocation(r.Context(), ctx.GID, out)
 		if err != nil {
 			log.Err(err).Msg("export download: locate artifact")
 			if ent.IsNotFound(err) {
@@ -131,9 +131,9 @@ func (ctrl *V1Controller) HandleExportDownload() errchain.HandlerFunc {
 			}
 			return validate.NewRequestError(err, http.StatusForbidden)
 		}
-		defer func() { _ = bucket.Close() }()
+		defer func() { _ = store.Close() }()
 
-		reader, err := bucket.NewReader(r.Context(), key, nil)
+		reader, err := store.Open(r.Context(), key)
 		if err != nil {
 			log.Err(err).Str("artifact_path", out.ArtifactPath).Msg("export download: open reader")
 			return validate.NewRequestError(err, http.StatusInternalServerError)
@@ -188,9 +188,9 @@ func (ctrl *V1Controller) HandleExportDelete() errchain.HandlerFunc {
 			// that is already gone must not block removing the history row.
 			// ArtifactLocation enforces the per-group prefix and collapses any
 			// traversal segments before resolving the key.
-			if bucket, key, err := ctrl.svc.Backups.ArtifactLocation(r.Context(), ctx.GID, out); err == nil {
-				_ = bucket.Delete(r.Context(), key)
-				_ = bucket.Close()
+			if store, key, err := ctrl.svc.Backups.ArtifactLocation(r.Context(), ctx.GID, out); err == nil {
+				_ = store.Delete(r.Context(), key)
+				_ = store.Close()
 			}
 		}
 		if _, err := ctrl.repo.Exports.Delete(ctx, ctx.GID, id); err != nil {

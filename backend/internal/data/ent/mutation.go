@@ -2622,10 +2622,14 @@ type BackupDestinationMutation struct {
 	description                *string
 	_type                      *backupdestination.Type
 	conn_string                *string
+	username                   *string
+	secret                     *string
+	host_key                   *string
 	prefix                     *string
 	enabled                    *bool
 	schedule_enabled           *bool
 	frequency                  *backupdestination.Frequency
+	cron_expr                  *string
 	interval_hours             *int
 	addinterval_hours          *int
 	at_hour                    *int
@@ -3054,6 +3058,153 @@ func (m *BackupDestinationMutation) ResetConnString() {
 	delete(m.clearedFields, backupdestination.FieldConnString)
 }
 
+// SetUsername sets the "username" field.
+func (m *BackupDestinationMutation) SetUsername(s string) {
+	m.username = &s
+}
+
+// Username returns the value of the "username" field in the mutation.
+func (m *BackupDestinationMutation) Username() (r string, exists bool) {
+	v := m.username
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsername returns the old "username" field's value of the BackupDestination entity.
+// If the BackupDestination object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupDestinationMutation) OldUsername(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsername is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsername requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsername: %w", err)
+	}
+	return oldValue.Username, nil
+}
+
+// ClearUsername clears the value of the "username" field.
+func (m *BackupDestinationMutation) ClearUsername() {
+	m.username = nil
+	m.clearedFields[backupdestination.FieldUsername] = struct{}{}
+}
+
+// UsernameCleared returns if the "username" field was cleared in this mutation.
+func (m *BackupDestinationMutation) UsernameCleared() bool {
+	_, ok := m.clearedFields[backupdestination.FieldUsername]
+	return ok
+}
+
+// ResetUsername resets all changes to the "username" field.
+func (m *BackupDestinationMutation) ResetUsername() {
+	m.username = nil
+	delete(m.clearedFields, backupdestination.FieldUsername)
+}
+
+// SetSecret sets the "secret" field.
+func (m *BackupDestinationMutation) SetSecret(s string) {
+	m.secret = &s
+}
+
+// Secret returns the value of the "secret" field in the mutation.
+func (m *BackupDestinationMutation) Secret() (r string, exists bool) {
+	v := m.secret
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSecret returns the old "secret" field's value of the BackupDestination entity.
+// If the BackupDestination object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupDestinationMutation) OldSecret(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSecret is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSecret requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSecret: %w", err)
+	}
+	return oldValue.Secret, nil
+}
+
+// ClearSecret clears the value of the "secret" field.
+func (m *BackupDestinationMutation) ClearSecret() {
+	m.secret = nil
+	m.clearedFields[backupdestination.FieldSecret] = struct{}{}
+}
+
+// SecretCleared returns if the "secret" field was cleared in this mutation.
+func (m *BackupDestinationMutation) SecretCleared() bool {
+	_, ok := m.clearedFields[backupdestination.FieldSecret]
+	return ok
+}
+
+// ResetSecret resets all changes to the "secret" field.
+func (m *BackupDestinationMutation) ResetSecret() {
+	m.secret = nil
+	delete(m.clearedFields, backupdestination.FieldSecret)
+}
+
+// SetHostKey sets the "host_key" field.
+func (m *BackupDestinationMutation) SetHostKey(s string) {
+	m.host_key = &s
+}
+
+// HostKey returns the value of the "host_key" field in the mutation.
+func (m *BackupDestinationMutation) HostKey() (r string, exists bool) {
+	v := m.host_key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHostKey returns the old "host_key" field's value of the BackupDestination entity.
+// If the BackupDestination object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupDestinationMutation) OldHostKey(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHostKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHostKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHostKey: %w", err)
+	}
+	return oldValue.HostKey, nil
+}
+
+// ClearHostKey clears the value of the "host_key" field.
+func (m *BackupDestinationMutation) ClearHostKey() {
+	m.host_key = nil
+	m.clearedFields[backupdestination.FieldHostKey] = struct{}{}
+}
+
+// HostKeyCleared returns if the "host_key" field was cleared in this mutation.
+func (m *BackupDestinationMutation) HostKeyCleared() bool {
+	_, ok := m.clearedFields[backupdestination.FieldHostKey]
+	return ok
+}
+
+// ResetHostKey resets all changes to the "host_key" field.
+func (m *BackupDestinationMutation) ResetHostKey() {
+	m.host_key = nil
+	delete(m.clearedFields, backupdestination.FieldHostKey)
+}
+
 // SetPrefix sets the "prefix" field.
 func (m *BackupDestinationMutation) SetPrefix(s string) {
 	m.prefix = &s
@@ -3196,6 +3347,55 @@ func (m *BackupDestinationMutation) OldFrequency(ctx context.Context) (v backupd
 // ResetFrequency resets all changes to the "frequency" field.
 func (m *BackupDestinationMutation) ResetFrequency() {
 	m.frequency = nil
+}
+
+// SetCronExpr sets the "cron_expr" field.
+func (m *BackupDestinationMutation) SetCronExpr(s string) {
+	m.cron_expr = &s
+}
+
+// CronExpr returns the value of the "cron_expr" field in the mutation.
+func (m *BackupDestinationMutation) CronExpr() (r string, exists bool) {
+	v := m.cron_expr
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCronExpr returns the old "cron_expr" field's value of the BackupDestination entity.
+// If the BackupDestination object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupDestinationMutation) OldCronExpr(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCronExpr is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCronExpr requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCronExpr: %w", err)
+	}
+	return oldValue.CronExpr, nil
+}
+
+// ClearCronExpr clears the value of the "cron_expr" field.
+func (m *BackupDestinationMutation) ClearCronExpr() {
+	m.cron_expr = nil
+	m.clearedFields[backupdestination.FieldCronExpr] = struct{}{}
+}
+
+// CronExprCleared returns if the "cron_expr" field was cleared in this mutation.
+func (m *BackupDestinationMutation) CronExprCleared() bool {
+	_, ok := m.clearedFields[backupdestination.FieldCronExpr]
+	return ok
+}
+
+// ResetCronExpr resets all changes to the "cron_expr" field.
+func (m *BackupDestinationMutation) ResetCronExpr() {
+	m.cron_expr = nil
+	delete(m.clearedFields, backupdestination.FieldCronExpr)
 }
 
 // SetIntervalHours sets the "interval_hours" field.
@@ -4539,7 +4739,7 @@ func (m *BackupDestinationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackupDestinationMutation) Fields() []string {
-	fields := make([]string, 0, 37)
+	fields := make([]string, 0, 41)
 	if m.created_at != nil {
 		fields = append(fields, backupdestination.FieldCreatedAt)
 	}
@@ -4561,6 +4761,15 @@ func (m *BackupDestinationMutation) Fields() []string {
 	if m.conn_string != nil {
 		fields = append(fields, backupdestination.FieldConnString)
 	}
+	if m.username != nil {
+		fields = append(fields, backupdestination.FieldUsername)
+	}
+	if m.secret != nil {
+		fields = append(fields, backupdestination.FieldSecret)
+	}
+	if m.host_key != nil {
+		fields = append(fields, backupdestination.FieldHostKey)
+	}
 	if m.prefix != nil {
 		fields = append(fields, backupdestination.FieldPrefix)
 	}
@@ -4572,6 +4781,9 @@ func (m *BackupDestinationMutation) Fields() []string {
 	}
 	if m.frequency != nil {
 		fields = append(fields, backupdestination.FieldFrequency)
+	}
+	if m.cron_expr != nil {
+		fields = append(fields, backupdestination.FieldCronExpr)
 	}
 	if m.interval_hours != nil {
 		fields = append(fields, backupdestination.FieldIntervalHours)
@@ -4673,6 +4885,12 @@ func (m *BackupDestinationMutation) Field(name string) (ent.Value, bool) {
 		return m.GetType()
 	case backupdestination.FieldConnString:
 		return m.ConnString()
+	case backupdestination.FieldUsername:
+		return m.Username()
+	case backupdestination.FieldSecret:
+		return m.Secret()
+	case backupdestination.FieldHostKey:
+		return m.HostKey()
 	case backupdestination.FieldPrefix:
 		return m.Prefix()
 	case backupdestination.FieldEnabled:
@@ -4681,6 +4899,8 @@ func (m *BackupDestinationMutation) Field(name string) (ent.Value, bool) {
 		return m.ScheduleEnabled()
 	case backupdestination.FieldFrequency:
 		return m.Frequency()
+	case backupdestination.FieldCronExpr:
+		return m.CronExpr()
 	case backupdestination.FieldIntervalHours:
 		return m.IntervalHours()
 	case backupdestination.FieldAtHour:
@@ -4756,6 +4976,12 @@ func (m *BackupDestinationMutation) OldField(ctx context.Context, name string) (
 		return m.OldType(ctx)
 	case backupdestination.FieldConnString:
 		return m.OldConnString(ctx)
+	case backupdestination.FieldUsername:
+		return m.OldUsername(ctx)
+	case backupdestination.FieldSecret:
+		return m.OldSecret(ctx)
+	case backupdestination.FieldHostKey:
+		return m.OldHostKey(ctx)
 	case backupdestination.FieldPrefix:
 		return m.OldPrefix(ctx)
 	case backupdestination.FieldEnabled:
@@ -4764,6 +4990,8 @@ func (m *BackupDestinationMutation) OldField(ctx context.Context, name string) (
 		return m.OldScheduleEnabled(ctx)
 	case backupdestination.FieldFrequency:
 		return m.OldFrequency(ctx)
+	case backupdestination.FieldCronExpr:
+		return m.OldCronExpr(ctx)
 	case backupdestination.FieldIntervalHours:
 		return m.OldIntervalHours(ctx)
 	case backupdestination.FieldAtHour:
@@ -4874,6 +5102,27 @@ func (m *BackupDestinationMutation) SetField(name string, value ent.Value) error
 		}
 		m.SetConnString(v)
 		return nil
+	case backupdestination.FieldUsername:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsername(v)
+		return nil
+	case backupdestination.FieldSecret:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSecret(v)
+		return nil
+	case backupdestination.FieldHostKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHostKey(v)
+		return nil
 	case backupdestination.FieldPrefix:
 		v, ok := value.(string)
 		if !ok {
@@ -4901,6 +5150,13 @@ func (m *BackupDestinationMutation) SetField(name string, value ent.Value) error
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetFrequency(v)
+		return nil
+	case backupdestination.FieldCronExpr:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCronExpr(v)
 		return nil
 	case backupdestination.FieldIntervalHours:
 		v, ok := value.(int)
@@ -5267,6 +5523,18 @@ func (m *BackupDestinationMutation) ClearedFields() []string {
 	if m.FieldCleared(backupdestination.FieldConnString) {
 		fields = append(fields, backupdestination.FieldConnString)
 	}
+	if m.FieldCleared(backupdestination.FieldUsername) {
+		fields = append(fields, backupdestination.FieldUsername)
+	}
+	if m.FieldCleared(backupdestination.FieldSecret) {
+		fields = append(fields, backupdestination.FieldSecret)
+	}
+	if m.FieldCleared(backupdestination.FieldHostKey) {
+		fields = append(fields, backupdestination.FieldHostKey)
+	}
+	if m.FieldCleared(backupdestination.FieldCronExpr) {
+		fields = append(fields, backupdestination.FieldCronExpr)
+	}
 	if m.FieldCleared(backupdestination.FieldNextRunAt) {
 		fields = append(fields, backupdestination.FieldNextRunAt)
 	}
@@ -5310,6 +5578,18 @@ func (m *BackupDestinationMutation) ClearField(name string) error {
 		return nil
 	case backupdestination.FieldConnString:
 		m.ClearConnString()
+		return nil
+	case backupdestination.FieldUsername:
+		m.ClearUsername()
+		return nil
+	case backupdestination.FieldSecret:
+		m.ClearSecret()
+		return nil
+	case backupdestination.FieldHostKey:
+		m.ClearHostKey()
+		return nil
+	case backupdestination.FieldCronExpr:
+		m.ClearCronExpr()
 		return nil
 	case backupdestination.FieldNextRunAt:
 		m.ClearNextRunAt()
@@ -5364,6 +5644,15 @@ func (m *BackupDestinationMutation) ResetField(name string) error {
 	case backupdestination.FieldConnString:
 		m.ResetConnString()
 		return nil
+	case backupdestination.FieldUsername:
+		m.ResetUsername()
+		return nil
+	case backupdestination.FieldSecret:
+		m.ResetSecret()
+		return nil
+	case backupdestination.FieldHostKey:
+		m.ResetHostKey()
+		return nil
 	case backupdestination.FieldPrefix:
 		m.ResetPrefix()
 		return nil
@@ -5375,6 +5664,9 @@ func (m *BackupDestinationMutation) ResetField(name string) error {
 		return nil
 	case backupdestination.FieldFrequency:
 		m.ResetFrequency()
+		return nil
+	case backupdestination.FieldCronExpr:
+		m.ResetCronExpr()
 		return nil
 	case backupdestination.FieldIntervalHours:
 		m.ResetIntervalHours()

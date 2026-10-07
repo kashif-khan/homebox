@@ -18,11 +18,11 @@ import (
 // createDestination and updateDestination are the only places these tests touch
 // the create/update input type, which later stages widen.
 func createDestination(gid uuid.UUID, s repo.BackupSettings) (repo.BackupDestinationOut, error) {
-	return tSvc.Backups.CreateDestination(context.Background(), gid, s)
+	return tSvc.Backups.CreateDestination(context.Background(), gid, repo.BackupInput{BackupSettings: s})
 }
 
 func updateDestination(gid, id uuid.UUID, s repo.BackupSettings) (repo.BackupDestinationOut, error) {
-	return tSvc.Backups.UpdateDestination(context.Background(), gid, id, s)
+	return tSvc.Backups.UpdateDestination(context.Background(), gid, id, repo.BackupInput{BackupSettings: s})
 }
 
 func newLocalDestination(t *testing.T, gid uuid.UUID, mut func(*repo.BackupSettings)) repo.BackupDestinationOut {
@@ -91,6 +91,24 @@ func TestStaleThreshold(t *testing.T) {
 	assert.Equal(t, 62*24*time.Hour, staleThreshold(at("monthly", 1, 48)))
 	assert.Equal(t, 12*time.Hour, staleThreshold(at("hourly", 6, 2)), "every 6 hours is given 12")
 	assert.Equal(t, 1000*time.Hour, staleThreshold(at("daily", 1, 1000)), "a longer configured value wins")
+}
+
+func TestStaleThresholdFollowsCronSchedules(t *testing.T) {
+	cron := func(expr string, hours int) repo.BackupDestinationOut {
+		return repo.BackupDestinationOut{BackupSettings: repo.BackupSettings{Frequency: "cron", CronExpr: expr, AlertStaleHours: hours}}
+	}
+	// A daylight-saving change makes one daily gap 25 hours, so allow a little slack.
+	between := func(got, lo, hi time.Duration, msg string) {
+		assert.GreaterOrEqual(t, got, lo, msg)
+		assert.LessOrEqual(t, got, hi, msg)
+	}
+	between(staleThreshold(cron("0 3 * * *", 48)), 48*time.Hour, 50*time.Hour, "daily cron")
+	assert.Equal(t, 48*time.Hour, staleThreshold(cron("*/10 * * * *", 48)), "frequent cron keeps the configured hours")
+	between(staleThreshold(cron("0 3 * * 0", 48)), 14*24*time.Hour, 14*24*time.Hour+4*time.Hour, "weekly cron")
+	assert.GreaterOrEqual(t, staleThreshold(cron("0 6 * * 1-5", 48)), 2*3*24*time.Hour,
+		"weekdays only: the weekend gap is three days and must not look like a problem")
+	assert.GreaterOrEqual(t, staleThreshold(cron("0 2 1 * *", 48)), 2*28*24*time.Hour, "monthly cron")
+	assert.Equal(t, 48*time.Hour, staleThreshold(cron("garbage", 48)), "an unparseable stored expression falls back to daily")
 }
 
 func TestCheckStaleAlerts(t *testing.T) {

@@ -69,6 +69,12 @@ export enum BackupdestinationType {
   TypeS3 = "s3",
   TypeGcs = "gcs",
   TypeAzblob = "azblob",
+  TypeSftp = "sftp",
+  TypeWebdav = "webdav",
+  TypeGdrive = "gdrive",
+  TypeOnedrive = "onedrive",
+  TypeDropbox = "dropbox",
+  TypeSmb = "smb",
 }
 
 export enum BackupdestinationHealthStatus {
@@ -84,6 +90,7 @@ export enum BackupdestinationFrequency {
   FrequencyDaily = "daily",
   FrequencyWeekly = "weekly",
   FrequencyMonthly = "monthly",
+  FrequencyCron = "cron",
 }
 
 export enum AuthrolesRole {
@@ -232,6 +239,8 @@ export interface EntBackupDestination {
   conn_string: string;
   /** CreatedAt holds the value of the "created_at" field. */
   created_at: string;
+  /** CronExpr holds the value of the "cron_expr" field. */
+  cron_expr: string;
   /** DayOfMonth holds the value of the "day_of_month" field. */
   day_of_month: number;
   /** Description holds the value of the "description" field. */
@@ -257,6 +266,8 @@ export interface EntBackupDestination {
   health_interval_minutes: number;
   /** HealthStatus holds the value of the "health_status" field. */
   health_status: BackupdestinationHealthStatus;
+  /** HostKey holds the value of the "host_key" field. */
+  host_key: string;
   /** ID of the ent. */
   id: string;
   /** IntervalHours holds the value of the "interval_hours" field. */
@@ -291,6 +302,8 @@ export interface EntBackupDestination {
   type: BackupdestinationType;
   /** UpdatedAt holds the value of the "updated_at" field. */
   updated_at: string;
+  /** Username holds the value of the "username" field. */
+  username: string;
   /** Weekday holds the value of the "weekday" field. */
   weekday: number;
 }
@@ -877,6 +890,12 @@ export interface BackupDestinationOut {
   connString: string;
   createdAt: Date | string;
   /**
+   * CronExpr is a 5-field cron expression or descriptor, used when Frequency
+   * is "cron". It may start with CRON_TZ=Zone to schedule in another zone.
+   * @maxLength 255
+   */
+  cronExpr: string;
+  /**
    * @min 1
    * @max 28
    */
@@ -884,9 +903,11 @@ export interface BackupDestinationOut {
   /** @maxLength 1000 */
   description: string;
   enabled: boolean;
-  /** Frequency is one of hourly, daily, weekly, monthly. */
-  frequency: "hourly" | "daily" | "weekly" | "monthly";
+  /** Frequency is one of hourly, daily, weekly, monthly, cron. */
+  frequency: "hourly" | "daily" | "weekly" | "monthly" | "cron";
   groupId: string;
+  /** HasSecret reports whether credentials are stored for the destination. */
+  hasSecret: boolean;
   healthCheckedAt?: string | null;
   healthError: string;
   healthFailures: number;
@@ -896,6 +917,8 @@ export interface BackupDestinationOut {
    */
   healthIntervalMinutes: number;
   healthStatus: string;
+  /** @maxLength 255 */
+  hostKey: string;
   id: string;
   /**
    * @min 1
@@ -931,9 +954,29 @@ export interface BackupDestinationOut {
   prefix: string;
   scheduleEnabled: boolean;
   skipIfUnchanged: boolean;
-  /** Type is one of primary, local, s3, gcs, azblob. */
-  type: "primary" | "local" | "s3" | "gcs" | "azblob";
+  /**
+   * Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,
+   * onedrive, dropbox, smb.
+   */
+  type:
+    | "primary"
+    | "local"
+    | "s3"
+    | "gcs"
+    | "azblob"
+    | "sftp"
+    | "webdav"
+    | "gdrive"
+    | "onedrive"
+    | "dropbox"
+    | "smb";
   updatedAt: Date | string;
+  /**
+   * Username and HostKey serve the sftp and webdav types. HostKey is the
+   * SSH host key fingerprint (SHA256:...) an sftp server must present.
+   * @maxLength 255
+   */
+  username: string;
   /**
    * @min 0
    * @max 6
@@ -941,7 +984,7 @@ export interface BackupDestinationOut {
   weekday: number;
 }
 
-export interface BackupSettings {
+export interface BackupInput {
   /**
    * @min 1
    * @max 100
@@ -967,20 +1010,33 @@ export interface BackupSettings {
   /** @maxLength 2048 */
   connString: string;
   /**
+   * CronExpr is a 5-field cron expression or descriptor, used when Frequency
+   * is "cron". It may start with CRON_TZ=Zone to schedule in another zone.
+   * @maxLength 255
+   */
+  cronExpr: string;
+  /**
    * @min 1
    * @max 28
    */
   dayOfMonth: number;
   /** @maxLength 1000 */
   description: string;
+  /**
+   * DestinationID is only used when testing unsaved settings: it lets the
+   * test reuse the stored credentials of that destination.
+   */
+  destinationId: string;
   enabled: boolean;
-  /** Frequency is one of hourly, daily, weekly, monthly. */
-  frequency: "hourly" | "daily" | "weekly" | "monthly";
+  /** Frequency is one of hourly, daily, weekly, monthly, cron. */
+  frequency: "hourly" | "daily" | "weekly" | "monthly" | "cron";
   /**
    * @min 1
    * @max 1440
    */
   healthIntervalMinutes: number;
+  /** @maxLength 255 */
+  hostKey: string;
   /**
    * @min 1
    * @max 168
@@ -1006,12 +1062,47 @@ export interface BackupSettings {
    * @maxLength 255
    */
   name: string;
+  /**
+   * OAuthTicket is the one-time ticket returned by the OAuth callback for a
+   * cloud-drive destination. It carries the connected account, and is
+   * consumed when the destination is saved.
+   */
+  oauthTicket: string;
+  /** Passphrase unlocks a passphrase-protected PrivateKey. */
+  passphrase: string;
+  /**
+   * Password is the sftp or webdav password. Leave empty to keep the stored
+   * credentials of an existing destination.
+   */
+  password: string;
   /** @maxLength 255 */
   prefix: string;
+  /** PrivateKey is a PEM private key for sftp, optionally passphrase-protected. */
+  privateKey: string;
   scheduleEnabled: boolean;
   skipIfUnchanged: boolean;
-  /** Type is one of primary, local, s3, gcs, azblob. */
-  type: "primary" | "local" | "s3" | "gcs" | "azblob";
+  /**
+   * Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,
+   * onedrive, dropbox, smb.
+   */
+  type:
+    | "primary"
+    | "local"
+    | "s3"
+    | "gcs"
+    | "azblob"
+    | "sftp"
+    | "webdav"
+    | "gdrive"
+    | "onedrive"
+    | "dropbox"
+    | "smb";
+  /**
+   * Username and HostKey serve the sftp and webdav types. HostKey is the
+   * SSH host key fingerprint (SHA256:...) an sftp server must present.
+   * @maxLength 255
+   */
+  username: string;
   /**
    * @min 0
    * @max 6
@@ -1636,7 +1727,18 @@ export interface Latest {
   version: string;
 }
 
+export interface OIDCSuggestion {
+  destType: string;
+  email: string;
+  provider: string;
+}
+
 export interface TestResult {
+  /**
+   * HostKey is the SSH host key fingerprint the server presented when it
+   * was missing or did not match, so the UI can offer to trust it.
+   */
+  hostKey: string;
   latencyMs: number;
   message: string;
   ok: boolean;
@@ -1667,10 +1769,32 @@ export interface ActionAmountResult {
   completed: number;
 }
 
+export interface BackupOAuthStartIn {
+  provider: "google" | "microsoft" | "dropbox";
+  /**
+   * UseLoginAccount asks the provider to preselect the account the user
+   * signed in to Homebox with. Honoured only when that login came from the
+   * same provider.
+   */
+  useLoginAccount: boolean;
+}
+
+export interface BackupOAuthStartOut {
+  authUrl: string;
+}
+
 export interface BackupOptions {
   allowCustomEndpoints: boolean;
   enabled: boolean;
   localEnabled: boolean;
+  /** OAuthProviders lists the configured cloud drives: google, microsoft, dropbox. */
+  oauthProviders: string[];
+  /**
+   * OIDCSuggestion offers the cloud drive matching the identity provider the
+   * current user signed in with, when there is one.
+   */
+  oidcSuggestion?: OIDCSuggestion | null;
+  remoteEnabled: boolean;
 }
 
 export interface Build {

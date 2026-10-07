@@ -16,6 +16,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services/reporting/eventbus"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/backupdestination"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/export"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/migrations"
 	_ "github.com/sysadminsmedia/homebox/backend/internal/data/migrations/postgres"
@@ -48,6 +49,25 @@ func TestPostgresMigrationsAndBackupQueries(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, did, *e.DestinationID)
 	_, err = c.BackupDestination.UpdateOneID(d.ID).SetHealthStatus("unreachable").SetHealthFailures(2).SetAlertedUnreachable(true).SetLastFingerprint("x").Save(ctx)
+	require.NoError(t, err)
+
+	// SFTP and WebDAV destinations: widened type constraint and new columns.
+	_, err = c.BackupDestination.UpdateOneID(d.ID).
+		SetType("sftp").SetUsername("u").SetSecret("sealed").SetHostKey("SHA256:x").Save(ctx)
+	require.NoError(t, err)
+	_, err = c.BackupDestination.UpdateOneID(d.ID).SetType("webdav").Save(ctx)
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, `update backup_destinations set type = 'ftp' where id = $1`, d.ID)
+	require.Error(t, err, "the check constraint still rejects unknown types")
+	for _, typ := range []string{"gdrive", "onedrive", "dropbox"} {
+		_, err = c.BackupDestination.UpdateOneID(d.ID).SetType(backupdestination.Type(typ)).Save(ctx)
+		require.NoError(t, err, typ)
+	}
+	_, err = c.BackupDestination.UpdateOneID(d.ID).SetType("smb").SetFrequency("cron").SetCronExpr("0 3 * * *").Save(ctx)
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, `update backup_destinations set frequency = 'yearly' where id = $1`, d.ID)
+	require.Error(t, err, "the frequency constraint still rejects unknown values")
+	_, err = c.BackupDestination.UpdateOneID(d.ID).SetType("primary").SetFrequency("daily").Save(ctx)
 	require.NoError(t, err)
 
 	// The raw-SQL change fingerprint must work on postgres placeholders too.

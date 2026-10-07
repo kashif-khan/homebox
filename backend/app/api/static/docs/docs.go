@@ -1231,7 +1231,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/repo.BackupSettings"
+                            "$ref": "#/definitions/repo.BackupInput"
                         }
                     }
                 ],
@@ -1269,7 +1269,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/repo.BackupSettings"
+                            "$ref": "#/definitions/repo.BackupInput"
                         }
                     }
                 ],
@@ -1345,7 +1345,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/repo.BackupSettings"
+                            "$ref": "#/definitions/repo.BackupInput"
                         }
                     }
                 ],
@@ -1482,6 +1482,82 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.Results-repo_ExportOut"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/group/backup-oauth/callback": {
+            "get": {
+                "description": "The redirect target for cloud providers. Public: access is authorized by the single-use state created when the flow started.",
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "Backups"
+                ],
+                "summary": "Cloud Drive Authorization Callback",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "State",
+                        "name": "state",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Authorization code",
+                        "name": "code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider error",
+                        "name": "error",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/v1/group/backup-oauth/start": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Returns the provider's authorization URL. Open it in a popup; the callback page reports the result to the opener window.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Backups"
+                ],
+                "summary": "Start Connecting a Cloud Drive",
+                "parameters": [
+                    {
+                        "description": "Provider",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BackupOAuthStartIn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.BackupOAuthStartOut"
                         }
                     }
                 }
@@ -3596,14 +3672,16 @@ const docTemplate = `{
                 "hourly",
                 "daily",
                 "weekly",
-                "monthly"
+                "monthly",
+                "cron"
             ],
             "x-enum-varnames": [
                 "DefaultFrequency",
                 "FrequencyHourly",
                 "FrequencyDaily",
                 "FrequencyWeekly",
-                "FrequencyMonthly"
+                "FrequencyMonthly",
+                "FrequencyCron"
             ]
         },
         "backupdestination.HealthStatus": {
@@ -3629,7 +3707,13 @@ const docTemplate = `{
                 "local",
                 "s3",
                 "gcs",
-                "azblob"
+                "azblob",
+                "sftp",
+                "webdav",
+                "gdrive",
+                "onedrive",
+                "dropbox",
+                "smb"
             ],
             "x-enum-varnames": [
                 "DefaultType",
@@ -3637,7 +3721,13 @@ const docTemplate = `{
                 "TypeLocal",
                 "TypeS3",
                 "TypeGcs",
-                "TypeAzblob"
+                "TypeAzblob",
+                "TypeSftp",
+                "TypeWebdav",
+                "TypeGdrive",
+                "TypeOnedrive",
+                "TypeDropbox",
+                "TypeSmb"
             ]
         },
         "currencies.Currency": {
@@ -3922,6 +4012,10 @@ const docTemplate = `{
                     "description": "CreatedAt holds the value of the \"created_at\" field.",
                     "type": "string"
                 },
+                "cron_expr": {
+                    "description": "CronExpr holds the value of the \"cron_expr\" field.",
+                    "type": "string"
+                },
                 "day_of_month": {
                     "description": "DayOfMonth holds the value of the \"day_of_month\" field.",
                     "type": "integer"
@@ -3977,6 +4071,10 @@ const docTemplate = `{
                             "$ref": "#/definitions/backupdestination.HealthStatus"
                         }
                     ]
+                },
+                "host_key": {
+                    "description": "HostKey holds the value of the \"host_key\" field.",
+                    "type": "string"
                 },
                 "id": {
                     "description": "ID of the ent.",
@@ -4048,6 +4146,10 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                },
+                "username": {
+                    "description": "Username holds the value of the \"username\" field.",
                     "type": "string"
                 },
                 "weekday": {
@@ -5416,6 +5518,11 @@ const docTemplate = `{
                 "createdAt": {
                     "type": "string"
                 },
+                "cronExpr": {
+                    "description": "CronExpr is a 5-field cron expression or descriptor, used when Frequency\nis \"cron\". It may start with CRON_TZ=Zone to schedule in another zone.",
+                    "type": "string",
+                    "maxLength": 255
+                },
                 "dayOfMonth": {
                     "type": "integer",
                     "maximum": 28,
@@ -5429,17 +5536,22 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "frequency": {
-                    "description": "Frequency is one of hourly, daily, weekly, monthly.",
+                    "description": "Frequency is one of hourly, daily, weekly, monthly, cron.",
                     "type": "string",
                     "enum": [
                         "hourly",
                         "daily",
                         "weekly",
-                        "monthly"
+                        "monthly",
+                        "cron"
                     ]
                 },
                 "groupId": {
                     "type": "string"
+                },
+                "hasSecret": {
+                    "description": "HasSecret reports whether credentials are stored for the destination.",
+                    "type": "boolean"
                 },
                 "healthCheckedAt": {
                     "type": "string",
@@ -5458,6 +5570,10 @@ const docTemplate = `{
                 },
                 "healthStatus": {
                     "type": "string"
+                },
+                "hostKey": {
+                    "type": "string",
+                    "maxLength": 255
                 },
                 "id": {
                     "type": "string"
@@ -5517,18 +5633,29 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "type": {
-                    "description": "Type is one of primary, local, s3, gcs, azblob.",
+                    "description": "Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,\nonedrive, dropbox, smb.",
                     "type": "string",
                     "enum": [
                         "primary",
                         "local",
                         "s3",
                         "gcs",
-                        "azblob"
+                        "azblob",
+                        "sftp",
+                        "webdav",
+                        "gdrive",
+                        "onedrive",
+                        "dropbox",
+                        "smb"
                     ]
                 },
                 "updatedAt": {
                     "type": "string"
+                },
+                "username": {
+                    "description": "Username and HostKey serve the sftp and webdav types. HostKey is the\nSSH host key fingerprint (SHA256:...) an sftp server must present.",
+                    "type": "string",
+                    "maxLength": 255
                 },
                 "weekday": {
                     "type": "integer",
@@ -5537,7 +5664,7 @@ const docTemplate = `{
                 }
             }
         },
-        "repo.BackupSettings": {
+        "repo.BackupInput": {
             "type": "object",
             "required": [
                 "frequency",
@@ -5573,6 +5700,11 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 2048
                 },
+                "cronExpr": {
+                    "description": "CronExpr is a 5-field cron expression or descriptor, used when Frequency\nis \"cron\". It may start with CRON_TZ=Zone to schedule in another zone.",
+                    "type": "string",
+                    "maxLength": 255
+                },
                 "dayOfMonth": {
                     "type": "integer",
                     "maximum": 28,
@@ -5582,23 +5714,32 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 1000
                 },
+                "destinationId": {
+                    "description": "DestinationID is only used when testing unsaved settings: it lets the\ntest reuse the stored credentials of that destination.",
+                    "type": "string"
+                },
                 "enabled": {
                     "type": "boolean"
                 },
                 "frequency": {
-                    "description": "Frequency is one of hourly, daily, weekly, monthly.",
+                    "description": "Frequency is one of hourly, daily, weekly, monthly, cron.",
                     "type": "string",
                     "enum": [
                         "hourly",
                         "daily",
                         "weekly",
-                        "monthly"
+                        "monthly",
+                        "cron"
                     ]
                 },
                 "healthIntervalMinutes": {
                     "type": "integer",
                     "maximum": 1440,
                     "minimum": 1
+                },
+                "hostKey": {
+                    "type": "string",
+                    "maxLength": 255
                 },
                 "intervalHours": {
                     "type": "integer",
@@ -5625,9 +5766,25 @@ const docTemplate = `{
                     "maxLength": 255,
                     "minLength": 1
                 },
+                "oauthTicket": {
+                    "description": "OAuthTicket is the one-time ticket returned by the OAuth callback for a\ncloud-drive destination. It carries the connected account, and is\nconsumed when the destination is saved.",
+                    "type": "string"
+                },
+                "passphrase": {
+                    "description": "Passphrase unlocks a passphrase-protected PrivateKey.",
+                    "type": "string"
+                },
+                "password": {
+                    "description": "Password is the sftp or webdav password. Leave empty to keep the stored\ncredentials of an existing destination.",
+                    "type": "string"
+                },
                 "prefix": {
                     "type": "string",
                     "maxLength": 255
+                },
+                "privateKey": {
+                    "description": "PrivateKey is a PEM private key for sftp, optionally passphrase-protected.",
+                    "type": "string"
                 },
                 "scheduleEnabled": {
                     "type": "boolean"
@@ -5636,15 +5793,26 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "type": {
-                    "description": "Type is one of primary, local, s3, gcs, azblob.",
+                    "description": "Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,\nonedrive, dropbox, smb.",
                     "type": "string",
                     "enum": [
                         "primary",
                         "local",
                         "s3",
                         "gcs",
-                        "azblob"
+                        "azblob",
+                        "sftp",
+                        "webdav",
+                        "gdrive",
+                        "onedrive",
+                        "dropbox",
+                        "smb"
                     ]
+                },
+                "username": {
+                    "description": "Username and HostKey serve the sftp and webdav types. HostKey is the\nSSH host key fingerprint (SHA256:...) an sftp server must present.",
+                    "type": "string",
+                    "maxLength": 255
                 },
                 "weekday": {
                     "type": "integer",
@@ -7240,9 +7408,27 @@ const docTemplate = `{
                 }
             }
         },
+        "services.OIDCSuggestion": {
+            "type": "object",
+            "properties": {
+                "destType": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                }
+            }
+        },
         "services.TestResult": {
             "type": "object",
             "properties": {
+                "hostKey": {
+                    "description": "HostKey is the SSH host key fingerprint the server presented when it\nwas missing or did not match, so the UI can offer to trust it.",
+                    "type": "string"
+                },
                 "latencyMs": {
                     "type": "integer"
                 },
@@ -7348,6 +7534,34 @@ const docTemplate = `{
                 }
             }
         },
+        "v1.BackupOAuthStartIn": {
+            "type": "object",
+            "required": [
+                "provider"
+            ],
+            "properties": {
+                "provider": {
+                    "type": "string",
+                    "enum": [
+                        "google",
+                        "microsoft",
+                        "dropbox"
+                    ]
+                },
+                "useLoginAccount": {
+                    "description": "UseLoginAccount asks the provider to preselect the account the user\nsigned in to Homebox with. Honoured only when that login came from the\nsame provider.",
+                    "type": "boolean"
+                }
+            }
+        },
+        "v1.BackupOAuthStartOut": {
+            "type": "object",
+            "properties": {
+                "authUrl": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.BackupOptions": {
             "type": "object",
             "properties": {
@@ -7358,6 +7572,25 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "localEnabled": {
+                    "type": "boolean"
+                },
+                "oauthProviders": {
+                    "description": "OAuthProviders lists the configured cloud drives: google, microsoft, dropbox.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "oidcSuggestion": {
+                    "description": "OIDCSuggestion offers the cloud drive matching the identity provider the\ncurrent user signed in with, when there is one.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/services.OIDCSuggestion"
+                        }
+                    ],
+                    "x-nullable": true
+                },
+                "remoteEnabled": {
                     "type": "boolean"
                 }
             }

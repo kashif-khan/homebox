@@ -37,6 +37,7 @@ definitions:
     - daily
     - weekly
     - monthly
+    - cron
     type: string
     x-enum-varnames:
     - DefaultFrequency
@@ -44,6 +45,7 @@ definitions:
     - FrequencyDaily
     - FrequencyWeekly
     - FrequencyMonthly
+    - FrequencyCron
   backupdestination.HealthStatus:
     enum:
     - unknown
@@ -64,6 +66,12 @@ definitions:
     - s3
     - gcs
     - azblob
+    - sftp
+    - webdav
+    - gdrive
+    - onedrive
+    - dropbox
+    - smb
     type: string
     x-enum-varnames:
     - DefaultType
@@ -72,6 +80,12 @@ definitions:
     - TypeS3
     - TypeGcs
     - TypeAzblob
+    - TypeSftp
+    - TypeWebdav
+    - TypeGdrive
+    - TypeOnedrive
+    - TypeDropbox
+    - TypeSmb
   currencies.Currency:
     properties:
       code:
@@ -261,6 +275,9 @@ definitions:
       created_at:
         description: CreatedAt holds the value of the "created_at" field.
         type: string
+      cron_expr:
+        description: CronExpr holds the value of the "cron_expr" field.
+        type: string
       day_of_month:
         description: DayOfMonth holds the value of the "day_of_month" field.
         type: integer
@@ -300,6 +317,9 @@ definitions:
         allOf:
         - $ref: '#/definitions/backupdestination.HealthStatus'
         description: HealthStatus holds the value of the "health_status" field.
+      host_key:
+        description: HostKey holds the value of the "host_key" field.
+        type: string
       id:
         description: ID of the ent.
         type: string
@@ -351,6 +371,9 @@ definitions:
         description: Type holds the value of the "type" field.
       updated_at:
         description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+      username:
+        description: Username holds the value of the "username" field.
         type: string
       weekday:
         description: Weekday holds the value of the "weekday" field.
@@ -1298,6 +1321,12 @@ definitions:
         type: string
       createdAt:
         type: string
+      cronExpr:
+        description: |-
+          CronExpr is a 5-field cron expression or descriptor, used when Frequency
+          is "cron". It may start with CRON_TZ=Zone to schedule in another zone.
+        maxLength: 255
+        type: string
       dayOfMonth:
         maximum: 28
         minimum: 1
@@ -1308,15 +1337,19 @@ definitions:
       enabled:
         type: boolean
       frequency:
-        description: Frequency is one of hourly, daily, weekly, monthly.
+        description: Frequency is one of hourly, daily, weekly, monthly, cron.
         enum:
         - hourly
         - daily
         - weekly
         - monthly
+        - cron
         type: string
       groupId:
         type: string
+      hasSecret:
+        description: HasSecret reports whether credentials are stored for the destination.
+        type: boolean
       healthCheckedAt:
         type: string
         x-nullable: true
@@ -1329,6 +1362,9 @@ definitions:
         minimum: 1
         type: integer
       healthStatus:
+        type: string
+      hostKey:
+        maxLength: 255
         type: string
       id:
         type: string
@@ -1374,15 +1410,29 @@ definitions:
       skipIfUnchanged:
         type: boolean
       type:
-        description: Type is one of primary, local, s3, gcs, azblob.
+        description: |-
+          Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,
+          onedrive, dropbox, smb.
         enum:
         - primary
         - local
         - s3
         - gcs
         - azblob
+        - sftp
+        - webdav
+        - gdrive
+        - onedrive
+        - dropbox
+        - smb
         type: string
       updatedAt:
+        type: string
+      username:
+        description: |-
+          Username and HostKey serve the sftp and webdav types. HostKey is the
+          SSH host key fingerprint (SHA256:...) an sftp server must present.
+        maxLength: 255
         type: string
       weekday:
         maximum: 6
@@ -1393,7 +1443,7 @@ definitions:
     - name
     - type
     type: object
-  repo.BackupSettings:
+  repo.BackupInput:
     properties:
       alertFailureThreshold:
         maximum: 100
@@ -1418,6 +1468,12 @@ definitions:
       connString:
         maxLength: 2048
         type: string
+      cronExpr:
+        description: |-
+          CronExpr is a 5-field cron expression or descriptor, used when Frequency
+          is "cron". It may start with CRON_TZ=Zone to schedule in another zone.
+        maxLength: 255
+        type: string
       dayOfMonth:
         maximum: 28
         minimum: 1
@@ -1425,20 +1481,29 @@ definitions:
       description:
         maxLength: 1000
         type: string
+      destinationId:
+        description: |-
+          DestinationID is only used when testing unsaved settings: it lets the
+          test reuse the stored credentials of that destination.
+        type: string
       enabled:
         type: boolean
       frequency:
-        description: Frequency is one of hourly, daily, weekly, monthly.
+        description: Frequency is one of hourly, daily, weekly, monthly, cron.
         enum:
         - hourly
         - daily
         - weekly
         - monthly
+        - cron
         type: string
       healthIntervalMinutes:
         maximum: 1440
         minimum: 1
         type: integer
+      hostKey:
+        maxLength: 255
+        type: string
       intervalHours:
         maximum: 168
         minimum: 1
@@ -1459,21 +1524,52 @@ definitions:
         maxLength: 255
         minLength: 1
         type: string
+      oauthTicket:
+        description: |-
+          OAuthTicket is the one-time ticket returned by the OAuth callback for a
+          cloud-drive destination. It carries the connected account, and is
+          consumed when the destination is saved.
+        type: string
+      passphrase:
+        description: Passphrase unlocks a passphrase-protected PrivateKey.
+        type: string
+      password:
+        description: |-
+          Password is the sftp or webdav password. Leave empty to keep the stored
+          credentials of an existing destination.
+        type: string
       prefix:
         maxLength: 255
+        type: string
+      privateKey:
+        description: PrivateKey is a PEM private key for sftp, optionally passphrase-protected.
         type: string
       scheduleEnabled:
         type: boolean
       skipIfUnchanged:
         type: boolean
       type:
-        description: Type is one of primary, local, s3, gcs, azblob.
+        description: |-
+          Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,
+          onedrive, dropbox, smb.
         enum:
         - primary
         - local
         - s3
         - gcs
         - azblob
+        - sftp
+        - webdav
+        - gdrive
+        - onedrive
+        - dropbox
+        - smb
+        type: string
+      username:
+        description: |-
+          Username and HostKey serve the sftp and webdav types. HostKey is the
+          SSH host key fingerprint (SHA256:...) an sftp server must present.
+        maxLength: 255
         type: string
       weekday:
         maximum: 6
@@ -2586,8 +2682,22 @@ definitions:
       version:
         type: string
     type: object
+  services.OIDCSuggestion:
+    properties:
+      destType:
+        type: string
+      email:
+        type: string
+      provider:
+        type: string
+    type: object
   services.TestResult:
     properties:
+      hostKey:
+        description: |-
+          HostKey is the SSH host key fingerprint the server presented when it
+          was missing or did not match, so the UI can offer to trust it.
+        type: string
       latencyMs:
         type: integer
       message:
@@ -2660,6 +2770,28 @@ definitions:
       completed:
         type: integer
     type: object
+  v1.BackupOAuthStartIn:
+    properties:
+      provider:
+        enum:
+        - google
+        - microsoft
+        - dropbox
+        type: string
+      useLoginAccount:
+        description: |-
+          UseLoginAccount asks the provider to preselect the account the user
+          signed in to Homebox with. Honoured only when that login came from the
+          same provider.
+        type: boolean
+    required:
+    - provider
+    type: object
+  v1.BackupOAuthStartOut:
+    properties:
+      authUrl:
+        type: string
+    type: object
   v1.BackupOptions:
     properties:
       allowCustomEndpoints:
@@ -2667,6 +2799,21 @@ definitions:
       enabled:
         type: boolean
       localEnabled:
+        type: boolean
+      oauthProviders:
+        description: 'OAuthProviders lists the configured cloud drives: google, microsoft,
+          dropbox.'
+        items:
+          type: string
+        type: array
+      oidcSuggestion:
+        allOf:
+        - $ref: '#/definitions/services.OIDCSuggestion'
+        description: |-
+          OIDCSuggestion offers the cloud drive matching the identity provider the
+          current user signed in with, when there is one.
+        x-nullable: true
+      remoteEnabled:
         type: boolean
     type: object
   v1.Build:
@@ -3613,7 +3760,7 @@ paths:
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/repo.BackupSettings'
+          $ref: '#/definitions/repo.BackupInput'
       produces:
       - application/json
       responses:
@@ -3677,7 +3824,7 @@ paths:
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/repo.BackupSettings'
+          $ref: '#/definitions/repo.BackupInput'
       produces:
       - application/json
       responses:
@@ -3764,7 +3911,7 @@ paths:
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/repo.BackupSettings'
+          $ref: '#/definitions/repo.BackupInput'
       produces:
       - application/json
       responses:
@@ -3775,6 +3922,56 @@ paths:
       security:
       - Bearer: []
       summary: Test Unsaved Backup Destination Settings
+      tags:
+      - Backups
+  /v1/group/backup-oauth/callback:
+    get:
+      description: 'The redirect target for cloud providers. Public: access is authorized
+        by the single-use state created when the flow started.'
+      parameters:
+      - description: State
+        in: query
+        name: state
+        type: string
+      - description: Authorization code
+        in: query
+        name: code
+        type: string
+      - description: Provider error
+        in: query
+        name: error
+        type: string
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: OK
+      summary: Cloud Drive Authorization Callback
+      tags:
+      - Backups
+  /v1/group/backup-oauth/start:
+    post:
+      consumes:
+      - application/json
+      description: Returns the provider's authorization URL. Open it in a popup; the
+        callback page reports the result to the opener window.
+      parameters:
+      - description: Provider
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/v1.BackupOAuthStartIn'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.BackupOAuthStartOut'
+      security:
+      - Bearer: []
+      summary: Start Connecting a Cloud Drive
       tags:
       - Backups
   /v1/group/backup-options:

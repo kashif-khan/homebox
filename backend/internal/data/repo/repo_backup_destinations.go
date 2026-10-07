@@ -20,15 +20,23 @@ type BackupDestinationRepository struct {
 type BackupSettings struct {
 	Name        string `json:"name"        validate:"required,min=1,max=255"`
 	Description string `json:"description" validate:"max=1000"`
-	// Type is one of primary, local, s3, gcs, azblob.
-	Type       string `json:"type"       validate:"required,oneof=primary local s3 gcs azblob"`
+	// Type is one of primary, local, s3, gcs, azblob, sftp, webdav, gdrive,
+	// onedrive, dropbox, smb.
+	Type       string `json:"type"       validate:"required,oneof=primary local s3 gcs azblob sftp webdav gdrive onedrive dropbox smb"`
 	ConnString string `json:"connString" validate:"max=2048"`
-	Prefix     string `json:"prefix"     validate:"max=255"`
-	Enabled    bool   `json:"enabled"`
+	// Username and HostKey serve the sftp and webdav types. HostKey is the
+	// SSH host key fingerprint (SHA256:...) an sftp server must present.
+	Username string `json:"username" validate:"max=255"`
+	HostKey  string `json:"hostKey"  validate:"max=255"`
+	Prefix   string `json:"prefix"   validate:"max=255"`
+	Enabled  bool   `json:"enabled"`
 
 	ScheduleEnabled bool `json:"scheduleEnabled"`
-	// Frequency is one of hourly, daily, weekly, monthly.
-	Frequency       string `json:"frequency"       validate:"required,oneof=hourly daily weekly monthly"`
+	// Frequency is one of hourly, daily, weekly, monthly, cron.
+	Frequency string `json:"frequency" validate:"required,oneof=hourly daily weekly monthly cron"`
+	// CronExpr is a 5-field cron expression or descriptor, used when Frequency
+	// is "cron". It may start with CRON_TZ=Zone to schedule in another zone.
+	CronExpr        string `json:"cronExpr"        validate:"max=255"`
 	IntervalHours   int    `json:"intervalHours"   validate:"min=1,max=168"`
 	AtHour          int    `json:"atHour"          validate:"min=0,max=23"`
 	AtMinute        int    `json:"atMinute"        validate:"min=0,max=59"`
@@ -45,6 +53,27 @@ type BackupSettings struct {
 	AlertFailureThreshold int  `json:"alertFailureThreshold" validate:"min=1,max=100"`
 	// AlertStaleHours alerts when no backup succeeded for this long. 0 disables.
 	AlertStaleHours int `json:"alertStaleHours" validate:"min=0,max=8760"`
+}
+
+// BackupInput is what create, update and test requests carry: the settings
+// plus write-only credentials, which are sealed before storage and never
+// returned.
+type BackupInput struct {
+	BackupSettings
+	// Password is the sftp or webdav password. Leave empty to keep the stored
+	// credentials of an existing destination.
+	Password string `json:"password,omitempty"`
+	// PrivateKey is a PEM private key for sftp, optionally passphrase-protected.
+	PrivateKey string `json:"privateKey,omitempty"`
+	// Passphrase unlocks a passphrase-protected PrivateKey.
+	Passphrase string `json:"passphrase,omitempty"`
+	// OAuthTicket is the one-time ticket returned by the OAuth callback for a
+	// cloud-drive destination. It carries the connected account, and is
+	// consumed when the destination is saved.
+	OAuthTicket string `json:"oauthTicket,omitempty"`
+	// DestinationID is only used when testing unsaved settings: it lets the
+	// test reuse the stored credentials of that destination.
+	DestinationID string `json:"destinationId,omitempty"`
 }
 
 type BackupDestinationOut struct {
@@ -64,7 +93,12 @@ type BackupDestinationOut struct {
 	HealthError     string     `json:"healthError,omitempty"`
 	HealthFailures  int        `json:"healthFailures"`
 
-	// LastFingerprint and the alerted* flags are internal bookkeeping.
+	// HasSecret reports whether credentials are stored for the destination.
+	HasSecret bool `json:"hasSecret"`
+
+	// Secret (sealed credentials), LastFingerprint and the alerted* flags are
+	// internal and never serialized.
+	Secret             string `json:"-"`
 	LastFingerprint    string `json:"-"`
 	AlertedUnreachable bool   `json:"-"`
 	AlertedFailure     bool   `json:"-"`
@@ -83,10 +117,13 @@ func mapBackupDestination(d *ent.BackupDestination) BackupDestinationOut {
 			Description:           d.Description,
 			Type:                  string(d.Type),
 			ConnString:            d.ConnString,
+			Username:              d.Username,
+			HostKey:               d.HostKey,
 			Prefix:                d.Prefix,
 			Enabled:               d.Enabled,
 			ScheduleEnabled:       d.ScheduleEnabled,
 			Frequency:             string(d.Frequency),
+			CronExpr:              d.CronExpr,
 			IntervalHours:         d.IntervalHours,
 			AtHour:                d.AtHour,
 			AtMinute:              d.AtMinute,
@@ -110,6 +147,8 @@ func mapBackupDestination(d *ent.BackupDestination) BackupDestinationOut {
 		HealthCheckedAt:    d.HealthCheckedAt,
 		HealthError:        d.HealthError,
 		HealthFailures:     d.HealthFailures,
+		HasSecret:          d.Secret != "",
+		Secret:             d.Secret,
 		LastFingerprint:    d.LastFingerprint,
 		AlertedUnreachable: d.AlertedUnreachable,
 		AlertedFailure:     d.AlertedFailure,
@@ -174,9 +213,13 @@ func (r *BackupDestinationRepository) Get(ctx context.Context, gid, id uuid.UUID
 }
 
 // Create stores a new destination for the group.
-func (r *BackupDestinationRepository) Create(ctx context.Context, gid uuid.UUID, in BackupSettings, nextRun *time.Time) (BackupDestinationOut, error) {
+func (r *BackupDestinationRepository) Create(ctx context.Context, gid, id uuid.UUID, in BackupSettings, secret string, nextRun *time.Time) (BackupDestinationOut, error) {
 	c := r.db.BackupDestination.Create().
+		SetID(id).
 		SetGroupID(gid).
+		SetUsername(in.Username).
+		SetHostKey(in.HostKey).
+		SetSecret(secret).
 		SetName(in.Name).
 		SetDescription(in.Description).
 		SetType(backupdestination.Type(in.Type)).
@@ -185,6 +228,7 @@ func (r *BackupDestinationRepository) Create(ctx context.Context, gid uuid.UUID,
 		SetEnabled(in.Enabled).
 		SetScheduleEnabled(in.ScheduleEnabled).
 		SetFrequency(backupdestination.Frequency(in.Frequency)).
+		SetCronExpr(in.CronExpr).
 		SetIntervalHours(in.IntervalHours).
 		SetAtHour(in.AtHour).
 		SetAtMinute(in.AtMinute).
@@ -206,11 +250,15 @@ func (r *BackupDestinationRepository) Create(ctx context.Context, gid uuid.UUID,
 	return mapBackupDestination(d), nil
 }
 
-// Update replaces the editable settings. A changed destination invalidates
+// Update replaces the editable settings and the sealed secret (pass the
+// existing one to keep it). A changed destination invalidates
 // the stored health status and fingerprint, since they described the old one.
-func (r *BackupDestinationRepository) Update(ctx context.Context, gid, id uuid.UUID, in BackupSettings, nextRun *time.Time, resetState bool) (BackupDestinationOut, error) {
+func (r *BackupDestinationRepository) Update(ctx context.Context, gid, id uuid.UUID, in BackupSettings, secret string, nextRun *time.Time, resetState bool) (BackupDestinationOut, error) {
 	u := r.db.BackupDestination.UpdateOneID(id).
 		Where(backupdestination.GroupID(gid)).
+		SetUsername(in.Username).
+		SetHostKey(in.HostKey).
+		SetSecret(secret).
 		SetName(in.Name).
 		SetDescription(in.Description).
 		SetType(backupdestination.Type(in.Type)).
@@ -219,6 +267,7 @@ func (r *BackupDestinationRepository) Update(ctx context.Context, gid, id uuid.U
 		SetEnabled(in.Enabled).
 		SetScheduleEnabled(in.ScheduleEnabled).
 		SetFrequency(backupdestination.Frequency(in.Frequency)).
+		SetCronExpr(in.CronExpr).
 		SetIntervalHours(in.IntervalHours).
 		SetAtHour(in.AtHour).
 		SetAtMinute(in.AtMinute).
@@ -328,4 +377,10 @@ func (r *BackupDestinationRepository) SetAlertedFailure(ctx context.Context, id 
 // SetAlertedStale records whether the no-recent-backup alert has been sent.
 func (r *BackupDestinationRepository) SetAlertedStale(ctx context.Context, id uuid.UUID, v bool) error {
 	return r.db.BackupDestination.UpdateOneID(id).SetAlertedStale(v).Exec(ctx)
+}
+
+// SetSecret replaces a destination's sealed credentials, used when a provider
+// rotates the OAuth refresh token.
+func (r *BackupDestinationRepository) SetSecret(ctx context.Context, id uuid.UUID, secret string) error {
+	return r.db.BackupDestination.UpdateOneID(id).SetSecret(secret).Exec(ctx)
 }

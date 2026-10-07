@@ -13,9 +13,10 @@ import (
 // status and alert state. Type "primary" targets the instance's main storage
 // (HBOX_STORAGE_CONN_STRING); the other types use gocloud.dev/blob drivers.
 //
-// Destinations hold no secrets: the gocloud drivers read credentials from the
-// environment (AWS_*, GOOGLE_APPLICATION_CREDENTIALS, AZURE_*), and the
-// service rejects connection strings that embed userinfo.
+// The gocloud drivers hold no secrets: they read credentials from the
+// environment (AWS_*, GOOGLE_APPLICATION_CREDENTIALS, AZURE_*), and the service
+// rejects connection strings that embed userinfo. The sftp and webdav types
+// need a login, which is stored encrypted in secret.
 type BackupDestination struct {
 	ent.Schema
 }
@@ -34,13 +35,29 @@ func (BackupDestination) Mixin() []ent.Mixin {
 func (BackupDestination) Fields() []ent.Field {
 	return []ent.Field{
 		field.Enum("type").
-			Values("primary", "local", "s3", "gcs", "azblob").
+			Values("primary", "local", "s3", "gcs", "azblob", "sftp", "webdav", "gdrive", "onedrive", "dropbox", "smb").
 			Default("primary"),
 		// conn_string is a sub-directory of the configured local backup root
 		// for type=local, and a gocloud URL (s3://bucket?region=...) for the
 		// cloud types. Unused for type=primary.
 		field.String("conn_string").
 			MaxLen(2048).
+			Optional(),
+		// username, secret and host_key serve the sftp and webdav types. For
+		// the cloud-drive types (gdrive, onedrive, dropbox) username holds the
+		// connected account's name and secret the OAuth refresh token.
+		// secret is an AES-GCM sealed JSON blob holding the credentials; it is
+		// never returned by the API.
+		field.String("username").
+			MaxLen(255).
+			Optional(),
+		field.Text("secret").
+			Optional().
+			Sensitive(),
+		// host_key is the SSH host key fingerprint ("SHA256:...") an sftp
+		// destination must present.
+		field.String("host_key").
+			MaxLen(255).
 			Optional(),
 		field.String("prefix").
 			MaxLen(255).
@@ -51,8 +68,13 @@ func (BackupDestination) Fields() []ent.Field {
 		field.Bool("schedule_enabled").
 			Default(false),
 		field.Enum("frequency").
-			Values("hourly", "daily", "weekly", "monthly").
+			Values("hourly", "daily", "weekly", "monthly", "cron").
 			Default("daily"),
+		// cron_expr is a standard 5-field cron expression (or descriptor such
+		// as @daily), used when frequency is "cron".
+		field.String("cron_expr").
+			MaxLen(255).
+			Optional(),
 		field.Int("interval_hours").
 			Default(1),
 		field.Int("at_hour").

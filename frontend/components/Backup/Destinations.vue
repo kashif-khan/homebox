@@ -12,6 +12,33 @@
     </div>
 
     <div
+      v-if="showOfferBanner && options?.oidcSuggestion"
+      class="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-md border bg-accent p-3 text-sm text-accent-foreground"
+    >
+      <div>
+        <p class="font-semibold">
+          {{ $t("tools.backup_destinations.oidc_offer_title", { drive: typeLabel(options.oidcSuggestion.destType) }) }}
+        </p>
+        <p>
+          {{
+            $t("tools.backup_destinations.oidc_offer_text", {
+              drive: typeLabel(options.oidcSuggestion.destType),
+              email: options.oidcSuggestion.email,
+            })
+          }}
+        </p>
+      </div>
+      <div class="flex gap-2">
+        <Button size="sm" @click="acceptOffer">
+          {{ $t("tools.backup_destinations.oidc_offer_use", { drive: typeLabel(options.oidcSuggestion.destType) }) }}
+        </Button>
+        <Button size="sm" variant="outline" @click="dismissOffer">
+          {{ $t("tools.backup_destinations.oidc_offer_dismiss") }}
+        </Button>
+      </div>
+    </div>
+
+    <div
       v-for="d in problems"
       :key="d.id"
       class="mb-2 flex items-start gap-2 rounded-md border border-destructive bg-destructive/10 p-3 text-sm"
@@ -137,12 +164,14 @@
             <p class="text-xs text-muted-foreground">{{ $t(`tools.backup_destinations.type_help.${form.type}`) }}</p>
           </div>
 
-          <div v-if="form.type !== 'primary'" class="grid gap-1.5">
+          <div v-if="form.type !== 'primary' && !isDrive" class="grid gap-1.5">
             <Label for="bd-conn">
               {{
                 form.type === "local"
                   ? $t("tools.backup_destinations.local_dir")
-                  : $t("tools.backup_destinations.conn_string")
+                  : isRemote
+                    ? $t("tools.backup_destinations.address")
+                    : $t("tools.backup_destinations.conn_string")
               }}
             </Label>
             <Input
@@ -153,9 +182,72 @@
               autocomplete="off"
               spellcheck="false"
             />
-            <p v-if="form.type !== 'local'" class="text-xs text-muted-foreground">
+            <p v-if="form.type !== 'local' && !isRemote" class="text-xs text-muted-foreground">
               {{ $t("tools.backup_destinations.conn_help") }}
             </p>
+          </div>
+
+          <div v-if="isDrive" class="grid gap-2 rounded-md border p-3">
+            <p class="text-sm">
+              <template v-if="connectedAccount">
+                {{ $t("tools.backup_destinations.connected_as") }} <b>{{ connectedAccount }}</b>
+              </template>
+              <template v-else>{{ $t("tools.backup_destinations.not_connected") }}</template>
+            </p>
+            <Button type="button" variant="outline" class="w-fit" @click="connect">
+              <MdiLoading v-if="connecting" class="mr-1 animate-spin" />
+              {{
+                connectedAccount
+                  ? $t("tools.backup_destinations.reconnect", { name: typeLabel(form.type) })
+                  : $t("tools.backup_destinations.connect", { name: typeLabel(form.type) })
+              }}
+            </Button>
+            <p class="text-xs text-muted-foreground">{{ $t(`tools.backup_destinations.connect_help.${form.type}`) }}</p>
+          </div>
+
+          <div v-if="isRemote" class="grid gap-3 rounded-md border p-3">
+            <div class="grid gap-1.5">
+              <Label for="bd-user">{{ $t("tools.backup_destinations.username") }}</Label>
+              <Input id="bd-user" v-model="form.username" required autocomplete="off" maxlength="255" />
+            </div>
+            <div class="grid gap-1.5">
+              <Label for="bd-pass">{{ $t("tools.backup_destinations.password") }}</Label>
+              <Input
+                id="bd-pass"
+                v-model="form.password"
+                type="password"
+                autocomplete="new-password"
+                :placeholder="hasStoredSecret ? $t('tools.backup_destinations.password_keep') : ''"
+              />
+            </div>
+            <div v-if="form.type === 'sftp'" class="grid gap-1.5">
+              <Label for="bd-key">{{ $t("tools.backup_destinations.private_key") }}</Label>
+              <Textarea
+                id="bd-key"
+                v-model="form.privateKey"
+                rows="3"
+                spellcheck="false"
+                autocomplete="off"
+                placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
+              />
+              <p class="text-xs text-muted-foreground">{{ $t("tools.backup_destinations.private_key_help") }}</p>
+            </div>
+            <div v-if="form.type === 'sftp' && form.privateKey" class="grid gap-1.5">
+              <Label for="bd-passphrase">{{ $t("tools.backup_destinations.passphrase") }}</Label>
+              <Input id="bd-passphrase" v-model="form.passphrase" type="password" autocomplete="new-password" />
+            </div>
+            <div v-if="form.type === 'sftp'" class="grid gap-1.5">
+              <Label for="bd-hostkey">{{ $t("tools.backup_destinations.host_key") }}</Label>
+              <Input
+                id="bd-hostkey"
+                v-model="form.hostKey"
+                placeholder="SHA256:..."
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <p class="text-xs text-muted-foreground">{{ $t("tools.backup_destinations.host_key_help") }}</p>
+            </div>
+            <p class="text-xs text-muted-foreground">{{ $t("tools.backup_destinations.remote_help") }}</p>
           </div>
 
           <div v-if="form.type !== 'primary' && form.type !== 'local'" class="grid gap-1.5">
@@ -190,9 +282,22 @@
                   <Label for="bd-interval">{{ $t("tools.backup_destinations.every_hours") }}</Label>
                   <Input id="bd-interval" v-model.number="form.intervalHours" type="number" min="1" max="168" />
                 </div>
-                <div v-else class="grid gap-1.5">
+                <div v-else-if="form.frequency !== 'cron'" class="grid gap-1.5">
                   <Label for="bd-time">{{ $t("tools.backup_destinations.time") }}</Label>
                   <Input id="bd-time" v-model="time" type="time" required />
+                </div>
+                <div v-if="form.frequency === 'cron'" class="col-span-2 grid gap-1.5">
+                  <Label for="bd-cron">{{ $t("tools.backup_destinations.cron_expr") }}</Label>
+                  <Input
+                    id="bd-cron"
+                    v-model="form.cronExpr"
+                    required
+                    placeholder="0 3 * * *"
+                    autocomplete="off"
+                    spellcheck="false"
+                    class="font-mono"
+                  />
+                  <p class="text-xs text-muted-foreground">{{ $t("tools.backup_destinations.cron_help") }}</p>
                 </div>
                 <div v-if="form.frequency === 'hourly'" class="grid gap-1.5">
                   <Label for="bd-minute">{{ $t("tools.backup_destinations.at_minute") }}</Label>
@@ -278,6 +383,13 @@
               }}
             </p>
             <p class="break-words text-muted-foreground">{{ testResult.message }}</p>
+            <div v-if="testResult.hostKey && testResult.hostKey !== form.hostKey" class="mt-2 grid gap-2">
+              <p class="break-all font-mono text-xs">{{ testResult.hostKey }}</p>
+              <p class="text-xs text-muted-foreground">{{ $t("tools.backup_destinations.host_key_confirm") }}</p>
+              <Button type="button" size="sm" variant="outline" class="w-fit" @click="trustHostKey">
+                {{ $t("tools.backup_destinations.trust_host_key") }}
+              </Button>
+            </div>
           </div>
 
           <DialogFooter class="gap-2">
@@ -285,7 +397,7 @@
               <MdiLoading v-if="testing" class="mr-1 animate-spin" />
               {{ $t("tools.backup_destinations.test_connection") }}
             </Button>
-            <Button type="submit" :disabled="saving || !form.name.trim()">
+            <Button type="submit" :disabled="saving || !form.name.trim() || (isDrive && !connectedAccount)">
               <MdiLoading v-if="saving" class="mr-1 animate-spin" />
               {{ $t("global.save") }}
             </Button>
@@ -307,6 +419,7 @@
   import { Input } from "@/components/ui/input";
   import { Label } from "@/components/ui/label";
   import { Switch } from "@/components/ui/switch";
+  import { Textarea } from "@/components/ui/textarea";
   import { Checkbox } from "@/components/ui/checkbox";
   import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
   import { Dialog, DialogFooter, DialogHeader, DialogScrollContent, DialogTitle } from "@/components/ui/dialog";
@@ -315,8 +428,8 @@
   import { ServerEvent, onServerEvent } from "@/composables/use-server-events";
   import type {
     BackupDestinationOut,
+    BackupInput,
     BackupOptions,
-    BackupSettings,
     ExportOut,
     TestResult,
   } from "@/lib/api/types/data-contracts";
@@ -334,12 +447,27 @@
   const expanded = ref<string | null>(null);
   const busy = ref<Record<string, boolean>>({});
 
-  const frequencies = ["hourly", "daily", "weekly", "monthly"] as const;
+  const frequencies = ["hourly", "daily", "weekly", "monthly", "cron"] as const;
+
+  // Cloud drives are offered once the operator has configured their OAuth app.
+  const driveProvider: Record<string, "google" | "microsoft" | "dropbox"> = {
+    gdrive: "google",
+    onedrive: "microsoft",
+    dropbox: "dropbox",
+  };
 
   const typeOptions = computed(() => {
-    const all = ["primary", "local", "s3", "gcs", "azblob"];
-    return all.filter(ty => ty !== "local" || options.value?.localEnabled);
+    const all = ["primary", "local", "s3", "gcs", "azblob", "sftp", "webdav", "smb", "gdrive", "onedrive", "dropbox"];
+    return all.filter(ty => {
+      if (ty === "local") return options.value?.localEnabled;
+      if (ty === "sftp" || ty === "webdav" || ty === "smb") return options.value?.remoteEnabled || form.type === ty;
+      if (ty in driveProvider) return options.value?.oauthProviders?.includes(driveProvider[ty]!) || form.type === ty;
+      return true;
+    });
   });
+
+  const isRemote = computed(() => form.type === "sftp" || form.type === "webdav" || form.type === "smb");
+  const isDrive = computed(() => form.type in driveProvider);
 
   function typeLabel(ty: string) {
     return t(`tools.backup_destinations.types.${ty}`);
@@ -353,10 +481,45 @@
         return "gcs://my-bucket";
       case "azblob":
         return "azblob://my-container";
+      case "sftp":
+        return "sftp://nas.lan:22/mnt/tank/homebox-backups";
+      case "webdav":
+        return "https://cloud.example.com/remote.php/dav/files/me/";
+      case "smb":
+        return "smb://nas.lan/backups/homebox";
       default:
         return "s3://my-bucket?region=us-east-1";
     }
   });
+
+  // The OIDC-assisted offer: shown once per provider until accepted or dismissed,
+  // and never when a destination of that type already exists.
+  const offerDismissed = ref(false);
+  const offerKey = () => `homebox.backup.oidc-offer.${options.value?.oidcSuggestion?.provider ?? ""}`;
+  const showOfferBanner = computed(() => {
+    const offer = options.value?.oidcSuggestion;
+    return !!offer && !offerDismissed.value && !destinations.value.some(d => d.type === offer.destType);
+  });
+
+  function dismissOffer() {
+    offerDismissed.value = true;
+    try {
+      localStorage.setItem(offerKey(), "1");
+    } catch {
+      // storage can be unavailable (private mode); the banner just returns next visit
+    }
+  }
+
+  async function acceptOffer() {
+    const offer = options.value?.oidcSuggestion;
+    if (!offer) {
+      return;
+    }
+    openCreate();
+    form.type = offer.destType as typeof form.type;
+    form.name = typeLabel(offer.destType);
+    await connect();
+  }
 
   const problems = computed(() =>
     destinations.value.filter(d => d.enabled && (d.healthStatus === "unreachable" || d.lastError))
@@ -375,6 +538,11 @@
       return;
     }
     options.value = opts.data;
+    try {
+      offerDismissed.value = localStorage.getItem(offerKey()) === "1";
+    } catch {
+      offerDismissed.value = false;
+    }
     const list = await api.backups.listDestinations();
     if (list.error || !list.data) {
       available.value = false;
@@ -440,6 +608,9 @@
     const at = `${pad(d.atHour)}:${pad(d.atMinute)}`;
     let when: string;
     switch (d.frequency) {
+      case "cron":
+        when = t("tools.backup_destinations.summary_cron", { expr: d.cronExpr });
+        break;
       case "hourly":
         when = t("tools.backup_destinations.summary_hourly", { n: d.intervalHours, minute: pad(d.atMinute) });
         break;
@@ -462,12 +633,20 @@
 
   // ---- dialog form ------------------------------------------------------------
 
-  function defaults(): BackupSettings {
+  function defaults(): BackupInput {
     return {
       name: "",
       description: "",
       type: "primary",
       connString: "",
+      username: "",
+      hostKey: "",
+      password: "",
+      privateKey: "",
+      passphrase: "",
+      cronExpr: "",
+      destinationId: "",
+      oauthTicket: "",
       prefix: "homebox-backups",
       enabled: true,
       scheduleEnabled: true,
@@ -488,7 +667,7 @@
     };
   }
 
-  const form = reactive<BackupSettings>(defaults());
+  const form = reactive<BackupInput>(defaults());
   const editingId = ref<string | null>(null);
   const saving = ref(false);
   const testing = ref(false);
@@ -515,6 +694,9 @@
   function openCreate() {
     Object.assign(form, defaults());
     editingId.value = null;
+    storedSecret.value = false;
+    original.value = null;
+    connectedAccount.value = "";
     testResult.value = null;
     openDialog(DialogID.BackupDestination);
   }
@@ -526,10 +708,13 @@
       description,
       type,
       connString,
+      username: d.username,
+      hostKey: d.hostKey,
       prefix,
       enabled,
       scheduleEnabled,
       frequency,
+      cronExpr: d.cronExpr,
       intervalHours: d.intervalHours,
       atHour: d.atHour,
       atMinute: d.atMinute,
@@ -545,12 +730,110 @@
       alertStaleHours: d.alertStaleHours,
     });
     editingId.value = d.id;
+    storedSecret.value = d.hasSecret;
+    original.value = { type: d.type, connString: d.connString, username: d.username };
+    connectedAccount.value = d.type in driveProvider ? d.username : "";
     testResult.value = null;
     openDialog(DialogID.BackupDestination);
   }
 
-  function payload(): BackupSettings {
-    return { ...form, name: form.name.trim() };
+  // Credentials are never sent back, so an edit can only keep them while the
+  // type, address and username stay as they were.
+  const storedSecret = ref(false);
+  const original = ref<{ type: string; connString: string; username: string } | null>(null);
+  const hasStoredSecret = computed(
+    () =>
+      storedSecret.value &&
+      original.value !== null &&
+      original.value.type === form.type &&
+      original.value.connString === form.connString &&
+      original.value.username === form.username
+  );
+
+  // Cloud drives: the account is connected in a popup, which reports a
+  // one-time ticket back. The app is served with Cross-Origin-Opener-Policy:
+  // same-origin, which cuts the popup's window.opener once it visits the
+  // provider, so the result arrives on a same-origin BroadcastChannel (with
+  // postMessage as a fallback). The ticket is sent with the save.
+  const connectedAccount = ref("");
+  const connecting = ref(false);
+  const OAUTH_CHANNEL = "homebox-backup-oauth";
+  let channel: BroadcastChannel | null = null;
+  let giveUp: ReturnType<typeof setTimeout> | undefined;
+
+  type OAuthMessage = { type?: string; ok?: boolean; ticket?: string; account?: string; error?: string };
+
+  function handleOAuthMessage(d: OAuthMessage | null) {
+    if (!connecting.value || d?.type !== OAUTH_CHANNEL) {
+      return;
+    }
+    stopListening();
+    if (d.ok && d.ticket) {
+      form.oauthTicket = d.ticket;
+      connectedAccount.value = d.account ?? "";
+      testResult.value = null;
+    } else {
+      toast.error(d.error ?? t("tools.backup_destinations.connect_failed"));
+    }
+  }
+
+  function onWindowMessage(e: MessageEvent) {
+    if (e.origin === window.location.origin) {
+      handleOAuthMessage(e.data as OAuthMessage);
+    }
+  }
+
+  function stopListening() {
+    connecting.value = false;
+    clearTimeout(giveUp);
+    channel?.close();
+    channel = null;
+    window.removeEventListener("message", onWindowMessage);
+  }
+
+  async function connect() {
+    const provider = driveProvider[form.type];
+    if (!provider) {
+      return;
+    }
+    stopListening();
+    connecting.value = true;
+    const res = await api.backups.startOAuth(provider, options.value?.oidcSuggestion?.provider === provider);
+    if (res.error || !res.data) {
+      stopListening();
+      toast.error(errorMessage(res.data));
+      return;
+    }
+    if ("BroadcastChannel" in window) {
+      channel = new BroadcastChannel(OAUTH_CHANNEL);
+      channel.onmessage = e => handleOAuthMessage(e.data as OAuthMessage);
+    }
+    window.addEventListener("message", onWindowMessage);
+    // The user may close the window without finishing; stop waiting eventually.
+    giveUp = setTimeout(stopListening, 10 * 60 * 1000);
+    const win = window.open(res.data.authUrl, "homebox-backup-oauth", "width=560,height=720");
+    if (!win) {
+      stopListening();
+      toast.error(t("tools.backup_destinations.popup_blocked"));
+    }
+  }
+
+  onBeforeUnmount(stopListening);
+
+  function trustHostKey() {
+    if (testResult.value?.hostKey) {
+      form.hostKey = testResult.value.hostKey;
+      testResult.value = null;
+    }
+  }
+
+  function payload(): BackupInput {
+    return {
+      ...form,
+      name: form.name.trim(),
+      // Lets a test of an edited destination reuse its stored credentials.
+      destinationId: editingId.value ?? "",
+    };
   }
 
   async function testForm() {
@@ -559,7 +842,7 @@
     const res = await api.backups.testSettings(payload());
     testing.value = false;
     if (res.error || !res.data) {
-      testResult.value = { ok: false, latencyMs: 0, message: errorMessage(res.data) };
+      testResult.value = { ok: false, latencyMs: 0, message: errorMessage(res.data), hostKey: "" };
       return;
     }
     testResult.value = res.data;

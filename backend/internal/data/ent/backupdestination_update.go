@@ -118,6 +118,66 @@ func (_u *BackupDestinationUpdate) ClearConnString() *BackupDestinationUpdate {
 	return _u
 }
 
+// SetUsername sets the "username" field.
+func (_u *BackupDestinationUpdate) SetUsername(v string) *BackupDestinationUpdate {
+	_u.mutation.SetUsername(v)
+	return _u
+}
+
+// SetNillableUsername sets the "username" field if the given value is not nil.
+func (_u *BackupDestinationUpdate) SetNillableUsername(v *string) *BackupDestinationUpdate {
+	if v != nil {
+		_u.SetUsername(*v)
+	}
+	return _u
+}
+
+// ClearUsername clears the value of the "username" field.
+func (_u *BackupDestinationUpdate) ClearUsername() *BackupDestinationUpdate {
+	_u.mutation.ClearUsername()
+	return _u
+}
+
+// SetSecret sets the "secret" field.
+func (_u *BackupDestinationUpdate) SetSecret(v string) *BackupDestinationUpdate {
+	_u.mutation.SetSecret(v)
+	return _u
+}
+
+// SetNillableSecret sets the "secret" field if the given value is not nil.
+func (_u *BackupDestinationUpdate) SetNillableSecret(v *string) *BackupDestinationUpdate {
+	if v != nil {
+		_u.SetSecret(*v)
+	}
+	return _u
+}
+
+// ClearSecret clears the value of the "secret" field.
+func (_u *BackupDestinationUpdate) ClearSecret() *BackupDestinationUpdate {
+	_u.mutation.ClearSecret()
+	return _u
+}
+
+// SetHostKey sets the "host_key" field.
+func (_u *BackupDestinationUpdate) SetHostKey(v string) *BackupDestinationUpdate {
+	_u.mutation.SetHostKey(v)
+	return _u
+}
+
+// SetNillableHostKey sets the "host_key" field if the given value is not nil.
+func (_u *BackupDestinationUpdate) SetNillableHostKey(v *string) *BackupDestinationUpdate {
+	if v != nil {
+		_u.SetHostKey(*v)
+	}
+	return _u
+}
+
+// ClearHostKey clears the value of the "host_key" field.
+func (_u *BackupDestinationUpdate) ClearHostKey() *BackupDestinationUpdate {
+	_u.mutation.ClearHostKey()
+	return _u
+}
+
 // SetPrefix sets the "prefix" field.
 func (_u *BackupDestinationUpdate) SetPrefix(v string) *BackupDestinationUpdate {
 	_u.mutation.SetPrefix(v)
@@ -171,6 +231,26 @@ func (_u *BackupDestinationUpdate) SetNillableFrequency(v *backupdestination.Fre
 	if v != nil {
 		_u.SetFrequency(*v)
 	}
+	return _u
+}
+
+// SetCronExpr sets the "cron_expr" field.
+func (_u *BackupDestinationUpdate) SetCronExpr(v string) *BackupDestinationUpdate {
+	_u.mutation.SetCronExpr(v)
+	return _u
+}
+
+// SetNillableCronExpr sets the "cron_expr" field if the given value is not nil.
+func (_u *BackupDestinationUpdate) SetNillableCronExpr(v *string) *BackupDestinationUpdate {
+	if v != nil {
+		_u.SetCronExpr(*v)
+	}
+	return _u
+}
+
+// ClearCronExpr clears the value of the "cron_expr" field.
+func (_u *BackupDestinationUpdate) ClearCronExpr() *BackupDestinationUpdate {
+	_u.mutation.ClearCronExpr()
 	return _u
 }
 
@@ -744,6 +824,16 @@ func (_u *BackupDestinationUpdate) check() error {
 			return &ValidationError{Name: "conn_string", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.conn_string": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Username(); ok {
+		if err := backupdestination.UsernameValidator(v); err != nil {
+			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.username": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.HostKey(); ok {
+		if err := backupdestination.HostKeyValidator(v); err != nil {
+			return &ValidationError{Name: "host_key", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.host_key": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Prefix(); ok {
 		if err := backupdestination.PrefixValidator(v); err != nil {
 			return &ValidationError{Name: "prefix", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.prefix": %w`, err)}
@@ -752,6 +842,11 @@ func (_u *BackupDestinationUpdate) check() error {
 	if v, ok := _u.mutation.Frequency(); ok {
 		if err := backupdestination.FrequencyValidator(v); err != nil {
 			return &ValidationError{Name: "frequency", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.frequency": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.CronExpr(); ok {
+		if err := backupdestination.CronExprValidator(v); err != nil {
+			return &ValidationError{Name: "cron_expr", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.cron_expr": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.LastFingerprint(); ok {
@@ -813,6 +908,24 @@ func (_u *BackupDestinationUpdate) sqlSave(ctx context.Context) (_node int, err 
 	if _u.mutation.ConnStringCleared() {
 		_spec.ClearField(backupdestination.FieldConnString, field.TypeString)
 	}
+	if value, ok := _u.mutation.Username(); ok {
+		_spec.SetField(backupdestination.FieldUsername, field.TypeString, value)
+	}
+	if _u.mutation.UsernameCleared() {
+		_spec.ClearField(backupdestination.FieldUsername, field.TypeString)
+	}
+	if value, ok := _u.mutation.Secret(); ok {
+		_spec.SetField(backupdestination.FieldSecret, field.TypeString, value)
+	}
+	if _u.mutation.SecretCleared() {
+		_spec.ClearField(backupdestination.FieldSecret, field.TypeString)
+	}
+	if value, ok := _u.mutation.HostKey(); ok {
+		_spec.SetField(backupdestination.FieldHostKey, field.TypeString, value)
+	}
+	if _u.mutation.HostKeyCleared() {
+		_spec.ClearField(backupdestination.FieldHostKey, field.TypeString)
+	}
 	if value, ok := _u.mutation.Prefix(); ok {
 		_spec.SetField(backupdestination.FieldPrefix, field.TypeString, value)
 	}
@@ -824,6 +937,12 @@ func (_u *BackupDestinationUpdate) sqlSave(ctx context.Context) (_node int, err 
 	}
 	if value, ok := _u.mutation.Frequency(); ok {
 		_spec.SetField(backupdestination.FieldFrequency, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.CronExpr(); ok {
+		_spec.SetField(backupdestination.FieldCronExpr, field.TypeString, value)
+	}
+	if _u.mutation.CronExprCleared() {
+		_spec.ClearField(backupdestination.FieldCronExpr, field.TypeString)
 	}
 	if value, ok := _u.mutation.IntervalHours(); ok {
 		_spec.SetField(backupdestination.FieldIntervalHours, field.TypeInt, value)
@@ -1100,6 +1219,66 @@ func (_u *BackupDestinationUpdateOne) ClearConnString() *BackupDestinationUpdate
 	return _u
 }
 
+// SetUsername sets the "username" field.
+func (_u *BackupDestinationUpdateOne) SetUsername(v string) *BackupDestinationUpdateOne {
+	_u.mutation.SetUsername(v)
+	return _u
+}
+
+// SetNillableUsername sets the "username" field if the given value is not nil.
+func (_u *BackupDestinationUpdateOne) SetNillableUsername(v *string) *BackupDestinationUpdateOne {
+	if v != nil {
+		_u.SetUsername(*v)
+	}
+	return _u
+}
+
+// ClearUsername clears the value of the "username" field.
+func (_u *BackupDestinationUpdateOne) ClearUsername() *BackupDestinationUpdateOne {
+	_u.mutation.ClearUsername()
+	return _u
+}
+
+// SetSecret sets the "secret" field.
+func (_u *BackupDestinationUpdateOne) SetSecret(v string) *BackupDestinationUpdateOne {
+	_u.mutation.SetSecret(v)
+	return _u
+}
+
+// SetNillableSecret sets the "secret" field if the given value is not nil.
+func (_u *BackupDestinationUpdateOne) SetNillableSecret(v *string) *BackupDestinationUpdateOne {
+	if v != nil {
+		_u.SetSecret(*v)
+	}
+	return _u
+}
+
+// ClearSecret clears the value of the "secret" field.
+func (_u *BackupDestinationUpdateOne) ClearSecret() *BackupDestinationUpdateOne {
+	_u.mutation.ClearSecret()
+	return _u
+}
+
+// SetHostKey sets the "host_key" field.
+func (_u *BackupDestinationUpdateOne) SetHostKey(v string) *BackupDestinationUpdateOne {
+	_u.mutation.SetHostKey(v)
+	return _u
+}
+
+// SetNillableHostKey sets the "host_key" field if the given value is not nil.
+func (_u *BackupDestinationUpdateOne) SetNillableHostKey(v *string) *BackupDestinationUpdateOne {
+	if v != nil {
+		_u.SetHostKey(*v)
+	}
+	return _u
+}
+
+// ClearHostKey clears the value of the "host_key" field.
+func (_u *BackupDestinationUpdateOne) ClearHostKey() *BackupDestinationUpdateOne {
+	_u.mutation.ClearHostKey()
+	return _u
+}
+
 // SetPrefix sets the "prefix" field.
 func (_u *BackupDestinationUpdateOne) SetPrefix(v string) *BackupDestinationUpdateOne {
 	_u.mutation.SetPrefix(v)
@@ -1153,6 +1332,26 @@ func (_u *BackupDestinationUpdateOne) SetNillableFrequency(v *backupdestination.
 	if v != nil {
 		_u.SetFrequency(*v)
 	}
+	return _u
+}
+
+// SetCronExpr sets the "cron_expr" field.
+func (_u *BackupDestinationUpdateOne) SetCronExpr(v string) *BackupDestinationUpdateOne {
+	_u.mutation.SetCronExpr(v)
+	return _u
+}
+
+// SetNillableCronExpr sets the "cron_expr" field if the given value is not nil.
+func (_u *BackupDestinationUpdateOne) SetNillableCronExpr(v *string) *BackupDestinationUpdateOne {
+	if v != nil {
+		_u.SetCronExpr(*v)
+	}
+	return _u
+}
+
+// ClearCronExpr clears the value of the "cron_expr" field.
+func (_u *BackupDestinationUpdateOne) ClearCronExpr() *BackupDestinationUpdateOne {
+	_u.mutation.ClearCronExpr()
 	return _u
 }
 
@@ -1739,6 +1938,16 @@ func (_u *BackupDestinationUpdateOne) check() error {
 			return &ValidationError{Name: "conn_string", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.conn_string": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Username(); ok {
+		if err := backupdestination.UsernameValidator(v); err != nil {
+			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.username": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.HostKey(); ok {
+		if err := backupdestination.HostKeyValidator(v); err != nil {
+			return &ValidationError{Name: "host_key", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.host_key": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Prefix(); ok {
 		if err := backupdestination.PrefixValidator(v); err != nil {
 			return &ValidationError{Name: "prefix", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.prefix": %w`, err)}
@@ -1747,6 +1956,11 @@ func (_u *BackupDestinationUpdateOne) check() error {
 	if v, ok := _u.mutation.Frequency(); ok {
 		if err := backupdestination.FrequencyValidator(v); err != nil {
 			return &ValidationError{Name: "frequency", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.frequency": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.CronExpr(); ok {
+		if err := backupdestination.CronExprValidator(v); err != nil {
+			return &ValidationError{Name: "cron_expr", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.cron_expr": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.LastFingerprint(); ok {
@@ -1825,6 +2039,24 @@ func (_u *BackupDestinationUpdateOne) sqlSave(ctx context.Context) (_node *Backu
 	if _u.mutation.ConnStringCleared() {
 		_spec.ClearField(backupdestination.FieldConnString, field.TypeString)
 	}
+	if value, ok := _u.mutation.Username(); ok {
+		_spec.SetField(backupdestination.FieldUsername, field.TypeString, value)
+	}
+	if _u.mutation.UsernameCleared() {
+		_spec.ClearField(backupdestination.FieldUsername, field.TypeString)
+	}
+	if value, ok := _u.mutation.Secret(); ok {
+		_spec.SetField(backupdestination.FieldSecret, field.TypeString, value)
+	}
+	if _u.mutation.SecretCleared() {
+		_spec.ClearField(backupdestination.FieldSecret, field.TypeString)
+	}
+	if value, ok := _u.mutation.HostKey(); ok {
+		_spec.SetField(backupdestination.FieldHostKey, field.TypeString, value)
+	}
+	if _u.mutation.HostKeyCleared() {
+		_spec.ClearField(backupdestination.FieldHostKey, field.TypeString)
+	}
 	if value, ok := _u.mutation.Prefix(); ok {
 		_spec.SetField(backupdestination.FieldPrefix, field.TypeString, value)
 	}
@@ -1836,6 +2068,12 @@ func (_u *BackupDestinationUpdateOne) sqlSave(ctx context.Context) (_node *Backu
 	}
 	if value, ok := _u.mutation.Frequency(); ok {
 		_spec.SetField(backupdestination.FieldFrequency, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.CronExpr(); ok {
+		_spec.SetField(backupdestination.FieldCronExpr, field.TypeString, value)
+	}
+	if _u.mutation.CronExprCleared() {
+		_spec.ClearField(backupdestination.FieldCronExpr, field.TypeString)
 	}
 	if value, ok := _u.mutation.IntervalHours(); ok {
 		_spec.SetField(backupdestination.FieldIntervalHours, field.TypeInt, value)

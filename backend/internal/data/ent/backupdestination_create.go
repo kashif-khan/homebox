@@ -104,6 +104,48 @@ func (_c *BackupDestinationCreate) SetNillableConnString(v *string) *BackupDesti
 	return _c
 }
 
+// SetUsername sets the "username" field.
+func (_c *BackupDestinationCreate) SetUsername(v string) *BackupDestinationCreate {
+	_c.mutation.SetUsername(v)
+	return _c
+}
+
+// SetNillableUsername sets the "username" field if the given value is not nil.
+func (_c *BackupDestinationCreate) SetNillableUsername(v *string) *BackupDestinationCreate {
+	if v != nil {
+		_c.SetUsername(*v)
+	}
+	return _c
+}
+
+// SetSecret sets the "secret" field.
+func (_c *BackupDestinationCreate) SetSecret(v string) *BackupDestinationCreate {
+	_c.mutation.SetSecret(v)
+	return _c
+}
+
+// SetNillableSecret sets the "secret" field if the given value is not nil.
+func (_c *BackupDestinationCreate) SetNillableSecret(v *string) *BackupDestinationCreate {
+	if v != nil {
+		_c.SetSecret(*v)
+	}
+	return _c
+}
+
+// SetHostKey sets the "host_key" field.
+func (_c *BackupDestinationCreate) SetHostKey(v string) *BackupDestinationCreate {
+	_c.mutation.SetHostKey(v)
+	return _c
+}
+
+// SetNillableHostKey sets the "host_key" field if the given value is not nil.
+func (_c *BackupDestinationCreate) SetNillableHostKey(v *string) *BackupDestinationCreate {
+	if v != nil {
+		_c.SetHostKey(*v)
+	}
+	return _c
+}
+
 // SetPrefix sets the "prefix" field.
 func (_c *BackupDestinationCreate) SetPrefix(v string) *BackupDestinationCreate {
 	_c.mutation.SetPrefix(v)
@@ -156,6 +198,20 @@ func (_c *BackupDestinationCreate) SetFrequency(v backupdestination.Frequency) *
 func (_c *BackupDestinationCreate) SetNillableFrequency(v *backupdestination.Frequency) *BackupDestinationCreate {
 	if v != nil {
 		_c.SetFrequency(*v)
+	}
+	return _c
+}
+
+// SetCronExpr sets the "cron_expr" field.
+func (_c *BackupDestinationCreate) SetCronExpr(v string) *BackupDestinationCreate {
+	_c.mutation.SetCronExpr(v)
+	return _c
+}
+
+// SetNillableCronExpr sets the "cron_expr" field if the given value is not nil.
+func (_c *BackupDestinationCreate) SetNillableCronExpr(v *string) *BackupDestinationCreate {
+	if v != nil {
+		_c.SetCronExpr(*v)
 	}
 	return _c
 }
@@ -721,6 +777,16 @@ func (_c *BackupDestinationCreate) check() error {
 			return &ValidationError{Name: "conn_string", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.conn_string": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.Username(); ok {
+		if err := backupdestination.UsernameValidator(v); err != nil {
+			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.username": %w`, err)}
+		}
+	}
+	if v, ok := _c.mutation.HostKey(); ok {
+		if err := backupdestination.HostKeyValidator(v); err != nil {
+			return &ValidationError{Name: "host_key", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.host_key": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.Prefix(); !ok {
 		return &ValidationError{Name: "prefix", err: errors.New(`ent: missing required field "BackupDestination.prefix"`)}
 	}
@@ -741,6 +807,11 @@ func (_c *BackupDestinationCreate) check() error {
 	if v, ok := _c.mutation.Frequency(); ok {
 		if err := backupdestination.FrequencyValidator(v); err != nil {
 			return &ValidationError{Name: "frequency", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.frequency": %w`, err)}
+		}
+	}
+	if v, ok := _c.mutation.CronExpr(); ok {
+		if err := backupdestination.CronExprValidator(v); err != nil {
+			return &ValidationError{Name: "cron_expr", err: fmt.Errorf(`ent: validator failed for field "BackupDestination.cron_expr": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.IntervalHours(); !ok {
@@ -879,6 +950,18 @@ func (_c *BackupDestinationCreate) createSpec() (*BackupDestination, *sqlgraph.C
 		_spec.SetField(backupdestination.FieldConnString, field.TypeString, value)
 		_node.ConnString = value
 	}
+	if value, ok := _c.mutation.Username(); ok {
+		_spec.SetField(backupdestination.FieldUsername, field.TypeString, value)
+		_node.Username = value
+	}
+	if value, ok := _c.mutation.Secret(); ok {
+		_spec.SetField(backupdestination.FieldSecret, field.TypeString, value)
+		_node.Secret = value
+	}
+	if value, ok := _c.mutation.HostKey(); ok {
+		_spec.SetField(backupdestination.FieldHostKey, field.TypeString, value)
+		_node.HostKey = value
+	}
 	if value, ok := _c.mutation.Prefix(); ok {
 		_spec.SetField(backupdestination.FieldPrefix, field.TypeString, value)
 		_node.Prefix = value
@@ -894,6 +977,10 @@ func (_c *BackupDestinationCreate) createSpec() (*BackupDestination, *sqlgraph.C
 	if value, ok := _c.mutation.Frequency(); ok {
 		_spec.SetField(backupdestination.FieldFrequency, field.TypeEnum, value)
 		_node.Frequency = value
+	}
+	if value, ok := _c.mutation.CronExpr(); ok {
+		_spec.SetField(backupdestination.FieldCronExpr, field.TypeString, value)
+		_node.CronExpr = value
 	}
 	if value, ok := _c.mutation.IntervalHours(); ok {
 		_spec.SetField(backupdestination.FieldIntervalHours, field.TypeInt, value)
