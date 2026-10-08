@@ -1,5 +1,5 @@
 # Node dependencies stage
-FROM --platform=$BUILDPLATFORM public.ecr.aws/docker/library/node:22-alpine AS frontend-dependencies
+FROM public.ecr.aws/docker/library/node:22-alpine AS frontend-dependencies
 WORKDIR /app
 
 # Install pnpm 10 (latest stable, works reliably in Alpine)
@@ -10,7 +10,7 @@ COPY frontend/package.json frontend/pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Build Nuxt (frontend) stage
-FROM --platform=$BUILDPLATFORM public.ecr.aws/docker/library/node:22-alpine AS frontend-builder
+FROM public.ecr.aws/docker/library/node:22-alpine AS frontend-builder
 WORKDIR /app
 
 # Install pnpm 10 (latest stable)
@@ -22,7 +22,7 @@ COPY --from=frontend-dependencies /app/node_modules ./node_modules
 RUN pnpm build
 
 # Go dependencies stage
-FROM --platform=$BUILDPLATFORM public.ecr.aws/docker/library/golang:alpine AS builder-dependencies
+FROM public.ecr.aws/docker/library/golang:alpine AS builder-dependencies
 WORKDIR /go/src/app
 
 # Copy go.mod and go.sum for better caching
@@ -30,7 +30,7 @@ COPY ./backend/go.mod ./backend/go.sum ./
 RUN go mod download
 
 # Build API stage
-FROM --platform=$BUILDPLATFORM public.ecr.aws/docker/library/golang:alpine AS builder
+FROM public.ecr.aws/docker/library/golang:alpine AS builder
 ARG TARGETOS
 ARG TARGETARCH
 ARG BUILD_TIME
@@ -60,13 +60,8 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
         -ldflags "-s -w -X main.commit=$COMMIT -X main.buildTime=$BUILD_TIME -X main.version=$VERSION" \
         -tags nodynamic -o /go/bin/api -v ./app/api/*.go; \
     else \
-         case "$TARGETARCH" in \
-             arm64) INTERP="-I /lib/ld-musl-aarch64.so.1" ;; \
-             amd64) INTERP="-I /lib/ld-musl-x86_64.so.1" ;; \
-             *) INTERP="" ;; \
-         esac; \
          echo $TARGETOS $TARGETARCH; CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build \
-        -ldflags "-s -w $INTERP -X main.commit=$COMMIT -X main.buildTime=$BUILD_TIME -X main.version=$VERSION" \
+        -ldflags "-s -w -X main.commit=$COMMIT -X main.buildTime=$BUILD_TIME -X main.version=$VERSION" \
         -o /go/bin/api -v ./app/api/*.go; \
     fi
 
