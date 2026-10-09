@@ -42,7 +42,23 @@
             "settings": "Settings",
             "tools": "Tools"
         },
-        "uses": "Uses"
+        "uses": "Uses",
+        "ai_access": {
+            "label": "AI assistant access",
+            "levels": {
+                "off": "Off",
+                "read": "Read only",
+                "write": "Read and edit",
+                "full": "Read, edit and delete"
+            },
+            "help": {
+                "off": "AI assistants cannot connect to this collection.",
+                "read": "Assistants such as Claude or ChatGPT may look things up but never change anything.",
+                "write": "Assistants may look things up, add items and update them. They cannot delete.",
+                "full": "Assistants may do everything you can do in this collection, including deleting. Deletions still need the user's confirmation in the assistant."
+            },
+            "server_read_only": "The server administrator has limited AI assistants to read-only access, whatever is chosen here."
+        }
     },
     "components": {
         "app": {
@@ -816,7 +832,7 @@
         "api_key_token_label": "Your new API key",
         "api_key_token_warning": "Copy this token now. For your security, it will not be shown again.",
         "api_keys": "API Keys",
-        "api_keys_sub": "Static tokens for programmatic access. Each key has the same permissions as your account.",
+        "api_keys_sub": "Tokens for programmatic access, such as scripts, Home Assistant or AI assistants. Each key is limited to the access you choose.",
         "change_password": "Change Password",
         "currency_format": "Currency Format",
         "current_password": "Current Password",
@@ -869,13 +885,34 @@
             "group_updated": "Group updated",
             "logout_all_success": "Signed out of all devices.",
             "notifier_test_success": "Notifier test successful.",
-            "password_changed": "Password changed successfully."
+            "password_changed": "Password changed successfully.",
+            "assistant_disconnected": "Assistant disconnected.",
+            "failed_assistant_disconnect": "Failed to disconnect the assistant."
         },
         "update_group": "Update Group",
         "update_language": "Update Language",
         "url": "URL",
         "user_profile": "User Profile",
-        "user_profile_sub": "Invite users, and manage your account."
+        "user_profile_sub": "Invite users, and manage your account.",
+        "api_key_access": "Access",
+        "api_key_collection": "Collection",
+        "api_key_collection_any": "Any collection I belong to",
+        "api_key_preset": {
+            "read-only": "Read only",
+            "read-write": "Read and edit",
+            "full": "Full access",
+            "custom": "Custom"
+        },
+        "api_key_preset_help": {
+            "read-only": "Can look at your inventory but not change it. The safest choice for AI assistants and dashboards.",
+            "read-write": "Can also add and edit items and maintenance records. Cannot delete.",
+            "full": "Can do everything your account can, including deleting, except managing API keys. Use sparingly."
+        },
+        "assistants": "Connected AI assistants",
+        "assistants_sub": "Assistants you have allowed to work with your inventory. Disconnecting one revokes its access immediately.",
+        "assistants_disconnect": "Disconnect",
+        "assistants_disconnect_confirm": "Disconnect {name}? It will lose access to your inventory immediately.",
+        "no_assistants": "No AI assistants are connected."
     },
     "reports": {
         "label_generator": {
@@ -1178,6 +1215,28 @@
             "restore_requires_empty": "Restore requires a collection with no items. Switch to a freshly registered collection (default locations and tags are fine) and try again.",
             "restore_started": "Restore started — refresh shortly to see imported items.",
             "wipe_inventory_success": "Successfully wiped inventory. { results } items deleted."
+        }
+    },
+    "oauth": {
+        "consent": {
+            "title": "Connect an AI assistant",
+            "intro": "{client} wants to access your Homebox inventory.",
+            "redirect_note": "After you decide, you will be sent back to {host}. Only continue if you started this connection yourself.",
+            "collection": "Collection to share",
+            "collection_off": "AI access is off",
+            "none_enabled": "None of your collections allow AI assistants yet. Ask a collection owner to turn on AI assistant access in the collection settings, then try again.",
+            "permissions": "Permissions",
+            "can_change": "Can change data",
+            "read_only": "Read only",
+            "can_change_warning": "This assistant will be able to change your inventory on your behalf. Review what it does.",
+            "blocked_by_owner": "{count} of the selected permissions are not allowed by this collection's owner and will have no effect until they raise the access level.",
+            "revoke_note": "You can disconnect this assistant at any time from your profile.",
+            "allow": "Allow",
+            "deny": "Deny",
+            "approve_failed": "Could not approve the request. It may have expired; start again from the assistant.",
+            "deny_failed": "Could not decline the request.",
+            "missing_request": "This page needs to be opened from an AI assistant's connection flow.",
+            "expired": "This request has expired or was already handled. Start the connection again from the assistant."
         }
     }
 }
