@@ -48,6 +48,18 @@ type MaintenanceEntry func(*sql.Selector)
 // Notifier is the predicate function for notifier builders.
 type Notifier func(*sql.Selector)
 
+// OAuthClient is the predicate function for oauthclient builders.
+type OAuthClient func(*sql.Selector)
+
+// OAuthGrant is the predicate function for oauthgrant builders.
+type OAuthGrant func(*sql.Selector)
+
+// OAuthRequest is the predicate function for oauthrequest builders.
+type OAuthRequest func(*sql.Selector)
+
+// OAuthToken is the predicate function for oauthtoken builders.
+type OAuthToken func(*sql.Selector)
+
 // PasswordResetTokens is the predicate function for passwordresettokens builders.
 type PasswordResetTokens func(*sql.Selector)
 

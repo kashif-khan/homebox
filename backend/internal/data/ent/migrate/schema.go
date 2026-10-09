@@ -568,6 +568,138 @@ var (
 			},
 		},
 	}
+	// OauthClientsColumns holds the columns for the "oauth_clients" table.
+	OauthClientsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "client_id", Type: field.TypeString, Unique: true, Size: 64},
+		{Name: "name", Type: field.TypeString, Size: 255},
+		{Name: "redirect_uris", Type: field.TypeJSON},
+	}
+	// OauthClientsTable holds the schema information for the "oauth_clients" table.
+	OauthClientsTable = &schema.Table{
+		Name:       "oauth_clients",
+		Columns:    OauthClientsColumns,
+		PrimaryKey: []*schema.Column{OauthClientsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "oauthclient_client_id",
+				Unique:  false,
+				Columns: []*schema.Column{OauthClientsColumns[3]},
+			},
+		},
+	}
+	// OauthGrantsColumns holds the columns for the "oauth_grants" table.
+	OauthGrantsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "scopes", Type: field.TypeJSON},
+		{Name: "last_used_at", Type: field.TypeTime, Nullable: true},
+		{Name: "group_id", Type: field.TypeUUID},
+		{Name: "oauth_client_grants", Type: field.TypeUUID},
+		{Name: "user_id", Type: field.TypeUUID},
+	}
+	// OauthGrantsTable holds the schema information for the "oauth_grants" table.
+	OauthGrantsTable = &schema.Table{
+		Name:       "oauth_grants",
+		Columns:    OauthGrantsColumns,
+		PrimaryKey: []*schema.Column{OauthGrantsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "oauth_grants_groups_oauth_grants",
+				Columns:    []*schema.Column{OauthGrantsColumns[5]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "oauth_grants_oauth_clients_grants",
+				Columns:    []*schema.Column{OauthGrantsColumns[6]},
+				RefColumns: []*schema.Column{OauthClientsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "oauth_grants_users_oauth_grants",
+				Columns:    []*schema.Column{OauthGrantsColumns[7]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// OauthRequestsColumns holds the columns for the "oauth_requests" table.
+	OauthRequestsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "redirect_uri", Type: field.TypeString, Size: 2048},
+		{Name: "scopes", Type: field.TypeJSON},
+		{Name: "state", Type: field.TypeString, Nullable: true, Size: 2048},
+		{Name: "code_challenge", Type: field.TypeString, Size: 128},
+		{Name: "resource", Type: field.TypeString, Nullable: true, Size: 2048},
+		{Name: "expires_at", Type: field.TypeTime},
+		{Name: "oauth_client_requests", Type: field.TypeUUID},
+	}
+	// OauthRequestsTable holds the schema information for the "oauth_requests" table.
+	OauthRequestsTable = &schema.Table{
+		Name:       "oauth_requests",
+		Columns:    OauthRequestsColumns,
+		PrimaryKey: []*schema.Column{OauthRequestsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "oauth_requests_oauth_clients_requests",
+				Columns:    []*schema.Column{OauthRequestsColumns[9]},
+				RefColumns: []*schema.Column{OauthClientsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "oauthrequest_expires_at",
+				Unique:  false,
+				Columns: []*schema.Column{OauthRequestsColumns[8]},
+			},
+		},
+	}
+	// OauthTokensColumns holds the columns for the "oauth_tokens" table.
+	OauthTokensColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "kind", Type: field.TypeEnum, Enums: []string{"code", "access", "refresh"}},
+		{Name: "token_hash", Type: field.TypeBytes, Unique: true},
+		{Name: "expires_at", Type: field.TypeTime},
+		{Name: "used_at", Type: field.TypeTime, Nullable: true},
+		{Name: "code_challenge", Type: field.TypeString, Nullable: true, Size: 128},
+		{Name: "redirect_uri", Type: field.TypeString, Nullable: true, Size: 2048},
+		{Name: "oauth_grant_tokens", Type: field.TypeUUID},
+	}
+	// OauthTokensTable holds the schema information for the "oauth_tokens" table.
+	OauthTokensTable = &schema.Table{
+		Name:       "oauth_tokens",
+		Columns:    OauthTokensColumns,
+		PrimaryKey: []*schema.Column{OauthTokensColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "oauth_tokens_oauth_grants_tokens",
+				Columns:    []*schema.Column{OauthTokensColumns[9]},
+				RefColumns: []*schema.Column{OauthGrantsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "oauthtoken_token_hash",
+				Unique:  false,
+				Columns: []*schema.Column{OauthTokensColumns[4]},
+			},
+			{
+				Name:    "oauthtoken_expires_at",
+				Unique:  false,
+				Columns: []*schema.Column{OauthTokensColumns[5]},
+			},
+		},
+	}
 	// PasswordResetTokensColumns holds the columns for the "password_reset_tokens" table.
 	PasswordResetTokensColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -755,6 +887,10 @@ var (
 		GroupInvitationTokensTable,
 		MaintenanceEntriesTable,
 		NotifiersTable,
+		OauthClientsTable,
+		OauthGrantsTable,
+		OauthRequestsTable,
+		OauthTokensTable,
 		PasswordResetTokensTable,
 		TagsTable,
 		TemplateFieldsTable,
@@ -786,6 +922,11 @@ func init() {
 	MaintenanceEntriesTable.ForeignKeys[0].RefTable = EntitiesTable
 	NotifiersTable.ForeignKeys[0].RefTable = GroupsTable
 	NotifiersTable.ForeignKeys[1].RefTable = UsersTable
+	OauthGrantsTable.ForeignKeys[0].RefTable = GroupsTable
+	OauthGrantsTable.ForeignKeys[1].RefTable = OauthClientsTable
+	OauthGrantsTable.ForeignKeys[2].RefTable = UsersTable
+	OauthRequestsTable.ForeignKeys[0].RefTable = OauthClientsTable
+	OauthTokensTable.ForeignKeys[0].RefTable = OauthGrantsTable
 	PasswordResetTokensTable.ForeignKeys[0].RefTable = UsersTable
 	TagsTable.ForeignKeys[0].RefTable = GroupsTable
 	TagsTable.ForeignKeys[1].RefTable = TagsTable

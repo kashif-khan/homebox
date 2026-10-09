@@ -19,6 +19,10 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/groupinvitationtoken"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/maintenanceentry"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notifier"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/oauthclient"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/oauthgrant"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/oauthrequest"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/oauthtoken"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/passwordresettokens"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/schema"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/tag"
@@ -791,6 +795,170 @@ func init() {
 	notifierDescID := notifierMixinFields0[0].Descriptor()
 	// notifier.DefaultID holds the default value on creation for the id field.
 	notifier.DefaultID = notifierDescID.Default.(func() uuid.UUID)
+	oauthclientMixin := schema.OAuthClient{}.Mixin()
+	oauthclientMixinFields0 := oauthclientMixin[0].Fields()
+	_ = oauthclientMixinFields0
+	oauthclientFields := schema.OAuthClient{}.Fields()
+	_ = oauthclientFields
+	// oauthclientDescCreatedAt is the schema descriptor for created_at field.
+	oauthclientDescCreatedAt := oauthclientMixinFields0[1].Descriptor()
+	// oauthclient.DefaultCreatedAt holds the default value on creation for the created_at field.
+	oauthclient.DefaultCreatedAt = oauthclientDescCreatedAt.Default.(func() time.Time)
+	// oauthclientDescUpdatedAt is the schema descriptor for updated_at field.
+	oauthclientDescUpdatedAt := oauthclientMixinFields0[2].Descriptor()
+	// oauthclient.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	oauthclient.DefaultUpdatedAt = oauthclientDescUpdatedAt.Default.(func() time.Time)
+	// oauthclient.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	oauthclient.UpdateDefaultUpdatedAt = oauthclientDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// oauthclientDescClientID is the schema descriptor for client_id field.
+	oauthclientDescClientID := oauthclientFields[0].Descriptor()
+	// oauthclient.ClientIDValidator is a validator for the "client_id" field. It is called by the builders before save.
+	oauthclient.ClientIDValidator = func() func(string) error {
+		validators := oauthclientDescClientID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(client_id string) error {
+			for _, fn := range fns {
+				if err := fn(client_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// oauthclientDescName is the schema descriptor for name field.
+	oauthclientDescName := oauthclientFields[1].Descriptor()
+	// oauthclient.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	oauthclient.NameValidator = func() func(string) error {
+		validators := oauthclientDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// oauthclientDescID is the schema descriptor for id field.
+	oauthclientDescID := oauthclientMixinFields0[0].Descriptor()
+	// oauthclient.DefaultID holds the default value on creation for the id field.
+	oauthclient.DefaultID = oauthclientDescID.Default.(func() uuid.UUID)
+	oauthgrantMixin := schema.OAuthGrant{}.Mixin()
+	oauthgrantMixinFields0 := oauthgrantMixin[0].Fields()
+	_ = oauthgrantMixinFields0
+	oauthgrantFields := schema.OAuthGrant{}.Fields()
+	_ = oauthgrantFields
+	// oauthgrantDescCreatedAt is the schema descriptor for created_at field.
+	oauthgrantDescCreatedAt := oauthgrantMixinFields0[1].Descriptor()
+	// oauthgrant.DefaultCreatedAt holds the default value on creation for the created_at field.
+	oauthgrant.DefaultCreatedAt = oauthgrantDescCreatedAt.Default.(func() time.Time)
+	// oauthgrantDescUpdatedAt is the schema descriptor for updated_at field.
+	oauthgrantDescUpdatedAt := oauthgrantMixinFields0[2].Descriptor()
+	// oauthgrant.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	oauthgrant.DefaultUpdatedAt = oauthgrantDescUpdatedAt.Default.(func() time.Time)
+	// oauthgrant.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	oauthgrant.UpdateDefaultUpdatedAt = oauthgrantDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// oauthgrantDescID is the schema descriptor for id field.
+	oauthgrantDescID := oauthgrantMixinFields0[0].Descriptor()
+	// oauthgrant.DefaultID holds the default value on creation for the id field.
+	oauthgrant.DefaultID = oauthgrantDescID.Default.(func() uuid.UUID)
+	oauthrequestMixin := schema.OAuthRequest{}.Mixin()
+	oauthrequestMixinFields0 := oauthrequestMixin[0].Fields()
+	_ = oauthrequestMixinFields0
+	oauthrequestFields := schema.OAuthRequest{}.Fields()
+	_ = oauthrequestFields
+	// oauthrequestDescCreatedAt is the schema descriptor for created_at field.
+	oauthrequestDescCreatedAt := oauthrequestMixinFields0[1].Descriptor()
+	// oauthrequest.DefaultCreatedAt holds the default value on creation for the created_at field.
+	oauthrequest.DefaultCreatedAt = oauthrequestDescCreatedAt.Default.(func() time.Time)
+	// oauthrequestDescUpdatedAt is the schema descriptor for updated_at field.
+	oauthrequestDescUpdatedAt := oauthrequestMixinFields0[2].Descriptor()
+	// oauthrequest.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	oauthrequest.DefaultUpdatedAt = oauthrequestDescUpdatedAt.Default.(func() time.Time)
+	// oauthrequest.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	oauthrequest.UpdateDefaultUpdatedAt = oauthrequestDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// oauthrequestDescRedirectURI is the schema descriptor for redirect_uri field.
+	oauthrequestDescRedirectURI := oauthrequestFields[0].Descriptor()
+	// oauthrequest.RedirectURIValidator is a validator for the "redirect_uri" field. It is called by the builders before save.
+	oauthrequest.RedirectURIValidator = func() func(string) error {
+		validators := oauthrequestDescRedirectURI.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(redirect_uri string) error {
+			for _, fn := range fns {
+				if err := fn(redirect_uri); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// oauthrequestDescState is the schema descriptor for state field.
+	oauthrequestDescState := oauthrequestFields[2].Descriptor()
+	// oauthrequest.StateValidator is a validator for the "state" field. It is called by the builders before save.
+	oauthrequest.StateValidator = oauthrequestDescState.Validators[0].(func(string) error)
+	// oauthrequestDescCodeChallenge is the schema descriptor for code_challenge field.
+	oauthrequestDescCodeChallenge := oauthrequestFields[3].Descriptor()
+	// oauthrequest.CodeChallengeValidator is a validator for the "code_challenge" field. It is called by the builders before save.
+	oauthrequest.CodeChallengeValidator = func() func(string) error {
+		validators := oauthrequestDescCodeChallenge.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(code_challenge string) error {
+			for _, fn := range fns {
+				if err := fn(code_challenge); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// oauthrequestDescResource is the schema descriptor for resource field.
+	oauthrequestDescResource := oauthrequestFields[4].Descriptor()
+	// oauthrequest.ResourceValidator is a validator for the "resource" field. It is called by the builders before save.
+	oauthrequest.ResourceValidator = oauthrequestDescResource.Validators[0].(func(string) error)
+	// oauthrequestDescID is the schema descriptor for id field.
+	oauthrequestDescID := oauthrequestMixinFields0[0].Descriptor()
+	// oauthrequest.DefaultID holds the default value on creation for the id field.
+	oauthrequest.DefaultID = oauthrequestDescID.Default.(func() uuid.UUID)
+	oauthtokenMixin := schema.OAuthToken{}.Mixin()
+	oauthtokenMixinFields0 := oauthtokenMixin[0].Fields()
+	_ = oauthtokenMixinFields0
+	oauthtokenFields := schema.OAuthToken{}.Fields()
+	_ = oauthtokenFields
+	// oauthtokenDescCreatedAt is the schema descriptor for created_at field.
+	oauthtokenDescCreatedAt := oauthtokenMixinFields0[1].Descriptor()
+	// oauthtoken.DefaultCreatedAt holds the default value on creation for the created_at field.
+	oauthtoken.DefaultCreatedAt = oauthtokenDescCreatedAt.Default.(func() time.Time)
+	// oauthtokenDescUpdatedAt is the schema descriptor for updated_at field.
+	oauthtokenDescUpdatedAt := oauthtokenMixinFields0[2].Descriptor()
+	// oauthtoken.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	oauthtoken.DefaultUpdatedAt = oauthtokenDescUpdatedAt.Default.(func() time.Time)
+	// oauthtoken.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	oauthtoken.UpdateDefaultUpdatedAt = oauthtokenDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// oauthtokenDescCodeChallenge is the schema descriptor for code_challenge field.
+	oauthtokenDescCodeChallenge := oauthtokenFields[4].Descriptor()
+	// oauthtoken.CodeChallengeValidator is a validator for the "code_challenge" field. It is called by the builders before save.
+	oauthtoken.CodeChallengeValidator = oauthtokenDescCodeChallenge.Validators[0].(func(string) error)
+	// oauthtokenDescRedirectURI is the schema descriptor for redirect_uri field.
+	oauthtokenDescRedirectURI := oauthtokenFields[5].Descriptor()
+	// oauthtoken.RedirectURIValidator is a validator for the "redirect_uri" field. It is called by the builders before save.
+	oauthtoken.RedirectURIValidator = oauthtokenDescRedirectURI.Validators[0].(func(string) error)
+	// oauthtokenDescID is the schema descriptor for id field.
+	oauthtokenDescID := oauthtokenMixinFields0[0].Descriptor()
+	// oauthtoken.DefaultID holds the default value on creation for the id field.
+	oauthtoken.DefaultID = oauthtokenDescID.Default.(func() uuid.UUID)
 	passwordresettokensMixin := schema.PasswordResetTokens{}.Mixin()
 	passwordresettokensMixinFields0 := passwordresettokensMixin[0].Fields()
 	_ = passwordresettokensMixinFields0

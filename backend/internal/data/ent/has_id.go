@@ -60,6 +60,22 @@ func (_m *Notifier) GetID() uuid.UUID {
 	return _m.ID
 }
 
+func (_m *OAuthClient) GetID() uuid.UUID {
+	return _m.ID
+}
+
+func (_m *OAuthGrant) GetID() uuid.UUID {
+	return _m.ID
+}
+
+func (_m *OAuthRequest) GetID() uuid.UUID {
+	return _m.ID
+}
+
+func (_m *OAuthToken) GetID() uuid.UUID {
+	return _m.ID
+}
+
 func (_m *PasswordResetTokens) GetID() uuid.UUID {
 	return _m.ID
 }

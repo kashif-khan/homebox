@@ -16,6 +16,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authtokens"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/group"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notifier"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/oauthgrant"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/passwordresettokens"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/predicate"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/user"
@@ -283,6 +284,21 @@ func (_u *UserUpdate) AddNotifiers(v ...*Notifier) *UserUpdate {
 	return _u.AddNotifierIDs(ids...)
 }
 
+// AddOauthGrantIDs adds the "oauth_grants" edge to the OAuthGrant entity by IDs.
+func (_u *UserUpdate) AddOauthGrantIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddOauthGrantIDs(ids...)
+	return _u
+}
+
+// AddOauthGrants adds the "oauth_grants" edges to the OAuthGrant entity.
+func (_u *UserUpdate) AddOauthGrants(v ...*OAuthGrant) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddOauthGrantIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdate) Mutation() *UserMutation {
 	return _u.mutation
@@ -391,6 +407,27 @@ func (_u *UserUpdate) RemoveNotifiers(v ...*Notifier) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveNotifierIDs(ids...)
+}
+
+// ClearOauthGrants clears all "oauth_grants" edges to the OAuthGrant entity.
+func (_u *UserUpdate) ClearOauthGrants() *UserUpdate {
+	_u.mutation.ClearOauthGrants()
+	return _u
+}
+
+// RemoveOauthGrantIDs removes the "oauth_grants" edge to OAuthGrant entities by IDs.
+func (_u *UserUpdate) RemoveOauthGrantIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveOauthGrantIDs(ids...)
+	return _u
+}
+
+// RemoveOauthGrants removes "oauth_grants" edges to OAuthGrant entities.
+func (_u *UserUpdate) RemoveOauthGrants(v ...*OAuthGrant) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveOauthGrantIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -749,6 +786,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.OauthGrantsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OauthGrantsTable,
+			Columns: []string{user.OauthGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(oauthgrant.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedOauthGrantsIDs(); len(nodes) > 0 && !_u.mutation.OauthGrantsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OauthGrantsTable,
+			Columns: []string{user.OauthGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(oauthgrant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OauthGrantsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OauthGrantsTable,
+			Columns: []string{user.OauthGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(oauthgrant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -1018,6 +1100,21 @@ func (_u *UserUpdateOne) AddNotifiers(v ...*Notifier) *UserUpdateOne {
 	return _u.AddNotifierIDs(ids...)
 }
 
+// AddOauthGrantIDs adds the "oauth_grants" edge to the OAuthGrant entity by IDs.
+func (_u *UserUpdateOne) AddOauthGrantIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddOauthGrantIDs(ids...)
+	return _u
+}
+
+// AddOauthGrants adds the "oauth_grants" edges to the OAuthGrant entity.
+func (_u *UserUpdateOne) AddOauthGrants(v ...*OAuthGrant) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddOauthGrantIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdateOne) Mutation() *UserMutation {
 	return _u.mutation
@@ -1126,6 +1223,27 @@ func (_u *UserUpdateOne) RemoveNotifiers(v ...*Notifier) *UserUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveNotifierIDs(ids...)
+}
+
+// ClearOauthGrants clears all "oauth_grants" edges to the OAuthGrant entity.
+func (_u *UserUpdateOne) ClearOauthGrants() *UserUpdateOne {
+	_u.mutation.ClearOauthGrants()
+	return _u
+}
+
+// RemoveOauthGrantIDs removes the "oauth_grants" edge to OAuthGrant entities by IDs.
+func (_u *UserUpdateOne) RemoveOauthGrantIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveOauthGrantIDs(ids...)
+	return _u
+}
+
+// RemoveOauthGrants removes "oauth_grants" edges to OAuthGrant entities.
+func (_u *UserUpdateOne) RemoveOauthGrants(v ...*OAuthGrant) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveOauthGrantIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -1507,6 +1625,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(notifier.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.OauthGrantsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OauthGrantsTable,
+			Columns: []string{user.OauthGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(oauthgrant.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedOauthGrantsIDs(); len(nodes) > 0 && !_u.mutation.OauthGrantsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OauthGrantsTable,
+			Columns: []string{user.OauthGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(oauthgrant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OauthGrantsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OauthGrantsTable,
+			Columns: []string{user.OauthGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(oauthgrant.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

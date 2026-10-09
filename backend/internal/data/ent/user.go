@@ -61,11 +61,13 @@ type UserEdges struct {
 	APIKeys []*APIKey `json:"api_keys,omitempty"`
 	// Notifiers holds the value of the notifiers edge.
 	Notifiers []*Notifier `json:"notifiers,omitempty"`
+	// OauthGrants holds the value of the oauth_grants edge.
+	OauthGrants []*OAuthGrant `json:"oauth_grants,omitempty"`
 	// UserGroups holds the value of the user_groups edge.
 	UserGroups []*UserGroup `json:"user_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [7]bool
 }
 
 // GroupsOrErr returns the Groups value or an error if the edge
@@ -113,10 +115,19 @@ func (e UserEdges) NotifiersOrErr() ([]*Notifier, error) {
 	return nil, &NotLoadedError{edge: "notifiers"}
 }
 
+// OauthGrantsOrErr returns the OauthGrants value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) OauthGrantsOrErr() ([]*OAuthGrant, error) {
+	if e.loadedTypes[5] {
+		return e.OauthGrants, nil
+	}
+	return nil, &NotLoadedError{edge: "oauth_grants"}
+}
+
 // UserGroupsOrErr returns the UserGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) UserGroupsOrErr() ([]*UserGroup, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[6] {
 		return e.UserGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_groups"}
@@ -274,6 +285,11 @@ func (_m *User) QueryAPIKeys() *APIKeyQuery {
 // QueryNotifiers queries the "notifiers" edge of the User entity.
 func (_m *User) QueryNotifiers() *NotifierQuery {
 	return NewUserClient(_m.config).QueryNotifiers(_m)
+}
+
+// QueryOauthGrants queries the "oauth_grants" edge of the User entity.
+func (_m *User) QueryOauthGrants() *OAuthGrantQuery {
+	return NewUserClient(_m.config).QueryOauthGrants(_m)
 }
 
 // QueryUserGroups queries the "user_groups" edge of the User entity.

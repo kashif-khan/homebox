@@ -21,6 +21,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/group"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/groupinvitationtoken"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notifier"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/oauthgrant"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/predicate"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/tag"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/user"
@@ -43,6 +44,7 @@ type GroupQuery struct {
 	withEntityTemplates    *EntityTemplateQuery
 	withExports            *ExportQuery
 	withBackupDestinations *BackupDestinationQuery
+	withOauthGrants        *OAuthGrantQuery
 	withUserGroups         *UserGroupQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -278,6 +280,28 @@ func (_q *GroupQuery) QueryBackupDestinations() *BackupDestinationQuery {
 	return query
 }
 
+// QueryOauthGrants chains the current query on the "oauth_grants" edge.
+func (_q *GroupQuery) QueryOauthGrants() *OAuthGrantQuery {
+	query := (&OAuthGrantClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, selector),
+			sqlgraph.To(oauthgrant.Table, oauthgrant.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, group.OauthGrantsTable, group.OauthGrantsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryUserGroups chains the current query on the "user_groups" edge.
 func (_q *GroupQuery) QueryUserGroups() *UserGroupQuery {
 	query := (&UserGroupClient{config: _q.config}).Query()
@@ -501,6 +525,7 @@ func (_q *GroupQuery) Clone() *GroupQuery {
 		withEntityTemplates:    _q.withEntityTemplates.Clone(),
 		withExports:            _q.withExports.Clone(),
 		withBackupDestinations: _q.withBackupDestinations.Clone(),
+		withOauthGrants:        _q.withOauthGrants.Clone(),
 		withUserGroups:         _q.withUserGroups.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -607,6 +632,17 @@ func (_q *GroupQuery) WithBackupDestinations(opts ...func(*BackupDestinationQuer
 	return _q
 }
 
+// WithOauthGrants tells the query-builder to eager-load the nodes that are connected to
+// the "oauth_grants" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *GroupQuery) WithOauthGrants(opts ...func(*OAuthGrantQuery)) *GroupQuery {
+	query := (&OAuthGrantClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withOauthGrants = query
+	return _q
+}
+
 // WithUserGroups tells the query-builder to eager-load the nodes that are connected to
 // the "user_groups" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *GroupQuery) WithUserGroups(opts ...func(*UserGroupQuery)) *GroupQuery {
@@ -696,7 +732,7 @@ func (_q *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 	var (
 		nodes       = []*Group{}
 		_spec       = _q.querySpec()
-		loadedTypes = [10]bool{
+		loadedTypes = [11]bool{
 			_q.withUsers != nil,
 			_q.withEntityTypes != nil,
 			_q.withEntities != nil,
@@ -706,6 +742,7 @@ func (_q *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 			_q.withEntityTemplates != nil,
 			_q.withExports != nil,
 			_q.withBackupDestinations != nil,
+			_q.withOauthGrants != nil,
 			_q.withUserGroups != nil,
 		}
 	)
@@ -791,6 +828,13 @@ func (_q *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 			func(n *Group, e *BackupDestination) {
 				n.Edges.BackupDestinations = append(n.Edges.BackupDestinations, e)
 			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withOauthGrants; query != nil {
+		if err := _q.loadOauthGrants(ctx, query, nodes,
+			func(n *Group) { n.Edges.OauthGrants = []*OAuthGrant{} },
+			func(n *Group, e *OAuthGrant) { n.Edges.OauthGrants = append(n.Edges.OauthGrants, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1095,6 +1139,37 @@ func (_q *GroupQuery) loadBackupDestinations(ctx context.Context, query *BackupD
 	}
 	query.Where(predicate.BackupDestination(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(group.BackupDestinationsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.GroupID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "group_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *GroupQuery) loadOauthGrants(ctx context.Context, query *OAuthGrantQuery, nodes []*Group, init func(*Group), assign func(*Group, *OAuthGrant)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Group)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(oauthgrant.FieldGroupID)
+	}
+	query.Where(predicate.OAuthGrant(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(group.OauthGrantsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
