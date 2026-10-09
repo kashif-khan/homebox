@@ -1,0 +1,190 @@
+---
+title: AI Assistants (MCP)
+description: Let Claude, ChatGPT, Cursor and other Model Context Protocol clients work with your inventory, with permissions you control.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Homebox can speak the [Model Context Protocol](https://modelcontextprotocol.io) (MCP), so AI assistants can answer
+questions about your inventory ("which warranties run out this quarter?") and, if you allow it, change it ("move the drill
+to the garage").
+
+It is **off by default**, and three separate parties each hold a veto:
+
+| Who | What they control | Where |
+| --- | --- | --- |
+| **Server operator** | Whether MCP exists at all, and whether assistants may ever write or delete | `HBOX_MCP_*` settings |
+| **Collection owner** | Whether assistants may touch a collection, and how far (off, read, edit, delete) | Collection → Settings → *AI assistant access* |
+| **Each user** | Which assistant is connected, to which of *their* collections, with which permissions | Consent screen, or the scopes on an API key |
+
+An assistant can never do more than the **narrowest** of the three allows, and it only ever acts as the user who connected
+it, inside the one collection they chose. It cannot see other users' data, other collections, or manage accounts, API keys or
+backups.
+
+## Turn it on
+
+```bash
+HBOX_MCP_ENABLED=true
+```
+
+The endpoint is then served at `/mcp` (Streamable HTTP). Every collection starts with AI access **off**: a collection owner
+has to opt in under *Collection → Settings → AI assistant access* before anything connects.
+
+| Level | What assistants may do in the collection |
+| --- | --- |
+| Off *(default)* | Nothing. Connections are refused with an explanation. |
+| Read only | Search and read items, locations, tags, maintenance and statistics. |
+| Read and edit | Also create and update items, locations, tags and maintenance entries. No deleting. |
+| Read, edit and delete | Also delete items, tags and maintenance entries. Each deletion still needs `confirm=true`. |
+
+Lowering the level takes effect on the very next request, for every connected assistant, without anyone reconnecting.
+
+## Connect an assistant
+
+There are two ways in. Use whichever your assistant supports.
+
+### Sign in with OAuth (Claude, ChatGPT and other hosted assistants)
+
+Hosted assistants can't be given a static key. Homebox includes an OAuth 2.1 sign-in flow for them:
+
+1. In the assistant, add a custom connector / MCP server pointing at `https://your-homebox.example.com/mcp`.
+2. The assistant sends you to Homebox. Sign in if you aren't already.
+3. The consent screen shows which assistant is asking, where you'll be sent back to, which collection to share, and
+   exactly which permissions it wants. Untick what you don't want it to have, then **Allow**.
+4. To revoke later, use **Profile → Connected AI assistants → Disconnect**. It takes effect immediately.
+
+<Aside type="caution" title="Public HTTPS address required">
+Hosted assistants call your server from the internet, so it must be reachable over HTTPS, and Homebox must know its own
+public address. Set `HBOX_OPTIONS_HOSTNAME` to the full URL, including `https://`, for example
+`HBOX_OPTIONS_HOSTNAME=https://homebox.example.com`. Without it, the sign-in endpoints refuse to answer (rather than guess
+an address from a request header an attacker could forge). Behind a reverse proxy see [Proxy](/en/quick-start/configure/proxy).
+</Aside>
+
+### Use an API key (Claude Code, Cursor, VS Code, scripts, local setups)
+
+Create a key under **Profile → API Keys** and pick its access:
+
+| Preset | Allows |
+| --- | --- |
+| **Read only** *(default)* | Looking things up. The safest choice. |
+| **Read and edit** | Also adding and editing items and maintenance records. |
+| **Full access** | Everything your account can do, except managing API keys. For scripts you trust. |
+
+If you belong to several collections, you can also **pin** a key to one of them. Keys expire after 30 days unless you pick a
+date. Treat a key like a password: it's shown once.
+
+Then give your client the URL and the key as a bearer token:
+
+```bash
+# Claude Code
+claude mcp add --transport http homebox https://homebox.example.com/mcp \
+  --header "Authorization: Bearer hb_your_key_here"
+```
+
+```jsonc
+// Cursor, VS Code and most other clients that accept a remote server
+{
+  "mcpServers": {
+    "homebox": {
+      "url": "https://homebox.example.com/mcp",
+      "headers": { "Authorization": "Bearer hb_your_key_here" }
+    }
+  }
+}
+```
+
+Clients that only support local (stdio) servers can use a bridge such as
+[`mcp-remote`](https://www.npmjs.com/package/mcp-remote):
+
+```json
+{
+  "mcpServers": {
+    "homebox": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://homebox.example.com/mcp",
+               "--header", "Authorization: Bearer hb_your_key_here"]
+    }
+  }
+}
+```
+
+API keys work with everything on the server's API too, but keys are limited by their scopes there as well, and no key can
+ever create other keys, change your password or end your sessions.
+
+## What an assistant can do
+
+Tools appear only if the connection is allowed to use them, so a read-only connection never sees a write tool.
+
+| Tool | Needs | Purpose |
+| --- | --- | --- |
+| `whoami` | — | Which user and collection this is, and what it may do |
+| `search_items`, `get_item` | `items:read` | Find and read items and locations |
+| `list_locations`, `list_tags`, `list_entity_types` | `items:read` | Browse the structure |
+| `list_warranties_expiring` | `items:read` | Warranties ending in the next N days |
+| `list_maintenance` | `maintenance:read` | Scheduled and completed work, including what is due soon |
+| `get_statistics` | `collection:read` | Totals for the collection |
+| `create_item`, `create_location`, `create_tag` | `items:write` | Add things |
+| `update_item`, `update_tag`, `move_item`, `update_item_tags` | `items:write` | Change things; only the fields given are touched |
+| `add_maintenance_entry`, `update_maintenance_entry` | `maintenance:write` | Schedule or log work |
+| `delete_item`, `delete_tag`, `delete_maintenance_entry` | `items:delete` | Remove things. Requires `confirm=true` |
+
+Reference data is also offered as resources: `homebox://locations`, `homebox://tags` and `homebox://item/{id}`.
+
+Attachment *contents* are never returned (only their names and types), and nothing an assistant can do touches backups,
+exports, notifiers, members or invitations.
+
+### Safety built in
+
+- **Same code as the web app.** Tools call the same data layer as the web UI, so validation, per-collection isolation and
+  tracing are identical. There is no second permission system to drift out of sync.
+- **Deletes are doubly guarded.** They sit behind their own permission, are flagged `destructiveHint` so well-behaved
+  clients prompt you, and refuse to run without an explicit `confirm=true` the assistant must only set after you agree.
+- **Item text is treated as untrusted.** A note could contain text written to hijack an assistant. The server tells the
+  assistant to treat all inventory text as data, never as instructions; you should still review what an assistant proposes
+  to do.
+- **Bounded output.** Results are paged, long text is truncated (with a marker), and oversized responses are refused, so
+  one huge note can't flood the assistant's context.
+- **Audit log.** Every tool call is logged with who, which collection, which credential, the tool and *argument names*, the
+  outcome and the duration. Argument values are not logged.
+- **Rate limited** per credential.
+
+## Configuration
+
+All settings are environment variables (or the matching command-line flags).
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `HBOX_MCP_ENABLED` | `false` | Serve the MCP endpoint at `/mcp`. |
+| `HBOX_MCP_ALLOW_WRITES` | `true` | Set to `false` to make MCP read-only for the whole server, whatever collection owners choose. |
+| `HBOX_MCP_ALLOW_DELETE` | `true` | Set to `false` to forbid deleting over MCP. Ignored when writes are off. |
+| `HBOX_MCP_ALLOWED_ORIGINS` | *(none)* | Browser origins allowed to call `/mcp`. Non-browser clients send no `Origin` and are unaffected. Leave empty unless a browser-based client needs it. |
+| `HBOX_MCP_MAX_PAGE_SIZE` | `50` | Largest page a list or search tool returns. |
+| `HBOX_MCP_MAX_TEXT_LENGTH` | `2000` | Long text fields are cut to this many characters. |
+| `HBOX_MCP_MAX_RESPONSE_BYTES` | `131072` | Results larger than this are refused. |
+| `HBOX_MCP_RATE_LIMIT_PER_MINUTE` | `120` | Requests per credential per minute. `0` disables. |
+| `HBOX_MCP_OAUTH_ENABLED` | `true` | Offer the OAuth sign-in flow (only when MCP is enabled). Needs `HBOX_OPTIONS_HOSTNAME`. |
+| `HBOX_MCP_OAUTH_ALLOW_DYNAMIC_REGISTRATION` | `true` | Let assistants register themselves. Each still needs the user's consent. |
+| `HBOX_MCP_OAUTH_ACCESS_TOKEN_TTL` | `1h` | Access token lifetime. |
+| `HBOX_MCP_OAUTH_REFRESH_TOKEN_TTL` | `720h` | How long a connection lasts without being used. |
+| `HBOX_MCP_OAUTH_ALLOWED_REDIRECT_HOSTS` | *(any https host)* | Restrict where assistants may be sent back to. |
+
+API keys are hashed with `HBOX_AUTH_API_KEY_PEPPER`; keep it stable across restarts or every key and connection stops working.
+
+### How the OAuth flow is secured
+
+For operators who want to know what they are switching on: authorization code with **PKCE (S256 only)**; exact
+redirect-URI matching (HTTPS, loopback or reverse-domain app schemes only); single-use authorization codes; **refresh-token
+rotation with reuse detection** (replaying an old token revokes the whole connection); tokens bound to the `/mcp` resource;
+hashed token storage; no client secrets, implicit or password grants; and a consent screen that shows who is asking and
+lets the user narrow, but never widen, what they asked for.
+
+## Troubleshooting
+
+| Symptom | Likely cause |
+| --- | --- |
+| `403 … turned off for this collection` | The collection owner hasn't enabled *AI assistant access*. |
+| `403 … has no permissions that this collection allows` | The key or connection asks for more than the collection's level (for example a write key in a read-only collection). |
+| `401` from a hosted assistant, or the sign-in page never opens | `HBOX_OPTIONS_HOSTNAME` is unset or not the address the assistant uses, or the server isn't reachable over HTTPS. |
+| Write tools are missing | The key is read-only, the collection is read-only, or `HBOX_MCP_ALLOW_WRITES=false`. Ask the assistant to run `whoami`. |
+| Everything stopped after a restart | `HBOX_AUTH_API_KEY_PEPPER` changed. |
+| `429` | Over `HBOX_MCP_RATE_LIMIT_PER_MINUTE`; retry after the interval in `Retry-After`. |
