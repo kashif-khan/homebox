@@ -54,11 +54,13 @@ type GroupEdges struct {
 	Exports []*Export `json:"exports,omitempty"`
 	// BackupDestinations holds the value of the backup_destinations edge.
 	BackupDestinations []*BackupDestination `json:"backup_destinations,omitempty"`
+	// OauthGrants holds the value of the oauth_grants edge.
+	OauthGrants []*OAuthGrant `json:"oauth_grants,omitempty"`
 	// UserGroups holds the value of the user_groups edge.
 	UserGroups []*UserGroup `json:"user_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [10]bool
+	loadedTypes [11]bool
 }
 
 // UsersOrErr returns the Users value or an error if the edge
@@ -142,10 +144,19 @@ func (e GroupEdges) BackupDestinationsOrErr() ([]*BackupDestination, error) {
 	return nil, &NotLoadedError{edge: "backup_destinations"}
 }
 
+// OauthGrantsOrErr returns the OauthGrants value or an error if the edge
+// was not loaded in eager-loading.
+func (e GroupEdges) OauthGrantsOrErr() ([]*OAuthGrant, error) {
+	if e.loadedTypes[9] {
+		return e.OauthGrants, nil
+	}
+	return nil, &NotLoadedError{edge: "oauth_grants"}
+}
+
 // UserGroupsOrErr returns the UserGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e GroupEdges) UserGroupsOrErr() ([]*UserGroup, error) {
-	if e.loadedTypes[9] {
+	if e.loadedTypes[10] {
 		return e.UserGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_groups"}
@@ -269,6 +280,11 @@ func (_m *Group) QueryExports() *ExportQuery {
 // QueryBackupDestinations queries the "backup_destinations" edge of the Group entity.
 func (_m *Group) QueryBackupDestinations() *BackupDestinationQuery {
 	return NewGroupClient(_m.config).QueryBackupDestinations(_m)
+}
+
+// QueryOauthGrants queries the "oauth_grants" edge of the Group entity.
+func (_m *Group) QueryOauthGrants() *OAuthGrantQuery {
+	return NewGroupClient(_m.config).QueryOauthGrants(_m)
 }
 
 // QueryUserGroups queries the "user_groups" edge of the Group entity.

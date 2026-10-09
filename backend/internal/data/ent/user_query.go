@@ -17,6 +17,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authtokens"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/group"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notifier"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/oauthgrant"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/passwordresettokens"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/predicate"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/user"
@@ -35,6 +36,7 @@ type UserQuery struct {
 	withPasswordResetTokens *PasswordResetTokensQuery
 	withAPIKeys             *APIKeyQuery
 	withNotifiers           *NotifierQuery
+	withOauthGrants         *OAuthGrantQuery
 	withUserGroups          *UserGroupQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -175,6 +177,28 @@ func (_q *UserQuery) QueryNotifiers() *NotifierQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(notifier.Table, notifier.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.NotifiersTable, user.NotifiersColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryOauthGrants chains the current query on the "oauth_grants" edge.
+func (_q *UserQuery) QueryOauthGrants() *OAuthGrantQuery {
+	query := (&OAuthGrantClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(oauthgrant.Table, oauthgrant.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.OauthGrantsTable, user.OauthGrantsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -401,6 +425,7 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withPasswordResetTokens: _q.withPasswordResetTokens.Clone(),
 		withAPIKeys:             _q.withAPIKeys.Clone(),
 		withNotifiers:           _q.withNotifiers.Clone(),
+		withOauthGrants:         _q.withOauthGrants.Clone(),
 		withUserGroups:          _q.withUserGroups.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -460,6 +485,17 @@ func (_q *UserQuery) WithNotifiers(opts ...func(*NotifierQuery)) *UserQuery {
 		opt(query)
 	}
 	_q.withNotifiers = query
+	return _q
+}
+
+// WithOauthGrants tells the query-builder to eager-load the nodes that are connected to
+// the "oauth_grants" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithOauthGrants(opts ...func(*OAuthGrantQuery)) *UserQuery {
+	query := (&OAuthGrantClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withOauthGrants = query
 	return _q
 }
 
@@ -552,12 +588,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [6]bool{
+		loadedTypes = [7]bool{
 			_q.withGroups != nil,
 			_q.withAuthTokens != nil,
 			_q.withPasswordResetTokens != nil,
 			_q.withAPIKeys != nil,
 			_q.withNotifiers != nil,
+			_q.withOauthGrants != nil,
 			_q.withUserGroups != nil,
 		}
 	)
@@ -613,6 +650,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadNotifiers(ctx, query, nodes,
 			func(n *User) { n.Edges.Notifiers = []*Notifier{} },
 			func(n *User, e *Notifier) { n.Edges.Notifiers = append(n.Edges.Notifiers, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withOauthGrants; query != nil {
+		if err := _q.loadOauthGrants(ctx, query, nodes,
+			func(n *User) { n.Edges.OauthGrants = []*OAuthGrant{} },
+			func(n *User, e *OAuthGrant) { n.Edges.OauthGrants = append(n.Edges.OauthGrants, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -793,6 +837,37 @@ func (_q *UserQuery) loadNotifiers(ctx context.Context, query *NotifierQuery, no
 	}
 	query.Where(predicate.Notifier(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(user.NotifiersColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadOauthGrants(ctx context.Context, query *OAuthGrantQuery, nodes []*User, init func(*User), assign func(*User, *OAuthGrant)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(oauthgrant.FieldUserID)
+	}
+	query.Where(predicate.OAuthGrant(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.OauthGrantsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

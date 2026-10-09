@@ -177,6 +177,54 @@ func (f NotifierFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.NotifierMutation", m)
 }
 
+// The OAuthClientFunc type is an adapter to allow the use of ordinary
+// function as OAuthClient mutator.
+type OAuthClientFunc func(context.Context, *ent.OAuthClientMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f OAuthClientFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.OAuthClientMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.OAuthClientMutation", m)
+}
+
+// The OAuthGrantFunc type is an adapter to allow the use of ordinary
+// function as OAuthGrant mutator.
+type OAuthGrantFunc func(context.Context, *ent.OAuthGrantMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f OAuthGrantFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.OAuthGrantMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.OAuthGrantMutation", m)
+}
+
+// The OAuthRequestFunc type is an adapter to allow the use of ordinary
+// function as OAuthRequest mutator.
+type OAuthRequestFunc func(context.Context, *ent.OAuthRequestMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f OAuthRequestFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.OAuthRequestMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.OAuthRequestMutation", m)
+}
+
+// The OAuthTokenFunc type is an adapter to allow the use of ordinary
+// function as OAuthToken mutator.
+type OAuthTokenFunc func(context.Context, *ent.OAuthTokenMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f OAuthTokenFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.OAuthTokenMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.OAuthTokenMutation", m)
+}
+
 // The PasswordResetTokensFunc type is an adapter to allow the use of ordinary
 // function as PasswordResetTokens mutator.
 type PasswordResetTokensFunc func(context.Context, *ent.PasswordResetTokensMutation) (ent.Value, error)

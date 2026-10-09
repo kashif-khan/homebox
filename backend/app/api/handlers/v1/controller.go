@@ -16,6 +16,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services/reporting/eventbus"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/repo"
+	"github.com/sysadminsmedia/homebox/backend/internal/oauthserver"
 	"github.com/sysadminsmedia/homebox/backend/internal/sys/config"
 	"github.com/sysadminsmedia/homebox/backend/internal/sys/validate"
 
@@ -50,6 +51,13 @@ type Wrapped struct {
 
 func Wrap(v any) Wrapped {
 	return Wrapped{Item: v}
+}
+
+// WithOAuth enables the OAuth consent and connected-application endpoints.
+func WithOAuth(srv *oauthserver.Server) func(*V1Controller) {
+	return func(ctrl *V1Controller) {
+		ctrl.oauth = srv
+	}
 }
 
 func WithMaxUploadSize(maxUploadSize int64) func(*V1Controller) {
@@ -107,6 +115,7 @@ type V1Controller struct {
 	cookieSecure      bool
 	isDemo            bool
 	allowRegistration bool
+	oauth             *oauthserver.Server
 }
 
 type (
@@ -135,7 +144,10 @@ type (
 
 	// MCPStatus tells the web UI whether to offer AI assistant connections.
 	MCPStatus struct {
-		Enabled     bool `json:"enabled"`
+		Enabled bool `json:"enabled"`
+		// OAuth is true when hosted assistants (Claude, ChatGPT) can connect with a
+		// sign-in flow instead of an API key.
+		OAuth       bool `json:"oauth"`
 		AllowWrites bool `json:"allowWrites"`
 		AllowDelete bool `json:"allowDelete"`
 	}
@@ -211,6 +223,7 @@ func (ctrl *V1Controller) HandleBase(ready ReadyFunc, build Build) errchain.Hand
 			},
 			MCP: MCPStatus{
 				Enabled:     ctrl.config.MCP.Enabled,
+				OAuth:       ctrl.config.MCP.Enabled && ctrl.oauth != nil,
 				AllowWrites: ctrl.config.MCP.AllowWrites,
 				AllowDelete: ctrl.config.MCP.AllowWrites && ctrl.config.MCP.AllowDelete,
 			},

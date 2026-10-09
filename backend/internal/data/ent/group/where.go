@@ -563,6 +563,29 @@ func HasBackupDestinationsWith(preds ...predicate.BackupDestination) predicate.G
 	})
 }
 
+// HasOauthGrants applies the HasEdge predicate on the "oauth_grants" edge.
+func HasOauthGrants() predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, OauthGrantsTable, OauthGrantsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasOauthGrantsWith applies the HasEdge predicate on the "oauth_grants" edge with a given conditions (other predicates).
+func HasOauthGrantsWith(preds ...predicate.OAuthGrant) predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := newOauthGrantsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasUserGroups applies the HasEdge predicate on the "user_groups" edge.
 func HasUserGroups() predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {

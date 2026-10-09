@@ -43,6 +43,8 @@ const (
 	EdgeExports = "exports"
 	// EdgeBackupDestinations holds the string denoting the backup_destinations edge name in mutations.
 	EdgeBackupDestinations = "backup_destinations"
+	// EdgeOauthGrants holds the string denoting the oauth_grants edge name in mutations.
+	EdgeOauthGrants = "oauth_grants"
 	// EdgeUserGroups holds the string denoting the user_groups edge name in mutations.
 	EdgeUserGroups = "user_groups"
 	// Table holds the table name of the group in the database.
@@ -108,6 +110,13 @@ const (
 	BackupDestinationsInverseTable = "backup_destinations"
 	// BackupDestinationsColumn is the table column denoting the backup_destinations relation/edge.
 	BackupDestinationsColumn = "group_id"
+	// OauthGrantsTable is the table that holds the oauth_grants relation/edge.
+	OauthGrantsTable = "oauth_grants"
+	// OauthGrantsInverseTable is the table name for the OAuthGrant entity.
+	// It exists in this package in order to avoid circular dependency with the "oauthgrant" package.
+	OauthGrantsInverseTable = "oauth_grants"
+	// OauthGrantsColumn is the table column denoting the oauth_grants relation/edge.
+	OauthGrantsColumn = "group_id"
 	// UserGroupsTable is the table that holds the user_groups relation/edge.
 	UserGroupsTable = "user_groups"
 	// UserGroupsInverseTable is the table name for the UserGroup entity.
@@ -319,6 +328,20 @@ func ByBackupDestinations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOptio
 	}
 }
 
+// ByOauthGrantsCount orders the results by oauth_grants count.
+func ByOauthGrantsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newOauthGrantsStep(), opts...)
+	}
+}
+
+// ByOauthGrants orders the results by oauth_grants terms.
+func ByOauthGrants(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOauthGrantsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByUserGroupsCount orders the results by user_groups count.
 func ByUserGroupsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -393,6 +416,13 @@ func newBackupDestinationsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(BackupDestinationsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, BackupDestinationsTable, BackupDestinationsColumn),
+	)
+}
+func newOauthGrantsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OauthGrantsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, OauthGrantsTable, OauthGrantsColumn),
 	)
 }
 func newUserGroupsStep() *sqlgraph.Step {

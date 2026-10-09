@@ -38,6 +38,13 @@ var apiKeyRouteScopes = map[string]scopes.Scope{
 	"PUT /api/v1/users/self":                  scopeNever,
 	"DELETE /api/v1/users/self":               scopeNever,
 
+	// consent and connection management belong to the signed-in person
+	"GET /api/v1/oauth/requests/{id}":             scopeNever,
+	"POST /api/v1/oauth/requests/{id}/approve":    scopeNever,
+	"POST /api/v1/oauth/requests/{id}/deny":       scopeNever,
+	"GET /api/v1/users/self/oauth-grants":         scopeNever,
+	"DELETE /api/v1/users/self/oauth-grants/{id}": scopeNever,
+
 	// ---- collection:read ----
 	"GET /api/v1/users/self":                       scopes.CollectionRead,
 	"GET /api/v1/groups":                           scopes.CollectionRead,

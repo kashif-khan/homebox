@@ -59,6 +59,7 @@ func (Group) Edges() []ent.Edge {
 		owned("entity_templates", EntityTemplate.Type),
 		owned("exports", Export.Type),
 		owned("backup_destinations", BackupDestination.Type),
+		owned("oauth_grants", OAuthGrant.Type),
 		// $scaffold_edge
 	}
 }

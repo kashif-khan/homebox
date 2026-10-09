@@ -24,6 +24,7 @@ type AllRepos struct {
 	Notifiers           *NotifierRepository
 	Exports             *ExportRepository
 	BackupDestinations  *BackupDestinationRepository
+	OAuth               *OAuthRepository
 }
 
 // New constructs the repository container. searchEngine selects the free-text
@@ -48,5 +49,6 @@ func New(db *ent.Client, bus *eventbus.EventBus, storage config.Storage, pubSubC
 		Notifiers:           NewNotifierRepository(db),
 		Exports:             &ExportRepository{db},
 		BackupDestinations:  &BackupDestinationRepository{db},
+		OAuth:               &OAuthRepository{db},
 	}
 }

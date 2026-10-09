@@ -94,3 +94,20 @@ func TestPostgresMigrationsAndBackupQueries(t *testing.T) {
 
 	require.NoError(t, c.Group.DeleteOneID(g.ID).Exec(ctx))
 }
+
+func TestPostgresMCPSchemaMatchesEnt(t *testing.T) {
+	url := os.Getenv("HBOX_TEST_POSTGRES_URL")
+	if url == "" {
+		t.Skip("set HBOX_TEST_POSTGRES_URL to run against a disposable postgres database")
+	}
+	db, err := sql.Open("pgx", url)
+	require.NoError(t, err)
+	c := ent.NewClient(ent.Driver(entsql.OpenDB(dialect.Postgres, db)))
+	fs, err := migrations.Migrations("postgres")
+	require.NoError(t, err)
+	goose.SetBaseFS(fs)
+	require.NoError(t, goose.SetDialect("postgres"))
+	require.NoError(t, goose.Up(db, "postgres"))
+
+	exerciseMCPSchema(t, c)
+}

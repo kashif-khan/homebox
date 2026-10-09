@@ -40,6 +40,14 @@ type Tx struct {
 	MaintenanceEntry *MaintenanceEntryClient
 	// Notifier is the client for interacting with the Notifier builders.
 	Notifier *NotifierClient
+	// OAuthClient is the client for interacting with the OAuthClient builders.
+	OAuthClient *OAuthClientClient
+	// OAuthGrant is the client for interacting with the OAuthGrant builders.
+	OAuthGrant *OAuthGrantClient
+	// OAuthRequest is the client for interacting with the OAuthRequest builders.
+	OAuthRequest *OAuthRequestClient
+	// OAuthToken is the client for interacting with the OAuthToken builders.
+	OAuthToken *OAuthTokenClient
 	// PasswordResetTokens is the client for interacting with the PasswordResetTokens builders.
 	PasswordResetTokens *PasswordResetTokensClient
 	// Tag is the client for interacting with the Tag builders.
@@ -195,6 +203,10 @@ func (tx *Tx) init() {
 	tx.GroupInvitationToken = NewGroupInvitationTokenClient(tx.config)
 	tx.MaintenanceEntry = NewMaintenanceEntryClient(tx.config)
 	tx.Notifier = NewNotifierClient(tx.config)
+	tx.OAuthClient = NewOAuthClientClient(tx.config)
+	tx.OAuthGrant = NewOAuthGrantClient(tx.config)
+	tx.OAuthRequest = NewOAuthRequestClient(tx.config)
+	tx.OAuthToken = NewOAuthTokenClient(tx.config)
 	tx.PasswordResetTokens = NewPasswordResetTokensClient(tx.config)
 	tx.Tag = NewTagClient(tx.config)
 	tx.TemplateField = NewTemplateFieldClient(tx.config)

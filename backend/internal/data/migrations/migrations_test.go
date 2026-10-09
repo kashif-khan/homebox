@@ -250,3 +250,17 @@ func TestSqliteAPIKeyScopesBackfillFullAccess(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, exists, "deleting a collection must delete the keys pinned to it")
 }
+
+func TestSqliteMCPSchemaMatchesEnt(t *testing.T) {
+	c, err := ent.Open("sqlite3", "file:migmcpschema?mode=memory&cache=shared&_fk=1&_time_format=sqlite")
+	require.NoError(t, err)
+	defer func() { _ = c.Close() }()
+
+	fs, err := migrations.Migrations("sqlite3")
+	require.NoError(t, err)
+	goose.SetBaseFS(fs)
+	require.NoError(t, goose.SetDialect("sqlite3"))
+	require.NoError(t, goose.Up(c.Sql(), "sqlite3"))
+
+	exerciseMCPSchema(t, c)
+}

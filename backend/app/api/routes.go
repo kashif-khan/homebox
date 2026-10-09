@@ -78,6 +78,8 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 	// =========================================================================
 	// API Version 1
 
+	oauthSrv := a.newOAuthServer()
+
 	v1Ctrl := v1.NewControllerV1(
 		a.services,
 		a.repos,
@@ -89,6 +91,7 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 		v1.WithRegistration(a.conf.Options.AllowRegistration),
 		v1.WithDemoStatus(a.conf.Demo), // Disable Password Change in Demo Mode
 		v1.WithURL(fmt.Sprintf("%s:%s", a.conf.Web.Host, a.conf.Web.Port)),
+		v1.WithOAuth(oauthSrv),
 	)
 
 	r.Route(prefix+"/v1", func(r chi.Router) {
@@ -153,6 +156,13 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 		r.Get("/users/self/api-keys", chain.ToHandlerFunc(v1Ctrl.HandleUserAPIKeysList(), userMW...))
 		r.Post("/users/self/api-keys", chain.ToHandlerFunc(v1Ctrl.HandleUserAPIKeyCreate(), userMW...))
 		r.Delete("/users/self/api-keys/{id}", chain.ToHandlerFunc(v1Ctrl.HandleUserAPIKeyDelete(), userMW...))
+
+		// AI assistant connections (OAuth consent and connected applications)
+		r.Get("/oauth/requests/{id}", chain.ToHandlerFunc(v1Ctrl.HandleOAuthRequestGet(), userMW...))
+		r.Post("/oauth/requests/{id}/approve", chain.ToHandlerFunc(v1Ctrl.HandleOAuthRequestApprove(), userMW...))
+		r.Post("/oauth/requests/{id}/deny", chain.ToHandlerFunc(v1Ctrl.HandleOAuthRequestDeny(), userMW...))
+		r.Get("/users/self/oauth-grants", chain.ToHandlerFunc(v1Ctrl.HandleOAuthGrantsList(), userMW...))
+		r.Delete("/users/self/oauth-grants/{id}", chain.ToHandlerFunc(v1Ctrl.HandleOAuthGrantDelete(), userMW...))
 
 		// Group management endpoints
 		r.Get("/groups/all", chain.ToHandlerFunc(v1Ctrl.HandleGroupsGetAll(), userMW...))
@@ -301,7 +311,7 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 	})
 
 	if a.conf.MCP.Enabled {
-		a.mountMCP(r)
+		a.mountMCP(r, oauthSrv)
 	}
 
 	r.NotFound(chain.ToHandlerFunc(notFoundHandler()))
