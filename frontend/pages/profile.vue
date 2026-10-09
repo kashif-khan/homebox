@@ -25,7 +25,12 @@
   import DateTime from "@/components/global/DateTime.vue";
   import PasswordScore from "~/components/global/PasswordScore.vue";
   import { PASSWORD_MIN_LENGTH, PASSWORD_RULES } from "~/lib/passwords";
-  import type { APIKeyOut } from "~~/lib/api/types/data-contracts";
+  import type { APIKeyOut, OAuthGrantOut } from "~~/lib/api/types/data-contracts";
+  import { Badge } from "@/components/ui/badge";
+  import { Label } from "@/components/ui/label";
+  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+  import MdiRobot from "~icons/mdi/robot-outline";
+  import { scopePreset, type ScopePreset } from "~/composables/use-scopes";
 
   const { t } = useI18n();
 
@@ -151,10 +156,15 @@
     void loadApiKeys();
   });
 
+  const { collections } = useCollections();
+
   const apiKeyForm = reactive({
     name: "",
     setExpiration: false,
     expiresAt: "",
+    preset: "read-only" as ScopePreset,
+    // "" means the key works in any collection the user belongs to.
+    groupId: "",
     submitting: false,
   });
 
@@ -162,8 +172,57 @@
     apiKeyForm.name = "";
     apiKeyForm.setExpiration = false;
     apiKeyForm.expiresAt = "";
+    apiKeyForm.preset = "read-only";
+    apiKeyForm.groupId = "";
     apiKeyForm.submitting = false;
     openDialog(DialogID.CreateApiKey);
+  }
+
+  function collectionName(id?: string | null) {
+    if (!id) return "";
+    return collections.value.find(c => c.id === id)?.name ?? id;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Connected AI assistants (OAuth)
+
+  const pubApi = usePublicApi();
+  const { data: status } = useAsyncData("profile-status", async () => {
+    const { data } = await pubApi.status();
+    return data;
+  });
+
+  const mcpEnabled = computed(() => status.value?.mcp?.enabled ?? false);
+
+  const grants = ref<OAuthGrantOut[]>([]);
+  const grantsLoading = ref(false);
+
+  async function loadGrants() {
+    grantsLoading.value = true;
+    const { data, error } = await api.user.listOAuthGrants();
+    grantsLoading.value = false;
+    if (error) {
+      toast.error(t("errors.api_failure") + String(error));
+      return;
+    }
+    grants.value = data ?? [];
+  }
+
+  onMounted(() => {
+    void loadGrants();
+  });
+
+  async function disconnectGrant(g: OAuthGrantOut) {
+    const result = await confirm.open(t("profile.assistants_disconnect_confirm", { name: g.clientName }));
+    if (result.isCanceled) return;
+
+    const { error } = await api.user.deleteOAuthGrant(g.id);
+    if (error) {
+      toast.error(t("profile.toast.failed_assistant_disconnect"));
+      return;
+    }
+    toast.success(t("profile.toast.assistant_disconnected"));
+    await loadGrants();
   }
 
   const newApiKeyToken = ref<string | null>(null);
@@ -182,6 +241,9 @@
     const { data, error } = await api.user.createApiKey({
       name: apiKeyForm.name.trim(),
       expiresAt,
+      preset: apiKeyForm.preset,
+      scopes: [],
+      groupId: apiKeyForm.groupId || null,
     });
 
     apiKeyForm.submitting = false;
@@ -256,6 +318,38 @@
             :required="true"
             class="mb-2"
           />
+          <div class="mb-3">
+            <Label for="api-key-preset">{{ $t("profile.api_key_access") }}</Label>
+            <Select id="api-key-preset" v-model="apiKeyForm.preset">
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="read-only">{{ $t("profile.api_key_preset.read-only") }}</SelectItem>
+                <SelectItem value="read-write">{{ $t("profile.api_key_preset.read-write") }}</SelectItem>
+                <SelectItem value="full">{{ $t("profile.api_key_preset.full") }}</SelectItem>
+              </SelectContent>
+            </Select>
+            <p class="mt-1 text-sm text-muted-foreground">
+              {{ $t(`profile.api_key_preset_help.${apiKeyForm.preset}`) }}
+            </p>
+          </div>
+          <div v-if="collections.length > 1" class="mb-3">
+            <Label for="api-key-collection">{{ $t("profile.api_key_collection") }}</Label>
+            <Select
+              id="api-key-collection"
+              :model-value="apiKeyForm.groupId || 'any'"
+              @update:model-value="val => (apiKeyForm.groupId = val === 'any' ? '' : String(val))"
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">{{ $t("profile.api_key_collection_any") }}</SelectItem>
+                <SelectItem v-for="c in collections" :key="c.id" :value="c.id">{{ c.name }}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div class="mb-2 max-w-[260px]">
             <FormCheckbox v-model="apiKeyForm.setExpiration" :label="$t('profile.api_key_set_expiration')" />
           </div>
@@ -393,6 +487,10 @@
             <article v-for="k in apiKeys" :key="k.id" class="p-2">
               <div class="flex flex-wrap items-center gap-2">
                 <p class="mr-auto text-lg">{{ k.name }}</p>
+                <Badge :variant="scopePreset(k.scopes) === 'full' ? 'destructive' : 'secondary'">
+                  {{ $t(`profile.api_key_preset.${scopePreset(k.scopes)}`) }}
+                </Badge>
+                <Badge v-if="k.groupId" variant="outline">{{ collectionName(k.groupId) }}</Badge>
                 <Button variant="destructive" size="icon" :aria-label="$t('global.delete')" @click="revokeApiKey(k)">
                   <MdiDelete />
                 </Button>
@@ -424,6 +522,52 @@
             <Button variant="secondary" size="sm" @click="openCreateApiKey">
               {{ $t("profile.api_key_create") }}
             </Button>
+          </div>
+        </div>
+      </BaseCard>
+
+      <BaseCard v-if="mcpEnabled || grants.length > 0">
+        <template #title>
+          <BaseSectionHeader>
+            <MdiRobot class="-mt-1 mr-2" />
+            <span>{{ $t("profile.assistants") }}</span>
+            <template #description>{{ $t("profile.assistants_sub") }}</template>
+          </BaseSectionHeader>
+        </template>
+
+        <div class="px-4 pb-4">
+          <div class="mx-1 divide-y rounded-md border">
+            <p v-if="!grantsLoading && grants.length === 0" class="p-2 text-center text-sm">
+              {{ $t("profile.no_assistants") }}
+            </p>
+            <article v-for="g in grants" :key="g.id" class="p-2">
+              <div class="flex flex-wrap items-center gap-2">
+                <p class="mr-auto text-lg">{{ g.clientName }}</p>
+                <Badge variant="secondary">{{ $t(`profile.api_key_preset.${scopePreset(g.scopes)}`) }}</Badge>
+                <Badge variant="outline">{{ g.groupName }}</Badge>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  :aria-label="$t('profile.assistants_disconnect')"
+                  @click="disconnectGrant(g)"
+                >
+                  {{ $t("profile.assistants_disconnect") }}
+                </Button>
+              </div>
+              <div class="flex flex-wrap justify-between gap-x-4 gap-y-1 py-1 text-sm text-muted-foreground">
+                <p>
+                  {{ $t("profile.api_key_created") }}:
+                  <DateTime format="relative" datetime-type="time" :date="g.createdAt" />
+                </p>
+                <p>
+                  {{ $t("profile.api_key_last_used") }}:
+                  <template v-if="g.lastUsedAt">
+                    <DateTime format="relative" datetime-type="time" :date="g.lastUsedAt" />
+                  </template>
+                  <template v-else>{{ $t("profile.api_key_never_used") }}</template>
+                </p>
+              </div>
+            </article>
           </div>
         </div>
       </BaseCard>

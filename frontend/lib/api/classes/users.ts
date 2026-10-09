@@ -1,5 +1,15 @@
 import { BaseAPI, route } from "../base";
-import type { APIKeyCreate, APIKeyCreatedOut, APIKeyOut, ChangePassword, UserOut } from "../types/data-contracts";
+import type {
+  APIKeyCreate,
+  APIKeyCreatedOut,
+  APIKeyOut,
+  ChangePassword,
+  OAuthApprove,
+  OAuthDecision,
+  OAuthGrantOut,
+  OauthserverConsentInfo,
+  UserOut,
+} from "../types/data-contracts";
 import type { Result } from "../types/non-generated";
 
 export class UserApi extends BaseAPI {
@@ -57,5 +67,28 @@ export class UserApi extends BaseAPI {
 
   public deleteApiKey(id: string) {
     return this.http.delete<void>({ url: route(`/users/self/api-keys/${id}`) });
+  }
+
+  /** AI assistants the user has connected through the OAuth sign-in flow. */
+  public listOAuthGrants() {
+    return this.http.get<OAuthGrantOut[]>({ url: route("/users/self/oauth-grants") });
+  }
+
+  /** Disconnects an assistant: revokes the grant and every token issued under it. */
+  public deleteOAuthGrant(id: string) {
+    return this.http.delete<void>({ url: route(`/users/self/oauth-grants/${id}`) });
+  }
+
+  /** Describes a pending assistant authorization request for the consent screen. */
+  public getOAuthRequest(id: string) {
+    return this.http.get<OauthserverConsentInfo>({ url: route(`/oauth/requests/${id}`) });
+  }
+
+  public approveOAuthRequest(id: string, body: OAuthApprove) {
+    return this.http.post<OAuthApprove, OAuthDecision>({ url: route(`/oauth/requests/${id}/approve`), body });
+  }
+
+  public denyOAuthRequest(id: string) {
+    return this.http.post<object, OAuthDecision>({ url: route(`/oauth/requests/${id}/deny`), body: {} });
   }
 }

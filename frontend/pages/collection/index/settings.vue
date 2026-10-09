@@ -8,6 +8,7 @@
   import FormTextField from "~/components/Form/TextField.vue";
   import type { CurrenciesCurrency, Group } from "~~/lib/api/types/data-contracts";
   import { fmtCurrencyAsync } from "~/composables/utils";
+  import { AI_ACCESS_LEVELS, type AIAccessLevel } from "~/composables/use-scopes";
 
   definePageMeta({
     middleware: ["auth"],
@@ -29,6 +30,15 @@
   const name = ref("");
   const currencyCode = ref("USD");
   const currencyExample = ref("$1,000.00");
+  const mcpAccess = ref<AIAccessLevel>("off");
+
+  const pubApi = usePublicApi();
+  const { data: status } = useAsyncData("collection-settings-status", async () => {
+    const { data } = await pubApi.status();
+    return data;
+  });
+  const mcpEnabled = computed(() => status.value?.mcp?.enabled ?? false);
+  const mcpAllowWrites = computed(() => status.value?.mcp?.allowWrites ?? true);
 
   const loadSettings = async () => {
     if (!selectedCollection.value) {
@@ -60,6 +70,9 @@
       group.value = res.data;
       name.value = res.data.name;
       currencyCode.value = res.data.currency;
+      mcpAccess.value = (AI_ACCESS_LEVELS as readonly string[]).includes(res.data.mcpAccess)
+        ? (res.data.mcpAccess as AIAccessLevel)
+        : "off";
     } catch (e) {
       const msg = (e as Error).message ?? String(e);
       error.value = msg;
@@ -101,6 +114,7 @@
         {
           name: name.value,
           currency: currencyCode.value,
+          mcpAccess: mcpAccess.value,
         },
         selectedCollection.value.id
       );
@@ -158,6 +172,28 @@
             </SelectContent>
           </Select>
           <p class="m-2 text-sm">{{ $t("profile.example") }}: {{ currencyExample }}</p>
+        </div>
+
+        <div v-if="mcpEnabled">
+          <Label for="mcp-access"> {{ $t("collection.ai_access.label") }} </Label>
+          <Select
+            id="mcp-access"
+            :model-value="mcpAccess"
+            @update:model-value="val => (mcpAccess = String(val || 'off') as AIAccessLevel)"
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="level in AI_ACCESS_LEVELS" :key="level" :value="level">
+                {{ $t(`collection.ai_access.levels.${level}`) }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <p class="m-2 text-sm text-muted-foreground">{{ $t(`collection.ai_access.help.${mcpAccess}`) }}</p>
+          <p v-if="mcpAccess !== 'off' && !mcpAllowWrites" class="m-2 text-sm text-muted-foreground">
+            {{ $t("collection.ai_access.server_read_only") }}
+          </p>
         </div>
 
         <div class="mt-4">
