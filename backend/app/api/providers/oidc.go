@@ -593,6 +593,11 @@ func (p *OIDCProvider) getBaseURL(r *http.Request) string {
 
 	host := r.Host
 	if p.options.Hostname != "" {
+		// The hostname may already carry a scheme, which GetHBURL accepts too.
+		// Prefixing another one would send the provider a malformed redirect URI.
+		if strings.HasPrefix(p.options.Hostname, "http://") || strings.HasPrefix(p.options.Hostname, "https://") {
+			return strings.TrimSuffix(p.options.Hostname, "/")
+		}
 		host = p.options.Hostname
 	} else if p.options.TrustProxy {
 		if xfHost := r.Header.Get("X-Forwarded-Host"); xfHost != "" {
