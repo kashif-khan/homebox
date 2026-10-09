@@ -3219,3 +3219,54 @@ func ConvertEntitiesToTree(items []FlatTreeItem) []TreeItem {
 		return *itemMap[id]
 	})
 }
+
+// WarrantyExpiring returns non-archived entities whose warranty ends within
+// [from, to], soonest first. Lifetime warranties never expire and are skipped.
+// limit bounds the result; the second return value is the total matching count.
+func (r *EntityRepository) WarrantyExpiring(ctx context.Context, gid uuid.UUID, from, to time.Time, limit int) ([]WarrantyExpiry, int, error) {
+	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.WarrantyExpiring",
+		trace.WithAttributes(
+			attribute.String("group.id", gid.String()),
+			attribute.Int("limit", limit),
+		))
+	defer span.End()
+
+	where := []predicate.Entity{
+		entity.HasGroupWith(group.ID(gid)),
+		entity.Archived(false),
+		entity.LifetimeWarranty(false),
+		entity.WarrantyExpiresGTE(from),
+		entity.WarrantyExpiresLTE(to),
+	}
+
+	total, err := r.db.Entity.Query().Where(where...).Count(ctx)
+	if err != nil {
+		recordSpanError(span, err)
+		return nil, 0, err
+	}
+
+	rows, err := r.db.Entity.Query().
+		Where(where...).
+		WithParent().
+		WithEntityType().
+		WithTag().
+		Order(ent.Asc(entity.FieldWarrantyExpires), ent.Asc(entity.FieldName)).
+		Limit(limit).
+		All(ctx)
+	if err != nil {
+		recordSpanError(span, err)
+		return nil, 0, err
+	}
+
+	out := make([]WarrantyExpiry, len(rows))
+	for i, e := range rows {
+		out[i] = WarrantyExpiry{EntitySummary: mapEntitySummary(e), ExpiresAt: types.DateFromDBTime(e.WarrantyExpires)}
+	}
+	return out, total, nil
+}
+
+// WarrantyExpiry is an entity together with the day its warranty ends.
+type WarrantyExpiry struct {
+	EntitySummary
+	ExpiresAt types.Date
+}

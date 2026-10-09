@@ -26,6 +26,8 @@ type Group struct {
 	Name string `json:"name,omitempty"`
 	// Currency holds the value of the "currency" field.
 	Currency string `json:"currency,omitempty"`
+	// McpAccess holds the value of the "mcp_access" field.
+	McpAccess string `json:"mcp_access,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GroupQuery when eager-loading is set.
 	Edges        GroupEdges `json:"edges"`
@@ -154,7 +156,7 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case group.FieldName, group.FieldCurrency:
+		case group.FieldName, group.FieldCurrency, group.FieldMcpAccess:
 			values[i] = new(sql.NullString)
 		case group.FieldCreatedAt, group.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -204,6 +206,12 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field currency", values[i])
 			} else if value.Valid {
 				_m.Currency = value.String
+			}
+		case group.FieldMcpAccess:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field mcp_access", values[i])
+			} else if value.Valid {
+				_m.McpAccess = value.String
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -302,6 +310,9 @@ func (_m *Group) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("currency=")
 	builder.WriteString(_m.Currency)
+	builder.WriteString(", ")
+	builder.WriteString("mcp_access=")
+	builder.WriteString(_m.McpAccess)
 	builder.WriteByte(')')
 	return builder.String()
 }

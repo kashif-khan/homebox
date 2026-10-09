@@ -72,6 +72,20 @@ func (_u *GroupUpdate) SetNillableCurrency(v *string) *GroupUpdate {
 	return _u
 }
 
+// SetMcpAccess sets the "mcp_access" field.
+func (_u *GroupUpdate) SetMcpAccess(v string) *GroupUpdate {
+	_u.mutation.SetMcpAccess(v)
+	return _u
+}
+
+// SetNillableMcpAccess sets the "mcp_access" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableMcpAccess(v *string) *GroupUpdate {
+	if v != nil {
+		_u.SetMcpAccess(*v)
+	}
+	return _u
+}
+
 // AddUserIDs adds the "users" edge to the User entity by IDs.
 func (_u *GroupUpdate) AddUserIDs(ids ...uuid.UUID) *GroupUpdate {
 	_u.mutation.AddUserIDs(ids...)
@@ -467,6 +481,9 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Currency(); ok {
 		_spec.SetField(group.FieldCurrency, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.McpAccess(); ok {
+		_spec.SetField(group.FieldMcpAccess, field.TypeString, value)
 	}
 	if _u.mutation.UsersCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -939,6 +956,20 @@ func (_u *GroupUpdateOne) SetNillableCurrency(v *string) *GroupUpdateOne {
 	return _u
 }
 
+// SetMcpAccess sets the "mcp_access" field.
+func (_u *GroupUpdateOne) SetMcpAccess(v string) *GroupUpdateOne {
+	_u.mutation.SetMcpAccess(v)
+	return _u
+}
+
+// SetNillableMcpAccess sets the "mcp_access" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableMcpAccess(v *string) *GroupUpdateOne {
+	if v != nil {
+		_u.SetMcpAccess(*v)
+	}
+	return _u
+}
+
 // AddUserIDs adds the "users" edge to the User entity by IDs.
 func (_u *GroupUpdateOne) AddUserIDs(ids ...uuid.UUID) *GroupUpdateOne {
 	_u.mutation.AddUserIDs(ids...)
@@ -1364,6 +1395,9 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if value, ok := _u.mutation.Currency(); ok {
 		_spec.SetField(group.FieldCurrency, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.McpAccess(); ok {
+		_spec.SetField(group.FieldMcpAccess, field.TypeString, value)
 	}
 	if _u.mutation.UsersCleared() {
 		edge := &sqlgraph.EdgeSpec{

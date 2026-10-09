@@ -652,6 +652,10 @@ func init() {
 	groupDescCurrency := groupFields[1].Descriptor()
 	// group.DefaultCurrency holds the default value on creation for the currency field.
 	group.DefaultCurrency = groupDescCurrency.Default.(string)
+	// groupDescMcpAccess is the schema descriptor for mcp_access field.
+	groupDescMcpAccess := groupFields[2].Descriptor()
+	// group.DefaultMcpAccess holds the default value on creation for the mcp_access field.
+	group.DefaultMcpAccess = groupDescMcpAccess.Default.(string)
 	// groupDescID is the schema descriptor for id field.
 	groupDescID := groupMixinFields0[0].Descriptor()
 	// group.DefaultID holds the default value on creation for the id field.
