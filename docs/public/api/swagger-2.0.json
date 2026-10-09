@@ -2578,6 +2578,117 @@
                 }
             }
         },
+        "/v1/oauth/requests/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "Describe a pending AI assistant authorization request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/oauthserver.ConsentInfo"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/oauth/requests/{id}/approve": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "Approve a pending AI assistant authorization request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Collection and permissions to grant",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.OAuthApprove"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.OAuthDecision"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/oauth/requests/{id}/deny": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "Deny a pending AI assistant authorization request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.OAuthDecision"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/products/search-from-barcode": {
             "get": {
                 "security": [
@@ -3540,6 +3651,61 @@
                 }
             }
         },
+        "/v1/users/self/oauth-grants": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "List connected AI assistants",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/repo.OAuthGrantOut"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/users/self/oauth-grants/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Revokes the grant and every token issued under it.",
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "Disconnect an AI assistant",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Grant ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/v1/users/self/settings": {
             "get": {
                 "security": [
@@ -3766,6 +3932,10 @@
                     "description": "ExpiresAt holds the value of the \"expires_at\" field.",
                     "type": "string"
                 },
+                "group_id": {
+                    "description": "GroupID holds the value of the \"group_id\" field.",
+                    "type": "string"
+                },
                 "id": {
                     "description": "ID of the ent.",
                     "type": "string"
@@ -3777,6 +3947,13 @@
                 "name": {
                     "description": "Name holds the value of the \"name\" field.",
                     "type": "string"
+                },
+                "scopes": {
+                    "description": "Scopes holds the value of the \"scopes\" field.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "updated_at": {
                     "description": "UpdatedAt holds the value of the \"updated_at\" field.",
@@ -3791,6 +3968,14 @@
         "ent.APIKeyEdges": {
             "type": "object",
             "properties": {
+                "group": {
+                    "description": "Group holds the value of the group edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.Group"
+                        }
+                    ]
+                },
                 "user": {
                     "description": "User holds the value of the user edge.",
                     "allOf": [
@@ -4724,6 +4909,10 @@
                     "description": "ID of the ent.",
                     "type": "string"
                 },
+                "mcp_access": {
+                    "description": "McpAccess holds the value of the \"mcp_access\" field.",
+                    "type": "string"
+                },
                 "name": {
                     "description": "Name holds the value of the \"name\" field.",
                     "type": "string"
@@ -4784,6 +4973,13 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/ent.Notifier"
+                    }
+                },
+                "oauth_grants": {
+                    "description": "OauthGrants holds the value of the oauth_grants edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.OAuthGrant"
                     }
                 },
                 "tags": {
@@ -4981,6 +5177,272 @@
                     "allOf": [
                         {
                             "$ref": "#/definitions/ent.User"
+                        }
+                    ]
+                }
+            }
+        },
+        "ent.OAuthClient": {
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "description": "ClientID holds the value of the \"client_id\" field.",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "CreatedAt holds the value of the \"created_at\" field.",
+                    "type": "string"
+                },
+                "edges": {
+                    "description": "Edges holds the relations/edges for other nodes in the graph.\nThe values are being populated by the OAuthClientQuery when eager-loading is set.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.OAuthClientEdges"
+                        }
+                    ]
+                },
+                "id": {
+                    "description": "ID of the ent.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name holds the value of the \"name\" field.",
+                    "type": "string"
+                },
+                "redirect_uris": {
+                    "description": "RedirectUris holds the value of the \"redirect_uris\" field.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "updated_at": {
+                    "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                }
+            }
+        },
+        "ent.OAuthClientEdges": {
+            "type": "object",
+            "properties": {
+                "grants": {
+                    "description": "Grants holds the value of the grants edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.OAuthGrant"
+                    }
+                },
+                "requests": {
+                    "description": "Requests holds the value of the requests edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.OAuthRequest"
+                    }
+                }
+            }
+        },
+        "ent.OAuthGrant": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "CreatedAt holds the value of the \"created_at\" field.",
+                    "type": "string"
+                },
+                "edges": {
+                    "description": "Edges holds the relations/edges for other nodes in the graph.\nThe values are being populated by the OAuthGrantQuery when eager-loading is set.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.OAuthGrantEdges"
+                        }
+                    ]
+                },
+                "group_id": {
+                    "description": "GroupID holds the value of the \"group_id\" field.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID of the ent.",
+                    "type": "string"
+                },
+                "last_used_at": {
+                    "description": "LastUsedAt holds the value of the \"last_used_at\" field.",
+                    "type": "string"
+                },
+                "scopes": {
+                    "description": "Scopes holds the value of the \"scopes\" field.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "updated_at": {
+                    "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                },
+                "user_id": {
+                    "description": "UserID holds the value of the \"user_id\" field.",
+                    "type": "string"
+                }
+            }
+        },
+        "ent.OAuthGrantEdges": {
+            "type": "object",
+            "properties": {
+                "client": {
+                    "description": "Client holds the value of the client edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.OAuthClient"
+                        }
+                    ]
+                },
+                "group": {
+                    "description": "Group holds the value of the group edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.Group"
+                        }
+                    ]
+                },
+                "tokens": {
+                    "description": "Tokens holds the value of the tokens edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.OAuthToken"
+                    }
+                },
+                "user": {
+                    "description": "User holds the value of the user edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.User"
+                        }
+                    ]
+                }
+            }
+        },
+        "ent.OAuthRequest": {
+            "type": "object",
+            "properties": {
+                "code_challenge": {
+                    "description": "CodeChallenge holds the value of the \"code_challenge\" field.",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "CreatedAt holds the value of the \"created_at\" field.",
+                    "type": "string"
+                },
+                "edges": {
+                    "description": "Edges holds the relations/edges for other nodes in the graph.\nThe values are being populated by the OAuthRequestQuery when eager-loading is set.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.OAuthRequestEdges"
+                        }
+                    ]
+                },
+                "expires_at": {
+                    "description": "ExpiresAt holds the value of the \"expires_at\" field.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID of the ent.",
+                    "type": "string"
+                },
+                "redirect_uri": {
+                    "description": "RedirectURI holds the value of the \"redirect_uri\" field.",
+                    "type": "string"
+                },
+                "resource": {
+                    "description": "Resource holds the value of the \"resource\" field.",
+                    "type": "string"
+                },
+                "scopes": {
+                    "description": "Scopes holds the value of the \"scopes\" field.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "state": {
+                    "description": "State holds the value of the \"state\" field.",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                }
+            }
+        },
+        "ent.OAuthRequestEdges": {
+            "type": "object",
+            "properties": {
+                "client": {
+                    "description": "Client holds the value of the client edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.OAuthClient"
+                        }
+                    ]
+                }
+            }
+        },
+        "ent.OAuthToken": {
+            "type": "object",
+            "properties": {
+                "code_challenge": {
+                    "description": "CodeChallenge holds the value of the \"code_challenge\" field.",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "CreatedAt holds the value of the \"created_at\" field.",
+                    "type": "string"
+                },
+                "edges": {
+                    "description": "Edges holds the relations/edges for other nodes in the graph.\nThe values are being populated by the OAuthTokenQuery when eager-loading is set.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.OAuthTokenEdges"
+                        }
+                    ]
+                },
+                "expires_at": {
+                    "description": "ExpiresAt holds the value of the \"expires_at\" field.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID of the ent.",
+                    "type": "string"
+                },
+                "kind": {
+                    "description": "Kind holds the value of the \"kind\" field.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/oauthtoken.Kind"
+                        }
+                    ]
+                },
+                "redirect_uri": {
+                    "description": "RedirectURI holds the value of the \"redirect_uri\" field.",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                },
+                "used_at": {
+                    "description": "UsedAt holds the value of the \"used_at\" field.",
+                    "type": "string"
+                }
+            }
+        },
+        "ent.OAuthTokenEdges": {
+            "type": "object",
+            "properties": {
+                "grant": {
+                    "description": "Grant holds the value of the grant edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.OAuthGrant"
                         }
                     ]
                 }
@@ -5282,6 +5744,13 @@
                         "$ref": "#/definitions/ent.Notifier"
                     }
                 },
+                "oauth_grants": {
+                    "description": "OauthGrants holds the value of the oauth_grants edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.OAuthGrant"
+                    }
+                },
                 "password_reset_tokens": {
                     "description": "PasswordResetTokens holds the value of the password_reset_tokens edge.",
                     "type": "array",
@@ -5406,6 +5875,85 @@
                 "StatusFailed"
             ]
         },
+        "oauthserver.ConsentCollection": {
+            "type": "object",
+            "properties": {
+                "allowed": {
+                    "description": "Allowed are the requested scopes this collection's ceiling currently permits.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "mcpAccess": {
+                    "description": "MCPAccess is the owner's ceiling: off, read, write or full. \"off\" means the\napplication cannot be connected to this collection yet.",
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "oauthserver.ConsentInfo": {
+            "type": "object",
+            "properties": {
+                "clientId": {
+                    "type": "string"
+                },
+                "clientName": {
+                    "type": "string"
+                },
+                "collections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/oauthserver.ConsentCollection"
+                    }
+                },
+                "expiresAt": {
+                    "type": "string"
+                },
+                "redirectHost": {
+                    "description": "RedirectHost is where the user will be sent back to. Shown so a user can\nnotice an application calling itself something it isn't.",
+                    "type": "string"
+                },
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/oauthserver.ConsentScope"
+                    }
+                }
+            }
+        },
+        "oauthserver.ConsentScope": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "mutating": {
+                    "type": "boolean"
+                },
+                "scope": {
+                    "type": "string"
+                }
+            }
+        },
+        "oauthtoken.Kind": {
+            "type": "string",
+            "enum": [
+                "code",
+                "access",
+                "refresh"
+            ],
+            "x-enum-varnames": [
+                "KindCode",
+                "KindAccess",
+                "KindRefresh"
+            ]
+        },
         "repo.APIKeyCreate": {
             "type": "object",
             "required": [
@@ -5416,10 +5964,31 @@
                     "type": "string",
                     "x-nullable": true
                 },
+                "groupId": {
+                    "description": "GroupID pins the key to one collection the user belongs to.",
+                    "type": "string",
+                    "x-nullable": true
+                },
                 "name": {
                     "type": "string",
                     "maxLength": 255,
                     "minLength": 1
+                },
+                "preset": {
+                    "description": "Preset is a shortcut for Scopes: read-only, read-write or full. It is\nignored when Scopes is set. With neither, the key is read-only.",
+                    "type": "string",
+                    "enum": [
+                        "read-only",
+                        "read-write",
+                        "full"
+                    ]
+                },
+                "scopes": {
+                    "description": "Scopes limits what the key may do, e.g. \"items:read\".",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -5433,6 +6002,10 @@
                     "type": "string",
                     "x-nullable": true
                 },
+                "groupId": {
+                    "type": "string",
+                    "x-nullable": true
+                },
                 "id": {
                     "type": "string"
                 },
@@ -5442,6 +6015,12 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "token": {
                     "type": "string"
@@ -5461,6 +6040,10 @@
                     "type": "string",
                     "x-nullable": true
                 },
+                "groupId": {
+                    "type": "string",
+                    "x-nullable": true
+                },
                 "id": {
                     "type": "string"
                 },
@@ -5470,6 +6053,12 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "userId": {
                     "type": "string"
@@ -6779,6 +7368,10 @@
                 "id": {
                     "type": "string"
                 },
+                "mcpAccess": {
+                    "description": "MCPAccess is the ceiling for AI assistants connected over MCP:\noff, read, write or full.",
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -6832,6 +7425,12 @@
             "properties": {
                 "currency": {
                     "type": "string"
+                },
+                "mcpAccess": {
+                    "description": "MCPAccess is left unchanged when nil.",
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
                 },
                 "name": {
                     "type": "string"
@@ -7062,6 +7661,42 @@
                 "url": {
                     "type": "string",
                     "x-nullable": true
+                }
+            }
+        },
+        "repo.OAuthGrantOut": {
+            "type": "object",
+            "properties": {
+                "clientId": {
+                    "type": "string"
+                },
+                "clientName": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "groupId": {
+                    "type": "string"
+                },
+                "groupName": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "lastUsedAt": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "userId": {
+                    "type": "string"
                 }
             }
         },
@@ -7503,6 +8138,9 @@
                 "latest": {
                     "$ref": "#/definitions/services.Latest"
                 },
+                "mcp": {
+                    "$ref": "#/definitions/v1.MCPStatus"
+                },
                 "message": {
                     "type": "string"
                 },
@@ -7736,6 +8374,46 @@
                 "username": {
                     "type": "string",
                     "example": "admin@admin.com"
+                }
+            }
+        },
+        "v1.MCPStatus": {
+            "type": "object",
+            "properties": {
+                "allowDelete": {
+                    "type": "boolean"
+                },
+                "allowWrites": {
+                    "type": "boolean"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "oauth": {
+                    "description": "OAuth is true when hosted assistants (Claude, ChatGPT) can connect with a\nsign-in flow instead of an API key.",
+                    "type": "boolean"
+                }
+            }
+        },
+        "v1.OAuthApprove": {
+            "type": "object",
+            "properties": {
+                "groupId": {
+                    "type": "string"
+                },
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "v1.OAuthDecision": {
+            "type": "object",
+            "properties": {
+                "redirectUrl": {
+                    "type": "string"
                 }
             }
         },

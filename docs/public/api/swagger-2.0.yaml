@@ -113,6 +113,9 @@ definitions:
       expires_at:
         description: ExpiresAt holds the value of the "expires_at" field.
         type: string
+      group_id:
+        description: GroupID holds the value of the "group_id" field.
+        type: string
       id:
         description: ID of the ent.
         type: string
@@ -122,6 +125,11 @@ definitions:
       name:
         description: Name holds the value of the "name" field.
         type: string
+      scopes:
+        description: Scopes holds the value of the "scopes" field.
+        items:
+          type: string
+        type: array
       updated_at:
         description: UpdatedAt holds the value of the "updated_at" field.
         type: string
@@ -131,6 +139,10 @@ definitions:
     type: object
   ent.APIKeyEdges:
     properties:
+      group:
+        allOf:
+        - $ref: '#/definitions/ent.Group'
+        description: Group holds the value of the group edge.
       user:
         allOf:
         - $ref: '#/definitions/ent.User'
@@ -772,6 +784,9 @@ definitions:
       id:
         description: ID of the ent.
         type: string
+      mcp_access:
+        description: McpAccess holds the value of the "mcp_access" field.
+        type: string
       name:
         description: Name holds the value of the "name" field.
         type: string
@@ -816,6 +831,11 @@ definitions:
         description: Notifiers holds the value of the notifiers edge.
         items:
           $ref: '#/definitions/ent.Notifier'
+        type: array
+      oauth_grants:
+        description: OauthGrants holds the value of the oauth_grants edge.
+        items:
+          $ref: '#/definitions/ent.OAuthGrant'
         type: array
       tags:
         description: Tags holds the value of the tags edge.
@@ -952,6 +972,186 @@ definitions:
         allOf:
         - $ref: '#/definitions/ent.User'
         description: User holds the value of the user edge.
+    type: object
+  ent.OAuthClient:
+    properties:
+      client_id:
+        description: ClientID holds the value of the "client_id" field.
+        type: string
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.OAuthClientEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the OAuthClientQuery when eager-loading is set.
+      id:
+        description: ID of the ent.
+        type: string
+      name:
+        description: Name holds the value of the "name" field.
+        type: string
+      redirect_uris:
+        description: RedirectUris holds the value of the "redirect_uris" field.
+        items:
+          type: string
+        type: array
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+    type: object
+  ent.OAuthClientEdges:
+    properties:
+      grants:
+        description: Grants holds the value of the grants edge.
+        items:
+          $ref: '#/definitions/ent.OAuthGrant'
+        type: array
+      requests:
+        description: Requests holds the value of the requests edge.
+        items:
+          $ref: '#/definitions/ent.OAuthRequest'
+        type: array
+    type: object
+  ent.OAuthGrant:
+    properties:
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.OAuthGrantEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the OAuthGrantQuery when eager-loading is set.
+      group_id:
+        description: GroupID holds the value of the "group_id" field.
+        type: string
+      id:
+        description: ID of the ent.
+        type: string
+      last_used_at:
+        description: LastUsedAt holds the value of the "last_used_at" field.
+        type: string
+      scopes:
+        description: Scopes holds the value of the "scopes" field.
+        items:
+          type: string
+        type: array
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+      user_id:
+        description: UserID holds the value of the "user_id" field.
+        type: string
+    type: object
+  ent.OAuthGrantEdges:
+    properties:
+      client:
+        allOf:
+        - $ref: '#/definitions/ent.OAuthClient'
+        description: Client holds the value of the client edge.
+      group:
+        allOf:
+        - $ref: '#/definitions/ent.Group'
+        description: Group holds the value of the group edge.
+      tokens:
+        description: Tokens holds the value of the tokens edge.
+        items:
+          $ref: '#/definitions/ent.OAuthToken'
+        type: array
+      user:
+        allOf:
+        - $ref: '#/definitions/ent.User'
+        description: User holds the value of the user edge.
+    type: object
+  ent.OAuthRequest:
+    properties:
+      code_challenge:
+        description: CodeChallenge holds the value of the "code_challenge" field.
+        type: string
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.OAuthRequestEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the OAuthRequestQuery when eager-loading is set.
+      expires_at:
+        description: ExpiresAt holds the value of the "expires_at" field.
+        type: string
+      id:
+        description: ID of the ent.
+        type: string
+      redirect_uri:
+        description: RedirectURI holds the value of the "redirect_uri" field.
+        type: string
+      resource:
+        description: Resource holds the value of the "resource" field.
+        type: string
+      scopes:
+        description: Scopes holds the value of the "scopes" field.
+        items:
+          type: string
+        type: array
+      state:
+        description: State holds the value of the "state" field.
+        type: string
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+    type: object
+  ent.OAuthRequestEdges:
+    properties:
+      client:
+        allOf:
+        - $ref: '#/definitions/ent.OAuthClient'
+        description: Client holds the value of the client edge.
+    type: object
+  ent.OAuthToken:
+    properties:
+      code_challenge:
+        description: CodeChallenge holds the value of the "code_challenge" field.
+        type: string
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.OAuthTokenEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the OAuthTokenQuery when eager-loading is set.
+      expires_at:
+        description: ExpiresAt holds the value of the "expires_at" field.
+        type: string
+      id:
+        description: ID of the ent.
+        type: string
+      kind:
+        allOf:
+        - $ref: '#/definitions/oauthtoken.Kind'
+        description: Kind holds the value of the "kind" field.
+      redirect_uri:
+        description: RedirectURI holds the value of the "redirect_uri" field.
+        type: string
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+      used_at:
+        description: UsedAt holds the value of the "used_at" field.
+        type: string
+    type: object
+  ent.OAuthTokenEdges:
+    properties:
+      grant:
+        allOf:
+        - $ref: '#/definitions/ent.OAuthGrant'
+        description: Grant holds the value of the grant edge.
     type: object
   ent.PasswordResetTokens:
     properties:
@@ -1158,6 +1358,11 @@ definitions:
         items:
           $ref: '#/definitions/ent.Notifier'
         type: array
+      oauth_grants:
+        description: OauthGrants holds the value of the oauth_grants edge.
+        items:
+          $ref: '#/definitions/ent.OAuthGrant'
+        type: array
       password_reset_tokens:
         description: PasswordResetTokens holds the value of the password_reset_tokens
           edge.
@@ -1246,15 +1451,92 @@ definitions:
     - StatusRunning
     - StatusCompleted
     - StatusFailed
+  oauthserver.ConsentCollection:
+    properties:
+      allowed:
+        description: Allowed are the requested scopes this collection's ceiling currently
+          permits.
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      mcpAccess:
+        description: |-
+          MCPAccess is the owner's ceiling: off, read, write or full. "off" means the
+          application cannot be connected to this collection yet.
+        type: string
+      name:
+        type: string
+    type: object
+  oauthserver.ConsentInfo:
+    properties:
+      clientId:
+        type: string
+      clientName:
+        type: string
+      collections:
+        items:
+          $ref: '#/definitions/oauthserver.ConsentCollection'
+        type: array
+      expiresAt:
+        type: string
+      redirectHost:
+        description: |-
+          RedirectHost is where the user will be sent back to. Shown so a user can
+          notice an application calling itself something it isn't.
+        type: string
+      scopes:
+        items:
+          $ref: '#/definitions/oauthserver.ConsentScope'
+        type: array
+    type: object
+  oauthserver.ConsentScope:
+    properties:
+      description:
+        type: string
+      mutating:
+        type: boolean
+      scope:
+        type: string
+    type: object
+  oauthtoken.Kind:
+    enum:
+    - code
+    - access
+    - refresh
+    type: string
+    x-enum-varnames:
+    - KindCode
+    - KindAccess
+    - KindRefresh
   repo.APIKeyCreate:
     properties:
       expiresAt:
+        type: string
+        x-nullable: true
+      groupId:
+        description: GroupID pins the key to one collection the user belongs to.
         type: string
         x-nullable: true
       name:
         maxLength: 255
         minLength: 1
         type: string
+      preset:
+        description: |-
+          Preset is a shortcut for Scopes: read-only, read-write or full. It is
+          ignored when Scopes is set. With neither, the key is read-only.
+        enum:
+        - read-only
+        - read-write
+        - full
+        type: string
+      scopes:
+        description: Scopes limits what the key may do, e.g. "items:read".
+        items:
+          type: string
+        type: array
     required:
     - name
     type: object
@@ -1265,6 +1547,9 @@ definitions:
       expiresAt:
         type: string
         x-nullable: true
+      groupId:
+        type: string
+        x-nullable: true
       id:
         type: string
       lastUsedAt:
@@ -1272,6 +1557,10 @@ definitions:
         x-nullable: true
       name:
         type: string
+      scopes:
+        items:
+          type: string
+        type: array
       token:
         type: string
       userId:
@@ -1284,6 +1573,9 @@ definitions:
       expiresAt:
         type: string
         x-nullable: true
+      groupId:
+        type: string
+        x-nullable: true
       id:
         type: string
       lastUsedAt:
@@ -1291,6 +1583,10 @@ definitions:
         x-nullable: true
       name:
         type: string
+      scopes:
+        items:
+          type: string
+        type: array
       userId:
         type: string
     type: object
@@ -2267,6 +2563,11 @@ definitions:
         type: string
       id:
         type: string
+      mcpAccess:
+        description: |-
+          MCPAccess is the ceiling for AI assistants connected over MCP:
+          off, read, write or full.
+        type: string
       name:
         type: string
       updatedAt:
@@ -2302,6 +2603,11 @@ definitions:
     properties:
       currency:
         type: string
+      mcpAccess:
+        description: MCPAccess is left unchanged when nil.
+        type: string
+        x-nullable: true
+        x-omitempty: true
       name:
         type: string
     type: object
@@ -2457,6 +2763,30 @@ definitions:
         x-nullable: true
     required:
     - name
+    type: object
+  repo.OAuthGrantOut:
+    properties:
+      clientId:
+        type: string
+      clientName:
+        type: string
+      createdAt:
+        type: string
+      groupId:
+        type: string
+      groupName:
+        type: string
+      id:
+        type: string
+      lastUsedAt:
+        type: string
+        x-nullable: true
+      scopes:
+        items:
+          type: string
+        type: array
+      userId:
+        type: string
     type: object
   repo.PaginationResult-repo_EntitySummary:
     properties:
@@ -2752,6 +3082,8 @@ definitions:
         type: boolean
       latest:
         $ref: '#/definitions/services.Latest'
+      mcp:
+        $ref: '#/definitions/v1.MCPStatus'
       message:
         type: string
       oidc:
@@ -2915,6 +3247,34 @@ definitions:
         type: boolean
       username:
         example: admin@admin.com
+        type: string
+    type: object
+  v1.MCPStatus:
+    properties:
+      allowDelete:
+        type: boolean
+      allowWrites:
+        type: boolean
+      enabled:
+        type: boolean
+      oauth:
+        description: |-
+          OAuth is true when hosted assistants (Claude, ChatGPT) can connect with a
+          sign-in flow instead of an API key.
+        type: boolean
+    type: object
+  v1.OAuthApprove:
+    properties:
+      groupId:
+        type: string
+      scopes:
+        items:
+          type: string
+        type: array
+    type: object
+  v1.OAuthDecision:
+    properties:
+      redirectUrl:
         type: string
     type: object
   v1.OIDCStatus:
@@ -4595,6 +4955,74 @@ paths:
       summary: Test Notifier
       tags:
       - Notifiers
+  /v1/oauth/requests/{id}:
+    get:
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/oauthserver.ConsentInfo'
+      security:
+      - Bearer: []
+      summary: Describe a pending AI assistant authorization request
+      tags:
+      - OAuth
+  /v1/oauth/requests/{id}/approve:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Collection and permissions to grant
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/v1.OAuthApprove'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.OAuthDecision'
+      security:
+      - Bearer: []
+      summary: Approve a pending AI assistant authorization request
+      tags:
+      - OAuth
+  /v1/oauth/requests/{id}/deny:
+    post:
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.OAuthDecision'
+      security:
+      - Bearer: []
+      summary: Deny a pending AI assistant authorization request
+      tags:
+      - OAuth
   /v1/products/search-from-barcode:
     get:
       parameters:
@@ -5190,6 +5618,39 @@ paths:
       summary: Delete API Key
       tags:
       - User
+  /v1/users/self/oauth-grants:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repo.OAuthGrantOut'
+            type: array
+      security:
+      - Bearer: []
+      summary: List connected AI assistants
+      tags:
+      - OAuth
+  /v1/users/self/oauth-grants/{id}:
+    delete:
+      description: Revokes the grant and every token issued under it.
+      parameters:
+      - description: Grant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+      - Bearer: []
+      summary: Disconnect an AI assistant
+      tags:
+      - OAuth
   /v1/users/self/settings:
     get:
       produces:
