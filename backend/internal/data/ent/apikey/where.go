@@ -91,6 +91,11 @@ func LastUsedAt(v time.Time) predicate.APIKey {
 	return predicate.APIKey(sql.FieldEQ(FieldLastUsedAt, v))
 }
 
+// GroupID applies equality check predicate on the "group_id" field. It's identical to GroupIDEQ.
+func GroupID(v uuid.UUID) predicate.APIKey {
+	return predicate.APIKey(sql.FieldEQ(FieldGroupID, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.APIKey {
 	return predicate.APIKey(sql.FieldEQ(FieldCreatedAt, v))
@@ -396,6 +401,36 @@ func LastUsedAtNotNil() predicate.APIKey {
 	return predicate.APIKey(sql.FieldNotNull(FieldLastUsedAt))
 }
 
+// GroupIDEQ applies the EQ predicate on the "group_id" field.
+func GroupIDEQ(v uuid.UUID) predicate.APIKey {
+	return predicate.APIKey(sql.FieldEQ(FieldGroupID, v))
+}
+
+// GroupIDNEQ applies the NEQ predicate on the "group_id" field.
+func GroupIDNEQ(v uuid.UUID) predicate.APIKey {
+	return predicate.APIKey(sql.FieldNEQ(FieldGroupID, v))
+}
+
+// GroupIDIn applies the In predicate on the "group_id" field.
+func GroupIDIn(vs ...uuid.UUID) predicate.APIKey {
+	return predicate.APIKey(sql.FieldIn(FieldGroupID, vs...))
+}
+
+// GroupIDNotIn applies the NotIn predicate on the "group_id" field.
+func GroupIDNotIn(vs ...uuid.UUID) predicate.APIKey {
+	return predicate.APIKey(sql.FieldNotIn(FieldGroupID, vs...))
+}
+
+// GroupIDIsNil applies the IsNil predicate on the "group_id" field.
+func GroupIDIsNil() predicate.APIKey {
+	return predicate.APIKey(sql.FieldIsNull(FieldGroupID))
+}
+
+// GroupIDNotNil applies the NotNil predicate on the "group_id" field.
+func GroupIDNotNil() predicate.APIKey {
+	return predicate.APIKey(sql.FieldNotNull(FieldGroupID))
+}
+
 // HasUser applies the HasEdge predicate on the "user" edge.
 func HasUser() predicate.APIKey {
 	return predicate.APIKey(func(s *sql.Selector) {
@@ -411,6 +446,29 @@ func HasUser() predicate.APIKey {
 func HasUserWith(preds ...predicate.User) predicate.APIKey {
 	return predicate.APIKey(func(s *sql.Selector) {
 		step := newUserStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasGroup applies the HasEdge predicate on the "group" edge.
+func HasGroup() predicate.APIKey {
+	return predicate.APIKey(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, GroupTable, GroupColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGroupWith applies the HasEdge predicate on the "group" edge with a given conditions (other predicates).
+func HasGroupWith(preds ...predicate.Group) predicate.APIKey {
+	return predicate.APIKey(func(s *sql.Selector) {
+		step := newGroupStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/apikey"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/group"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/user"
 )
 
@@ -96,6 +97,26 @@ func (_c *APIKeyCreate) SetNillableLastUsedAt(v *time.Time) *APIKeyCreate {
 	return _c
 }
 
+// SetScopes sets the "scopes" field.
+func (_c *APIKeyCreate) SetScopes(v []string) *APIKeyCreate {
+	_c.mutation.SetScopes(v)
+	return _c
+}
+
+// SetGroupID sets the "group_id" field.
+func (_c *APIKeyCreate) SetGroupID(v uuid.UUID) *APIKeyCreate {
+	_c.mutation.SetGroupID(v)
+	return _c
+}
+
+// SetNillableGroupID sets the "group_id" field if the given value is not nil.
+func (_c *APIKeyCreate) SetNillableGroupID(v *uuid.UUID) *APIKeyCreate {
+	if v != nil {
+		_c.SetGroupID(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *APIKeyCreate) SetID(v uuid.UUID) *APIKeyCreate {
 	_c.mutation.SetID(v)
@@ -113,6 +134,11 @@ func (_c *APIKeyCreate) SetNillableID(v *uuid.UUID) *APIKeyCreate {
 // SetUser sets the "user" edge to the User entity.
 func (_c *APIKeyCreate) SetUser(v *User) *APIKeyCreate {
 	return _c.SetUserID(v.ID)
+}
+
+// SetGroup sets the "group" edge to the Group entity.
+func (_c *APIKeyCreate) SetGroup(v *Group) *APIKeyCreate {
+	return _c.SetGroupID(v.ID)
 }
 
 // Mutation returns the APIKeyMutation object of the builder.
@@ -158,6 +184,10 @@ func (_c *APIKeyCreate) defaults() {
 		v := apikey.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.Scopes(); !ok {
+		v := apikey.DefaultScopes
+		_c.mutation.SetScopes(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := apikey.DefaultID()
 		_c.mutation.SetID(v)
@@ -185,6 +215,9 @@ func (_c *APIKeyCreate) check() error {
 	}
 	if _, ok := _c.mutation.Token(); !ok {
 		return &ValidationError{Name: "token", err: errors.New(`ent: missing required field "APIKey.token"`)}
+	}
+	if _, ok := _c.mutation.Scopes(); !ok {
+		return &ValidationError{Name: "scopes", err: errors.New(`ent: missing required field "APIKey.scopes"`)}
 	}
 	if len(_c.mutation.UserIDs()) == 0 {
 		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "APIKey.user"`)}
@@ -248,6 +281,10 @@ func (_c *APIKeyCreate) createSpec() (*APIKey, *sqlgraph.CreateSpec) {
 		_spec.SetField(apikey.FieldLastUsedAt, field.TypeTime, value)
 		_node.LastUsedAt = &value
 	}
+	if value, ok := _c.mutation.Scopes(); ok {
+		_spec.SetField(apikey.FieldScopes, field.TypeJSON, value)
+		_node.Scopes = value
+	}
 	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -263,6 +300,23 @@ func (_c *APIKeyCreate) createSpec() (*APIKey, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.UserID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.GroupIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   apikey.GroupTable,
+			Columns: []string{apikey.GroupColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.GroupID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

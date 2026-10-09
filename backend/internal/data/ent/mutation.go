@@ -76,9 +76,13 @@ type APIKeyMutation struct {
 	token         *[]byte
 	expires_at    *time.Time
 	last_used_at  *time.Time
+	scopes        *[]string
+	appendscopes  []string
 	clearedFields map[string]struct{}
 	user          *uuid.UUID
 	cleareduser   bool
+	group         *uuid.UUID
+	clearedgroup  bool
 	done          bool
 	oldValue      func(context.Context) (*APIKey, error)
 	predicates    []predicate.APIKey
@@ -466,6 +470,106 @@ func (m *APIKeyMutation) ResetLastUsedAt() {
 	delete(m.clearedFields, apikey.FieldLastUsedAt)
 }
 
+// SetScopes sets the "scopes" field.
+func (m *APIKeyMutation) SetScopes(s []string) {
+	m.scopes = &s
+	m.appendscopes = nil
+}
+
+// Scopes returns the value of the "scopes" field in the mutation.
+func (m *APIKeyMutation) Scopes() (r []string, exists bool) {
+	v := m.scopes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScopes returns the old "scopes" field's value of the APIKey entity.
+// If the APIKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIKeyMutation) OldScopes(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScopes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScopes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScopes: %w", err)
+	}
+	return oldValue.Scopes, nil
+}
+
+// AppendScopes adds s to the "scopes" field.
+func (m *APIKeyMutation) AppendScopes(s []string) {
+	m.appendscopes = append(m.appendscopes, s...)
+}
+
+// AppendedScopes returns the list of values that were appended to the "scopes" field in this mutation.
+func (m *APIKeyMutation) AppendedScopes() ([]string, bool) {
+	if len(m.appendscopes) == 0 {
+		return nil, false
+	}
+	return m.appendscopes, true
+}
+
+// ResetScopes resets all changes to the "scopes" field.
+func (m *APIKeyMutation) ResetScopes() {
+	m.scopes = nil
+	m.appendscopes = nil
+}
+
+// SetGroupID sets the "group_id" field.
+func (m *APIKeyMutation) SetGroupID(u uuid.UUID) {
+	m.group = &u
+}
+
+// GroupID returns the value of the "group_id" field in the mutation.
+func (m *APIKeyMutation) GroupID() (r uuid.UUID, exists bool) {
+	v := m.group
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGroupID returns the old "group_id" field's value of the APIKey entity.
+// If the APIKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIKeyMutation) OldGroupID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGroupID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGroupID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGroupID: %w", err)
+	}
+	return oldValue.GroupID, nil
+}
+
+// ClearGroupID clears the value of the "group_id" field.
+func (m *APIKeyMutation) ClearGroupID() {
+	m.group = nil
+	m.clearedFields[apikey.FieldGroupID] = struct{}{}
+}
+
+// GroupIDCleared returns if the "group_id" field was cleared in this mutation.
+func (m *APIKeyMutation) GroupIDCleared() bool {
+	_, ok := m.clearedFields[apikey.FieldGroupID]
+	return ok
+}
+
+// ResetGroupID resets all changes to the "group_id" field.
+func (m *APIKeyMutation) ResetGroupID() {
+	m.group = nil
+	delete(m.clearedFields, apikey.FieldGroupID)
+}
+
 // ClearUser clears the "user" edge to the User entity.
 func (m *APIKeyMutation) ClearUser() {
 	m.cleareduser = true
@@ -491,6 +595,33 @@ func (m *APIKeyMutation) UserIDs() (ids []uuid.UUID) {
 func (m *APIKeyMutation) ResetUser() {
 	m.user = nil
 	m.cleareduser = false
+}
+
+// ClearGroup clears the "group" edge to the Group entity.
+func (m *APIKeyMutation) ClearGroup() {
+	m.clearedgroup = true
+	m.clearedFields[apikey.FieldGroupID] = struct{}{}
+}
+
+// GroupCleared reports if the "group" edge to the Group entity was cleared.
+func (m *APIKeyMutation) GroupCleared() bool {
+	return m.GroupIDCleared() || m.clearedgroup
+}
+
+// GroupIDs returns the "group" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// GroupID instead. It exists only for internal usage by the builders.
+func (m *APIKeyMutation) GroupIDs() (ids []uuid.UUID) {
+	if id := m.group; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetGroup resets all changes to the "group" edge.
+func (m *APIKeyMutation) ResetGroup() {
+	m.group = nil
+	m.clearedgroup = false
 }
 
 // Where appends a list predicates to the APIKeyMutation builder.
@@ -527,7 +658,7 @@ func (m *APIKeyMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *APIKeyMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 9)
 	if m.created_at != nil {
 		fields = append(fields, apikey.FieldCreatedAt)
 	}
@@ -548,6 +679,12 @@ func (m *APIKeyMutation) Fields() []string {
 	}
 	if m.last_used_at != nil {
 		fields = append(fields, apikey.FieldLastUsedAt)
+	}
+	if m.scopes != nil {
+		fields = append(fields, apikey.FieldScopes)
+	}
+	if m.group != nil {
+		fields = append(fields, apikey.FieldGroupID)
 	}
 	return fields
 }
@@ -571,6 +708,10 @@ func (m *APIKeyMutation) Field(name string) (ent.Value, bool) {
 		return m.ExpiresAt()
 	case apikey.FieldLastUsedAt:
 		return m.LastUsedAt()
+	case apikey.FieldScopes:
+		return m.Scopes()
+	case apikey.FieldGroupID:
+		return m.GroupID()
 	}
 	return nil, false
 }
@@ -594,6 +735,10 @@ func (m *APIKeyMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldExpiresAt(ctx)
 	case apikey.FieldLastUsedAt:
 		return m.OldLastUsedAt(ctx)
+	case apikey.FieldScopes:
+		return m.OldScopes(ctx)
+	case apikey.FieldGroupID:
+		return m.OldGroupID(ctx)
 	}
 	return nil, fmt.Errorf("unknown APIKey field %s", name)
 }
@@ -652,6 +797,20 @@ func (m *APIKeyMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetLastUsedAt(v)
 		return nil
+	case apikey.FieldScopes:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScopes(v)
+		return nil
+	case apikey.FieldGroupID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGroupID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown APIKey field %s", name)
 }
@@ -688,6 +847,9 @@ func (m *APIKeyMutation) ClearedFields() []string {
 	if m.FieldCleared(apikey.FieldLastUsedAt) {
 		fields = append(fields, apikey.FieldLastUsedAt)
 	}
+	if m.FieldCleared(apikey.FieldGroupID) {
+		fields = append(fields, apikey.FieldGroupID)
+	}
 	return fields
 }
 
@@ -707,6 +869,9 @@ func (m *APIKeyMutation) ClearField(name string) error {
 		return nil
 	case apikey.FieldLastUsedAt:
 		m.ClearLastUsedAt()
+		return nil
+	case apikey.FieldGroupID:
+		m.ClearGroupID()
 		return nil
 	}
 	return fmt.Errorf("unknown APIKey nullable field %s", name)
@@ -737,15 +902,24 @@ func (m *APIKeyMutation) ResetField(name string) error {
 	case apikey.FieldLastUsedAt:
 		m.ResetLastUsedAt()
 		return nil
+	case apikey.FieldScopes:
+		m.ResetScopes()
+		return nil
+	case apikey.FieldGroupID:
+		m.ResetGroupID()
+		return nil
 	}
 	return fmt.Errorf("unknown APIKey field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *APIKeyMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.user != nil {
 		edges = append(edges, apikey.EdgeUser)
+	}
+	if m.group != nil {
+		edges = append(edges, apikey.EdgeGroup)
 	}
 	return edges
 }
@@ -758,13 +932,17 @@ func (m *APIKeyMutation) AddedIDs(name string) []ent.Value {
 		if id := m.user; id != nil {
 			return []ent.Value{*id}
 		}
+	case apikey.EdgeGroup:
+		if id := m.group; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *APIKeyMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -776,9 +954,12 @@ func (m *APIKeyMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *APIKeyMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.cleareduser {
 		edges = append(edges, apikey.EdgeUser)
+	}
+	if m.clearedgroup {
+		edges = append(edges, apikey.EdgeGroup)
 	}
 	return edges
 }
@@ -789,6 +970,8 @@ func (m *APIKeyMutation) EdgeCleared(name string) bool {
 	switch name {
 	case apikey.EdgeUser:
 		return m.cleareduser
+	case apikey.EdgeGroup:
+		return m.clearedgroup
 	}
 	return false
 }
@@ -800,6 +983,9 @@ func (m *APIKeyMutation) ClearEdge(name string) error {
 	case apikey.EdgeUser:
 		m.ClearUser()
 		return nil
+	case apikey.EdgeGroup:
+		m.ClearGroup()
+		return nil
 	}
 	return fmt.Errorf("unknown APIKey unique edge %s", name)
 }
@@ -810,6 +996,9 @@ func (m *APIKeyMutation) ResetEdge(name string) error {
 	switch name {
 	case apikey.EdgeUser:
 		m.ResetUser()
+		return nil
+	case apikey.EdgeGroup:
+		m.ResetGroup()
 		return nil
 	}
 	return fmt.Errorf("unknown APIKey edge %s", name)

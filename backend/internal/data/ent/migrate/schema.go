@@ -18,6 +18,8 @@ var (
 		{Name: "token", Type: field.TypeBytes, Unique: true},
 		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
 		{Name: "last_used_at", Type: field.TypeTime, Nullable: true},
+		{Name: "scopes", Type: field.TypeJSON},
+		{Name: "group_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "user_id", Type: field.TypeUUID},
 	}
 	// APIKeysTable holds the schema information for the "api_keys" table.
@@ -27,8 +29,14 @@ var (
 		PrimaryKey: []*schema.Column{APIKeysColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
+				Symbol:     "api_keys_groups_group",
+				Columns:    []*schema.Column{APIKeysColumns[8]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
 				Symbol:     "api_keys_users_api_keys",
-				Columns:    []*schema.Column{APIKeysColumns[7]},
+				Columns:    []*schema.Column{APIKeysColumns[9]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -42,7 +50,7 @@ var (
 			{
 				Name:    "apikey_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{APIKeysColumns[7]},
+				Columns: []*schema.Column{APIKeysColumns[9]},
 			},
 		},
 	}
@@ -756,7 +764,8 @@ var (
 )
 
 func init() {
-	APIKeysTable.ForeignKeys[0].RefTable = UsersTable
+	APIKeysTable.ForeignKeys[0].RefTable = GroupsTable
+	APIKeysTable.ForeignKeys[1].RefTable = UsersTable
 	AttachmentsTable.ForeignKeys[0].RefTable = AttachmentsTable
 	AttachmentsTable.ForeignKeys[1].RefTable = EntitiesTable
 	AuthRolesTable.ForeignKeys[0].RefTable = AuthTokensTable

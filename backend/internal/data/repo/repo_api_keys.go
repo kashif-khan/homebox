@@ -27,6 +27,8 @@ func NewAPIKeyRepository(db *ent.Client) *APIKeyRepository {
 				CreatedAt:  k.CreatedAt,
 				ExpiresAt:  k.ExpiresAt,
 				LastUsedAt: k.LastUsedAt,
+				Scopes:     k.Scopes,
+				GroupID:    k.GroupID,
 			}
 		},
 	}
@@ -36,6 +38,21 @@ type (
 	APIKeyCreate struct {
 		Name      string     `json:"name"      validate:"required,min=1,max=255"`
 		ExpiresAt *time.Time `json:"expiresAt" extensions:"x-nullable"`
+		// Preset is a shortcut for Scopes: read-only, read-write or full. It is
+		// ignored when Scopes is set. With neither, the key is read-only.
+		Preset string `json:"preset" validate:"omitempty,oneof=read-only read-write full"`
+		// Scopes limits what the key may do, e.g. "items:read".
+		Scopes []string `json:"scopes"`
+		// GroupID pins the key to one collection the user belongs to.
+		GroupID *uuid.UUID `json:"groupId" extensions:"x-nullable"`
+	}
+
+	// APIKeyGrant is what an authenticated API key is allowed to do.
+	APIKeyGrant struct {
+		ID      uuid.UUID
+		Name    string
+		Scopes  []string
+		GroupID *uuid.UUID
 	}
 
 	// APIKeyOut is the metadata of an API key, returned for list views. The raw
@@ -47,6 +64,8 @@ type (
 		CreatedAt  time.Time  `json:"createdAt"`
 		ExpiresAt  *time.Time `json:"expiresAt"  extensions:"x-nullable"`
 		LastUsedAt *time.Time `json:"lastUsedAt" extensions:"x-nullable"`
+		Scopes     []string   `json:"scopes"`
+		GroupID    *uuid.UUID `json:"groupId"    extensions:"x-nullable"`
 	}
 
 	// APIKeyCreatedOut is returned exactly once at creation time and contains
@@ -59,7 +78,7 @@ type (
 
 // Create persists a new API key for the given user. The caller supplies the
 // pre-hashed token bytes; the raw token is never stored.
-func (r *APIKeyRepository) Create(ctx context.Context, userID uuid.UUID, name string, tokenHash []byte, expiresAt *time.Time) (APIKeyOut, error) {
+func (r *APIKeyRepository) Create(ctx context.Context, userID uuid.UUID, name string, tokenHash []byte, expiresAt *time.Time, scopes []string, groupID *uuid.UUID) (APIKeyOut, error) {
 	ctx, span := entityTracer().Start(ctx, "repo.APIKeyRepository.Create",
 		trace.WithAttributes(
 			attribute.String("user.id", userID.String()),
@@ -71,10 +90,14 @@ func (r *APIKeyRepository) Create(ctx context.Context, userID uuid.UUID, name st
 	q := r.db.APIKey.Create().
 		SetUserID(userID).
 		SetName(name).
-		SetToken(tokenHash)
+		SetToken(tokenHash).
+		SetScopes(scopes)
 
 	if expiresAt != nil {
 		q.SetExpiresAt(*expiresAt)
+	}
+	if groupID != nil {
+		q.SetGroupID(*groupID)
 	}
 
 	key, err := q.Save(ctx)
@@ -90,7 +113,14 @@ func (r *APIKeyRepository) Create(ctx context.Context, userID uuid.UUID, name st
 // if it exists and has not expired. The matching key's ID is returned so that
 // the caller can update last_used_at.
 func (r *APIKeyRepository) GetUserFromToken(ctx context.Context, tokenHash []byte) (UserOut, uuid.UUID, error) {
-	ctx, span := entityTracer().Start(ctx, "repo.APIKeyRepository.GetUserFromToken",
+	usr, grant, err := r.GetGrantFromToken(ctx, tokenHash)
+	return usr, grant.ID, err
+}
+
+// GetGrantFromToken is GetUserFromToken plus the key's scopes and collection
+// pin, which the auth middleware needs to enforce limits.
+func (r *APIKeyRepository) GetGrantFromToken(ctx context.Context, tokenHash []byte) (UserOut, APIKeyGrant, error) {
+	ctx, span := entityTracer().Start(ctx, "repo.APIKeyRepository.GetGrantFromToken",
 		trace.WithAttributes(attribute.Int("token.hash.length", len(tokenHash))))
 	defer span.End()
 
@@ -108,7 +138,7 @@ func (r *APIKeyRepository) GetUserFromToken(ctx context.Context, tokenHash []byt
 		if !ent.IsNotFound(err) {
 			recordSpanError(span, err)
 		}
-		return UserOut{}, uuid.Nil, err
+		return UserOut{}, APIKeyGrant{}, err
 	}
 
 	if key.ExpiresAt != nil && key.ExpiresAt.Before(time.Now()) {
@@ -116,16 +146,18 @@ func (r *APIKeyRepository) GetUserFromToken(ctx context.Context, tokenHash []byt
 			attribute.Bool("api_key.found", true),
 			attribute.Bool("api_key.expired", true),
 		)
-		return UserOut{}, uuid.Nil, &ent.NotFoundError{}
+		return UserOut{}, APIKeyGrant{}, &ent.NotFoundError{}
 	}
 
 	out := mapUserOut(key.Edges.User)
 	span.SetAttributes(
 		attribute.Bool("api_key.found", true),
 		attribute.String("api_key.id", key.ID.String()),
+		attribute.StringSlice("api_key.scopes", key.Scopes),
+		attribute.Bool("api_key.group_pinned", key.GroupID != nil),
 	)
 	span.SetAttributes(userSpanAttrs(out)...)
-	return out, key.ID, nil
+	return out, APIKeyGrant{ID: key.ID, Name: key.Name, Scopes: key.Scopes, GroupID: key.GroupID}, nil
 }
 
 // TouchLastUsed updates the last_used_at timestamp on the given API key.

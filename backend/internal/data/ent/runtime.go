@@ -63,6 +63,10 @@ func init() {
 			return nil
 		}
 	}()
+	// apikeyDescScopes is the schema descriptor for scopes field.
+	apikeyDescScopes := apikeyFields[4].Descriptor()
+	// apikey.DefaultScopes holds the default value on creation for the scopes field.
+	apikey.DefaultScopes = apikeyDescScopes.Default.([]string)
 	// apikeyDescID is the schema descriptor for id field.
 	apikeyDescID := apikeyMixinFields0[0].Descriptor()
 	// apikey.DefaultID holds the default value on creation for the id field.
