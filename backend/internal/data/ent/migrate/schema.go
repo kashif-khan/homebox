@@ -457,6 +457,7 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString, Size: 255},
 		{Name: "currency", Type: field.TypeString, Default: "usd"},
+		{Name: "mcp_access", Type: field.TypeString, Default: "off"},
 	}
 	// GroupsTable holds the schema information for the "groups" table.
 	GroupsTable = &schema.Table{

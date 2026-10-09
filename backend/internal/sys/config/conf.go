@@ -65,6 +65,57 @@ type Config struct {
 	Notifier   NotifierConf   `yaml:"notifier"`
 	Search     SearchConf     `yaml:"search"`
 	Backup     BackupConf     `yaml:"backup"`
+	MCP        MCPConf        `yaml:"mcp"`
+}
+
+// MCPConf controls the Model Context Protocol server that lets AI assistants
+// work with a user's inventory. It is off by default. Even when enabled, a
+// collection stays closed to assistants until its owner opts in, and every
+// credential is further limited by its own scopes; the instance settings here
+// are the operator's outermost cap.
+type MCPConf struct {
+	// Enabled mounts the MCP endpoint at /mcp.
+	Enabled bool `yaml:"enabled" conf:"default:false"`
+	// AllowWrites lets assistants create and update data. When false the whole
+	// instance is read-only for MCP regardless of collection settings.
+	AllowWrites bool `yaml:"allow_writes" conf:"default:true"`
+	// AllowDelete lets assistants delete data. Requires AllowWrites.
+	AllowDelete bool `yaml:"allow_delete" conf:"default:true"`
+	// AllowedOrigins lists browser origins permitted to call /mcp. Requests with
+	// no Origin header (every non-browser client) are always allowed; requests
+	// with an Origin must match one of these. Empty means no browser origin is
+	// allowed, which blocks DNS-rebinding attacks against local installs.
+	AllowedOrigins []string `yaml:"allowed_origins"`
+	// MaxPageSize caps the page size of list and search tools.
+	MaxPageSize int `yaml:"max_page_size" conf:"default:50"`
+	// MaxTextLength truncates long free-text fields (notes, descriptions) in tool
+	// results, keeping responses inside a model's context window.
+	MaxTextLength int `yaml:"max_text_length" conf:"default:2000"`
+	// MaxResponseBytes rejects tool results larger than this many bytes.
+	MaxResponseBytes int `yaml:"max_response_bytes" conf:"default:131072"`
+	// RateLimitPerMinute is the per-credential request budget. Zero disables it.
+	RateLimitPerMinute int `yaml:"rate_limit_per_minute" conf:"default:120"`
+
+	Oauth MCPOAuthConf `yaml:"oauth"`
+}
+
+// MCPOAuthConf configures the built-in OAuth 2.1 authorization server used by
+// hosted assistants (Claude, ChatGPT) that cannot be given a static API key.
+type MCPOAuthConf struct {
+	// Enabled turns on the authorization server and its discovery documents.
+	// It needs a trustworthy public URL: set HBOX_OPTIONS_HOSTNAME or enable
+	// HBOX_OPTIONS_TRUST_PROXY, otherwise the endpoints refuse to answer.
+	Enabled bool `yaml:"enabled" conf:"default:true"`
+	// AllowDynamicRegistration lets MCP clients register themselves (RFC 7591).
+	// Registered clients still need the user's explicit consent at authorize time.
+	AllowDynamicRegistration bool `yaml:"allow_dynamic_registration" conf:"default:true"`
+	// AccessTokenTTL is how long an access token is valid.
+	AccessTokenTTL time.Duration `yaml:"access_token_ttl" conf:"default:1h"`
+	// RefreshTokenTTL is how long a refresh token (and so a grant) lasts without use.
+	RefreshTokenTTL time.Duration `yaml:"refresh_token_ttl" conf:"default:720h"`
+	// AllowedRedirectHosts restricts the redirect URIs dynamic clients may
+	// register, in addition to https and loopback. Empty allows any https host.
+	AllowedRedirectHosts []string `yaml:"allowed_redirect_hosts"`
 }
 
 // BackupConf controls scheduled backups and their destinations.

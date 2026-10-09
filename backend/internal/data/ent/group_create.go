@@ -78,6 +78,20 @@ func (_c *GroupCreate) SetNillableCurrency(v *string) *GroupCreate {
 	return _c
 }
 
+// SetMcpAccess sets the "mcp_access" field.
+func (_c *GroupCreate) SetMcpAccess(v string) *GroupCreate {
+	_c.mutation.SetMcpAccess(v)
+	return _c
+}
+
+// SetNillableMcpAccess sets the "mcp_access" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableMcpAccess(v *string) *GroupCreate {
+	if v != nil {
+		_c.SetMcpAccess(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *GroupCreate) SetID(v uuid.UUID) *GroupCreate {
 	_c.mutation.SetID(v)
@@ -274,6 +288,10 @@ func (_c *GroupCreate) defaults() {
 		v := group.DefaultCurrency
 		_c.mutation.SetCurrency(v)
 	}
+	if _, ok := _c.mutation.McpAccess(); !ok {
+		v := group.DefaultMcpAccess
+		_c.mutation.SetMcpAccess(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := group.DefaultID()
 		_c.mutation.SetID(v)
@@ -298,6 +316,9 @@ func (_c *GroupCreate) check() error {
 	}
 	if _, ok := _c.mutation.Currency(); !ok {
 		return &ValidationError{Name: "currency", err: errors.New(`ent: missing required field "Group.currency"`)}
+	}
+	if _, ok := _c.mutation.McpAccess(); !ok {
+		return &ValidationError{Name: "mcp_access", err: errors.New(`ent: missing required field "Group.mcp_access"`)}
 	}
 	return nil
 }
@@ -349,6 +370,10 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Currency(); ok {
 		_spec.SetField(group.FieldCurrency, field.TypeString, value)
 		_node.Currency = value
+	}
+	if value, ok := _c.mutation.McpAccess(); ok {
+		_spec.SetField(group.FieldMcpAccess, field.TypeString, value)
+		_node.McpAccess = value
 	}
 	if nodes := _c.mutation.UsersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

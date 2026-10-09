@@ -300,6 +300,10 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 		r.NotFound(http.NotFound)
 	})
 
+	if a.conf.MCP.Enabled {
+		a.mountMCP(r)
+	}
+
 	r.NotFound(chain.ToHandlerFunc(notFoundHandler()))
 }
 

@@ -130,6 +130,14 @@ type (
 		LabelPrinting     bool            `json:"labelPrinting"`
 		OIDC              OIDCStatus      `json:"oidc"`
 		Telemetry         TelemetryStatus `json:"telemetry"`
+		MCP               MCPStatus       `json:"mcp"`
+	}
+
+	// MCPStatus tells the web UI whether to offer AI assistant connections.
+	MCPStatus struct {
+		Enabled     bool `json:"enabled"`
+		AllowWrites bool `json:"allowWrites"`
+		AllowDelete bool `json:"allowDelete"`
 	}
 
 	OIDCStatus struct {
@@ -200,6 +208,11 @@ func (ctrl *V1Controller) HandleBase(ready ReadyFunc, build Build) errchain.Hand
 			},
 			Telemetry: TelemetryStatus{
 				Enabled: ctrl.config.Otel.Enabled,
+			},
+			MCP: MCPStatus{
+				Enabled:     ctrl.config.MCP.Enabled,
+				AllowWrites: ctrl.config.MCP.AllowWrites,
+				AllowDelete: ctrl.config.MCP.AllowWrites && ctrl.config.MCP.AllowDelete,
 			},
 		})
 	}

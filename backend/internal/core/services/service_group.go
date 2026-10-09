@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/scopes"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/repo"
 	"github.com/sysadminsmedia/homebox/backend/internal/sys/validate"
 	"github.com/sysadminsmedia/homebox/backend/pkgs/hasher"
@@ -47,6 +48,11 @@ func (svc *GroupService) UpdateGroup(ctx Context, data repo.GroupUpdate) (repo.G
 
 	if data.Currency == "" {
 		return repo.Group{}, errors.New("currency cannot be empty")
+	}
+
+	if data.MCPAccess != nil && !scopes.ValidAccess(*data.MCPAccess) {
+		return repo.Group{}, validate.NewRequestError(
+			errors.New("mcpAccess must be one of off, read, write, full"), http.StatusUnprocessableEntity)
 	}
 
 	return svc.repos.Groups.GroupUpdate(ctx.Context, ctx.GID, data)

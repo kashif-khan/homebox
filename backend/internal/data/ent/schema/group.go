@@ -29,6 +29,11 @@ func (Group) Fields() []ent.Field {
 			NotEmpty(),
 		field.String("currency").
 			Default("usd"),
+		// mcp_access is the ceiling a collection owner sets for AI assistants
+		// connected over MCP: off (default), read, write or full. See
+		// scopes.Ceiling.
+		field.String("mcp_access").
+			Default("off"),
 	}
 }
 

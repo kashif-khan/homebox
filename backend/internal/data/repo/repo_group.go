@@ -36,6 +36,7 @@ func NewGroupRepository(db *ent.Client, attachments *AttachmentRepo) *GroupRepos
 			CreatedAt: g.CreatedAt,
 			UpdatedAt: g.UpdatedAt,
 			Currency:  strings.ToUpper(g.Currency),
+			MCPAccess: g.McpAccess,
 		}
 	}
 
@@ -63,11 +64,16 @@ type (
 		CreatedAt time.Time `json:"createdAt,omitempty"`
 		UpdatedAt time.Time `json:"updatedAt,omitempty"`
 		Currency  string    `json:"currency,omitempty"`
+		// MCPAccess is the ceiling for AI assistants connected over MCP:
+		// off, read, write or full.
+		MCPAccess string `json:"mcpAccess,omitempty"`
 	}
 
 	GroupUpdate struct {
 		Name     string `json:"name"`
 		Currency string `json:"currency"`
+		// MCPAccess is left unchanged when nil.
+		MCPAccess *string `json:"mcpAccess,omitempty" extensions:"x-nullable,x-omitempty"`
 	}
 
 	GroupInvitationCreate struct {
@@ -313,10 +319,13 @@ func (r *GroupRepository) GroupCreate(ctx context.Context, name string, userID u
 }
 
 func (r *GroupRepository) GroupUpdate(ctx context.Context, id uuid.UUID, data GroupUpdate) (Group, error) {
-	entity, err := r.db.Group.UpdateOneID(id).
+	q := r.db.Group.UpdateOneID(id).
 		SetName(data.Name).
-		SetCurrency(strings.ToLower(data.Currency)).
-		Save(ctx)
+		SetCurrency(strings.ToLower(data.Currency))
+	if data.MCPAccess != nil {
+		q.SetMcpAccess(*data.MCPAccess)
+	}
+	entity, err := q.Save(ctx)
 
 	return r.groupMapper.MapErr(entity, err)
 }

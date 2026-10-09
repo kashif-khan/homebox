@@ -76,6 +76,11 @@ func Currency(v string) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldCurrency, v))
 }
 
+// McpAccess applies equality check predicate on the "mcp_access" field. It's identical to McpAccessEQ.
+func McpAccess(v string) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldMcpAccess, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldCreatedAt, v))
@@ -284,6 +289,71 @@ func CurrencyEqualFold(v string) predicate.Group {
 // CurrencyContainsFold applies the ContainsFold predicate on the "currency" field.
 func CurrencyContainsFold(v string) predicate.Group {
 	return predicate.Group(sql.FieldContainsFold(FieldCurrency, v))
+}
+
+// McpAccessEQ applies the EQ predicate on the "mcp_access" field.
+func McpAccessEQ(v string) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldMcpAccess, v))
+}
+
+// McpAccessNEQ applies the NEQ predicate on the "mcp_access" field.
+func McpAccessNEQ(v string) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldMcpAccess, v))
+}
+
+// McpAccessIn applies the In predicate on the "mcp_access" field.
+func McpAccessIn(vs ...string) predicate.Group {
+	return predicate.Group(sql.FieldIn(FieldMcpAccess, vs...))
+}
+
+// McpAccessNotIn applies the NotIn predicate on the "mcp_access" field.
+func McpAccessNotIn(vs ...string) predicate.Group {
+	return predicate.Group(sql.FieldNotIn(FieldMcpAccess, vs...))
+}
+
+// McpAccessGT applies the GT predicate on the "mcp_access" field.
+func McpAccessGT(v string) predicate.Group {
+	return predicate.Group(sql.FieldGT(FieldMcpAccess, v))
+}
+
+// McpAccessGTE applies the GTE predicate on the "mcp_access" field.
+func McpAccessGTE(v string) predicate.Group {
+	return predicate.Group(sql.FieldGTE(FieldMcpAccess, v))
+}
+
+// McpAccessLT applies the LT predicate on the "mcp_access" field.
+func McpAccessLT(v string) predicate.Group {
+	return predicate.Group(sql.FieldLT(FieldMcpAccess, v))
+}
+
+// McpAccessLTE applies the LTE predicate on the "mcp_access" field.
+func McpAccessLTE(v string) predicate.Group {
+	return predicate.Group(sql.FieldLTE(FieldMcpAccess, v))
+}
+
+// McpAccessContains applies the Contains predicate on the "mcp_access" field.
+func McpAccessContains(v string) predicate.Group {
+	return predicate.Group(sql.FieldContains(FieldMcpAccess, v))
+}
+
+// McpAccessHasPrefix applies the HasPrefix predicate on the "mcp_access" field.
+func McpAccessHasPrefix(v string) predicate.Group {
+	return predicate.Group(sql.FieldHasPrefix(FieldMcpAccess, v))
+}
+
+// McpAccessHasSuffix applies the HasSuffix predicate on the "mcp_access" field.
+func McpAccessHasSuffix(v string) predicate.Group {
+	return predicate.Group(sql.FieldHasSuffix(FieldMcpAccess, v))
+}
+
+// McpAccessEqualFold applies the EqualFold predicate on the "mcp_access" field.
+func McpAccessEqualFold(v string) predicate.Group {
+	return predicate.Group(sql.FieldEqualFold(FieldMcpAccess, v))
+}
+
+// McpAccessContainsFold applies the ContainsFold predicate on the "mcp_access" field.
+func McpAccessContainsFold(v string) predicate.Group {
+	return predicate.Group(sql.FieldContainsFold(FieldMcpAccess, v))
 }
 
 // HasUsers applies the HasEdge predicate on the "users" edge.
