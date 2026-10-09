@@ -16,6 +16,8 @@ var (
 	ContextUserToken = &contextKeys{name: "UserToken"}
 	ContextTenant    = &contextKeys{name: "Tenant"}
 	ContextAPIKey    = &contextKeys{name: "APIKey"}
+
+	ContextAPIKeyGrant = &contextKeys{name: "APIKeyGrant"}
 )
 
 type Context struct {
@@ -103,4 +105,19 @@ func SetAPIKeyAuth(ctx context.Context) context.Context {
 func IsAPIKeyAuth(ctx context.Context) bool {
 	v, _ := ctx.Value(ContextAPIKey).(bool)
 	return v
+}
+
+// SetAPIKeyGrant marks the context as authenticated via an API key and records
+// what that key is allowed to do. Enforcement lives in the auth middleware and
+// the MCP server; services never inspect it.
+func SetAPIKeyGrant(ctx context.Context, grant repo.APIKeyGrant) context.Context {
+	ctx = SetAPIKeyAuth(ctx)
+	return context.WithValue(ctx, ContextAPIKeyGrant, grant)
+}
+
+// UseAPIKeyGrant returns the grant of the API key that authenticated the
+// request. ok is false for session-token requests.
+func UseAPIKeyGrant(ctx context.Context) (grant repo.APIKeyGrant, ok bool) {
+	grant, ok = ctx.Value(ContextAPIKeyGrant).(repo.APIKeyGrant)
+	return grant, ok
 }

@@ -4,14 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/scopes"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authroles"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/repo"
+	"github.com/sysadminsmedia/homebox/backend/internal/sys/validate"
 	"github.com/sysadminsmedia/homebox/backend/pkgs/hasher"
 	"github.com/sysadminsmedia/homebox/backend/pkgs/mailer"
 	"go.opentelemetry.io/otel/attribute"
@@ -29,6 +32,7 @@ var (
 	passwordResetTokenTTL     = time.Hour
 	ErrorInvalidLogin         = errors.New("invalid username or password")
 	ErrorInvalidToken         = errors.New("invalid token")
+	ErrAPIKeyInvalidGroup     = errors.New("collection not found")
 	ErrorMailerNotConfigured  = errors.New("password reset by email is unavailable: SMTP is not configured")
 	ErrorPasswordResetInvalid = errors.New("password reset link is invalid or has expired")
 	ErrorPasswordTooShort     = fmt.Errorf("password must be at least %d characters", PasswordMinLength)
@@ -873,8 +877,27 @@ func (svc *UserService) CreateAPIKey(ctx context.Context, userID uuid.UUID, in r
 		attribute.String("api_key.expires_at", expiresAt.Format(time.RFC3339)),
 	)
 
+	granted, err := resolveAPIKeyScopes(in)
+	if err != nil {
+		recordServiceSpanError(span, err)
+		return repo.APIKeyCreatedOut{}, err
+	}
+	span.SetAttributes(attribute.StringSlice("api_key.scopes", granted))
+
+	if in.GroupID != nil {
+		member, err := svc.repos.Groups.IsMember(ctx, *in.GroupID, userID)
+		if err != nil {
+			recordServiceSpanError(span, err)
+			return repo.APIKeyCreatedOut{}, err
+		}
+		if !member {
+			// Same answer as an unknown group, so membership isn't probeable.
+			return repo.APIKeyCreatedOut{}, validate.NewRequestError(ErrAPIKeyInvalidGroup, http.StatusNotFound)
+		}
+	}
+
 	token := hasher.GenerateAPIKeyCtx(ctx)
-	out, err := svc.repos.APIKeys.Create(ctx, userID, in.Name, token.Hash, expiresAt)
+	out, err := svc.repos.APIKeys.Create(ctx, userID, in.Name, token.Hash, expiresAt, granted, in.GroupID)
 	if err != nil {
 		recordServiceSpanError(span, err)
 		return repo.APIKeyCreatedOut{}, err
@@ -926,4 +949,23 @@ func (svc *UserService) ExistsByEmail(ctx context.Context, email string) bool {
 	exists := err == nil
 	span.SetAttributes(attribute.Bool("user.exists", exists))
 	return exists
+}
+
+// resolveAPIKeyScopes turns the scope-related fields of a create request into a
+// validated scope list. Explicit scopes win over a preset; with neither, the key
+// is read-only.
+func resolveAPIKeyScopes(in repo.APIKeyCreate) ([]string, error) {
+	requested := in.Scopes
+	if len(requested) == 0 && in.Preset != "" {
+		p, err := scopes.Preset(in.Preset)
+		if err != nil {
+			return nil, validate.NewRequestError(err, http.StatusUnprocessableEntity)
+		}
+		requested = p
+	}
+	out, err := scopes.Normalize(requested)
+	if err != nil {
+		return nil, validate.NewRequestError(err, http.StatusUnprocessableEntity)
+	}
+	return out, nil
 }

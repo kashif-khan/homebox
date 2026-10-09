@@ -2,8 +2,11 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/google/uuid"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/schema/mixins"
 )
 
@@ -37,6 +40,24 @@ func (APIKey) Fields() []ent.Field {
 		field.Time("last_used_at").
 			Optional().
 			Nillable(),
+		// scopes limits what the key may do. Rows created before scopes existed
+		// are backfilled with ["*"] (full access) by the migration.
+		field.Strings("scopes").
+			Default([]string{"*"}),
+		// group_id pins the key to a single collection. NULL means the key may
+		// act in any collection its owner belongs to.
+		field.UUID("group_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
+	}
+}
+
+func (APIKey) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.To("group", Group.Type).
+			Field("group_id").
+			Unique().
+			Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 	}
 }
 

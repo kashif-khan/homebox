@@ -10,9 +10,11 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/apikey"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/group"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/predicate"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/user"
 )
@@ -110,9 +112,46 @@ func (_u *APIKeyUpdate) ClearLastUsedAt() *APIKeyUpdate {
 	return _u
 }
 
+// SetScopes sets the "scopes" field.
+func (_u *APIKeyUpdate) SetScopes(v []string) *APIKeyUpdate {
+	_u.mutation.SetScopes(v)
+	return _u
+}
+
+// AppendScopes appends value to the "scopes" field.
+func (_u *APIKeyUpdate) AppendScopes(v []string) *APIKeyUpdate {
+	_u.mutation.AppendScopes(v)
+	return _u
+}
+
+// SetGroupID sets the "group_id" field.
+func (_u *APIKeyUpdate) SetGroupID(v uuid.UUID) *APIKeyUpdate {
+	_u.mutation.SetGroupID(v)
+	return _u
+}
+
+// SetNillableGroupID sets the "group_id" field if the given value is not nil.
+func (_u *APIKeyUpdate) SetNillableGroupID(v *uuid.UUID) *APIKeyUpdate {
+	if v != nil {
+		_u.SetGroupID(*v)
+	}
+	return _u
+}
+
+// ClearGroupID clears the value of the "group_id" field.
+func (_u *APIKeyUpdate) ClearGroupID() *APIKeyUpdate {
+	_u.mutation.ClearGroupID()
+	return _u
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (_u *APIKeyUpdate) SetUser(v *User) *APIKeyUpdate {
 	return _u.SetUserID(v.ID)
+}
+
+// SetGroup sets the "group" edge to the Group entity.
+func (_u *APIKeyUpdate) SetGroup(v *Group) *APIKeyUpdate {
+	return _u.SetGroupID(v.ID)
 }
 
 // Mutation returns the APIKeyMutation object of the builder.
@@ -123,6 +162,12 @@ func (_u *APIKeyUpdate) Mutation() *APIKeyMutation {
 // ClearUser clears the "user" edge to the User entity.
 func (_u *APIKeyUpdate) ClearUser() *APIKeyUpdate {
 	_u.mutation.ClearUser()
+	return _u
+}
+
+// ClearGroup clears the "group" edge to the Group entity.
+func (_u *APIKeyUpdate) ClearGroup() *APIKeyUpdate {
+	_u.mutation.ClearGroup()
 	return _u
 }
 
@@ -208,6 +253,14 @@ func (_u *APIKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.LastUsedAtCleared() {
 		_spec.ClearField(apikey.FieldLastUsedAt, field.TypeTime)
 	}
+	if value, ok := _u.mutation.Scopes(); ok {
+		_spec.SetField(apikey.FieldScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, apikey.FieldScopes, value)
+		})
+	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -230,6 +283,35 @@ func (_u *APIKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GroupCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   apikey.GroupTable,
+			Columns: []string{apikey.GroupColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GroupIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   apikey.GroupTable,
+			Columns: []string{apikey.GroupColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -337,9 +419,46 @@ func (_u *APIKeyUpdateOne) ClearLastUsedAt() *APIKeyUpdateOne {
 	return _u
 }
 
+// SetScopes sets the "scopes" field.
+func (_u *APIKeyUpdateOne) SetScopes(v []string) *APIKeyUpdateOne {
+	_u.mutation.SetScopes(v)
+	return _u
+}
+
+// AppendScopes appends value to the "scopes" field.
+func (_u *APIKeyUpdateOne) AppendScopes(v []string) *APIKeyUpdateOne {
+	_u.mutation.AppendScopes(v)
+	return _u
+}
+
+// SetGroupID sets the "group_id" field.
+func (_u *APIKeyUpdateOne) SetGroupID(v uuid.UUID) *APIKeyUpdateOne {
+	_u.mutation.SetGroupID(v)
+	return _u
+}
+
+// SetNillableGroupID sets the "group_id" field if the given value is not nil.
+func (_u *APIKeyUpdateOne) SetNillableGroupID(v *uuid.UUID) *APIKeyUpdateOne {
+	if v != nil {
+		_u.SetGroupID(*v)
+	}
+	return _u
+}
+
+// ClearGroupID clears the value of the "group_id" field.
+func (_u *APIKeyUpdateOne) ClearGroupID() *APIKeyUpdateOne {
+	_u.mutation.ClearGroupID()
+	return _u
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (_u *APIKeyUpdateOne) SetUser(v *User) *APIKeyUpdateOne {
 	return _u.SetUserID(v.ID)
+}
+
+// SetGroup sets the "group" edge to the Group entity.
+func (_u *APIKeyUpdateOne) SetGroup(v *Group) *APIKeyUpdateOne {
+	return _u.SetGroupID(v.ID)
 }
 
 // Mutation returns the APIKeyMutation object of the builder.
@@ -350,6 +469,12 @@ func (_u *APIKeyUpdateOne) Mutation() *APIKeyMutation {
 // ClearUser clears the "user" edge to the User entity.
 func (_u *APIKeyUpdateOne) ClearUser() *APIKeyUpdateOne {
 	_u.mutation.ClearUser()
+	return _u
+}
+
+// ClearGroup clears the "group" edge to the Group entity.
+func (_u *APIKeyUpdateOne) ClearGroup() *APIKeyUpdateOne {
+	_u.mutation.ClearGroup()
 	return _u
 }
 
@@ -465,6 +590,14 @@ func (_u *APIKeyUpdateOne) sqlSave(ctx context.Context) (_node *APIKey, err erro
 	if _u.mutation.LastUsedAtCleared() {
 		_spec.ClearField(apikey.FieldLastUsedAt, field.TypeTime)
 	}
+	if value, ok := _u.mutation.Scopes(); ok {
+		_spec.SetField(apikey.FieldScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, apikey.FieldScopes, value)
+		})
+	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -487,6 +620,35 @@ func (_u *APIKeyUpdateOne) sqlSave(ctx context.Context) (_node *APIKey, err erro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GroupCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   apikey.GroupTable,
+			Columns: []string{apikey.GroupColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GroupIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   apikey.GroupTable,
+			Columns: []string{apikey.GroupColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

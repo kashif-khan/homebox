@@ -16,6 +16,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authroles"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/repo"
 	"github.com/sysadminsmedia/homebox/backend/internal/sys/config"
 	"github.com/sysadminsmedia/homebox/backend/internal/sys/validate"
 	"github.com/sysadminsmedia/homebox/backend/pkgs/hasher"
@@ -278,6 +279,7 @@ func (a *app) mwAuthToken(next errchain.Handler) errchain.Handler {
 		}
 
 		isAPIKey := false
+		var grant repo.APIKeyGrant
 		if err != nil {
 			// Session-token lookup missed. API keys are only accepted via the
 			// Authorization header — never via cookies or query params, since
@@ -289,7 +291,7 @@ func (a *app) mwAuthToken(next errchain.Handler) errchain.Handler {
 			}
 
 			tokenHash := hasher.HashAPIKey(requestToken)
-			keyUsr, keyID, keyErr := a.repos.APIKeys.GetUserFromToken(r.Context(), tokenHash)
+			keyUsr, keyGrant, keyErr := a.repos.APIKeys.GetGrantFromToken(r.Context(), tokenHash)
 			if keyErr != nil {
 				if ent.IsNotFound(keyErr) {
 					span.SetAttributes(attribute.String("auth.outcome", "token_not_found"))
@@ -301,11 +303,12 @@ func (a *app) mwAuthToken(next errchain.Handler) errchain.Handler {
 			}
 			usr = keyUsr
 			isAPIKey = true
+			grant = keyGrant
 
 			// Best-effort last_used_at update; failure must not break the
 			// request, but we want it surfaced in logs.
-			if touchErr := a.repos.APIKeys.TouchLastUsed(r.Context(), keyID, time.Now()); touchErr != nil {
-				log.Warn().Err(touchErr).Str("api_key.id", keyID.String()).Msg("failed to update api key last_used_at")
+			if touchErr := a.repos.APIKeys.TouchLastUsed(r.Context(), grant.ID, time.Now()); touchErr != nil {
+				log.Warn().Err(touchErr).Str("api_key.id", grant.ID.String()).Msg("failed to update api key last_used_at")
 			}
 		}
 
@@ -320,7 +323,7 @@ func (a *app) mwAuthToken(next errchain.Handler) errchain.Handler {
 
 		ctxOut := services.SetUserCtx(r.Context(), &usr, requestToken)
 		if isAPIKey {
-			ctxOut = services.SetAPIKeyAuth(ctxOut)
+			ctxOut = services.SetAPIKeyGrant(ctxOut, grant)
 		}
 		r = r.WithContext(ctxOut)
 		return next.ServeHTTP(w, r)
@@ -347,6 +350,15 @@ func (a *app) mwTenant(next errchain.Handler) errchain.Handler {
 		tenantID := user.DefaultGroupID
 		tenantSource := "default"
 
+		// An API key pinned to one collection acts in that collection only: it is
+		// the default tenant, and naming any other one is refused below.
+		var pinned *uuid.UUID
+		if grant, ok := services.UseAPIKeyGrant(spanCtx); ok && grant.GroupID != nil {
+			pinned = grant.GroupID
+			tenantID = *pinned
+			tenantSource = "api_key_pin"
+		}
+
 		tenantHeader := r.Header.Get("X-Tenant")
 		if tenantHeader == "" {
 			tenantHeader = r.URL.Query().Get("tenant")
@@ -368,6 +380,10 @@ func (a *app) mwTenant(next errchain.Handler) errchain.Handler {
 				return validate.NewRequestError(errors.New("invalid X-Tenant header format"), http.StatusBadRequest)
 			}
 
+			if pinned != nil && parsedTenantID != *pinned {
+				span.SetAttributes(attribute.String("tenant.outcome", "forbidden_pinned"))
+				return validate.NewRequestError(errors.New("api key is pinned to a different collection"), http.StatusForbidden)
+			}
 			tenantID = parsedTenantID
 		}
 

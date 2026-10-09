@@ -9,12 +9,16 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/apikey"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/backupdestination"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/export"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/migrations"
 	_ "github.com/sysadminsmedia/homebox/backend/internal/data/migrations/sqlite3"
 	_ "github.com/sysadminsmedia/homebox/backend/pkgs/cgofreesqlite"
 )
+
+// scopeItemsRead is the scope string the fixtures store.
+const scopeItemsRead = "items:read"
 
 func TestSqliteMigrationsApplyAndMatchEnt(t *testing.T) {
 	ctx := context.Background()
@@ -204,4 +208,45 @@ func TestSqliteSMBCronRebuildKeepsRows(t *testing.T) {
 	n, err := c.BackupDestination.Query().Count(ctx)
 	require.NoError(t, err)
 	require.Zero(t, n)
+}
+
+// TestSqliteAPIKeyScopesBackfillFullAccess checks that keys created before
+// scopes existed keep full access, and that the group pin cascades.
+func TestSqliteAPIKeyScopesBackfillFullAccess(t *testing.T) {
+	ctx := context.Background()
+	c, err := ent.Open("sqlite3", "file:migapikeyscopes?mode=memory&cache=shared&_fk=1&_time_format=sqlite")
+	require.NoError(t, err)
+	defer func() { _ = c.Close() }()
+
+	fs, err := migrations.Migrations("sqlite3")
+	require.NoError(t, err)
+	goose.SetBaseFS(fs)
+	require.NoError(t, goose.SetDialect("sqlite3"))
+	require.NoError(t, goose.UpTo(c.Sql(), "sqlite3", 20261005000000))
+
+	gid, uid, kid := uuid.New(), uuid.New(), uuid.New()
+	_, err = c.Sql().ExecContext(ctx, `insert into groups (id, created_at, updated_at, name, currency) values (?, datetime('now'), datetime('now'), 'g', 'USD')`, gid)
+	require.NoError(t, err)
+	_, err = c.Sql().ExecContext(ctx, `insert into users (id, created_at, updated_at, name, email, is_superuser, superuser, activated_on) values (?, datetime('now'), datetime('now'), 'u', 'u@example.com', false, false, datetime('now'))`, uid)
+	if err != nil {
+		t.Skipf("users table shape changed; adjust this fixture: %v", err)
+	}
+	_, err = c.Sql().ExecContext(ctx, `insert into api_keys (id, created_at, updated_at, user_id, name, token) values (?, datetime('now'), datetime('now'), ?, 'legacy', x'0102')`, kid, uid)
+	require.NoError(t, err)
+
+	require.NoError(t, goose.Up(c.Sql(), "sqlite3"))
+
+	k, err := c.APIKey.Get(ctx, kid)
+	require.NoError(t, err)
+	require.Equal(t, []string{"*"}, k.Scopes, "pre-existing keys must keep full access")
+	require.Nil(t, k.GroupID)
+
+	pinned, err := c.APIKey.Create().SetUserID(uid).SetName("pinned").SetToken([]byte{3}).
+		SetScopes([]string{scopeItemsRead}).SetGroupID(gid).Save(ctx)
+	require.NoError(t, err)
+
+	require.NoError(t, c.Group.DeleteOneID(gid).Exec(ctx))
+	exists, err := c.APIKey.Query().Where(apikey.ID(pinned.ID)).Exist(ctx)
+	require.NoError(t, err)
+	require.False(t, exists, "deleting a collection must delete the keys pinned to it")
 }

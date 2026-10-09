@@ -119,6 +119,7 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 
 		userMW := []errchain.Middleware{
 			a.mwAuthToken,
+			a.mwScopes,
 			a.mwTenant,
 			a.mwRoles(RoleModeOr, authroles.RoleUser.String()),
 		}
@@ -129,6 +130,7 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 		// re-share, or delete a collection they were merely given access to.
 		ownerMW := []errchain.Middleware{
 			a.mwAuthToken,
+			a.mwScopes,
 			a.mwTenant,
 			a.mwRoles(RoleModeOr, authroles.RoleUser.String()),
 			a.mwGroupOwner,
@@ -265,6 +267,7 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 		// Asset-Like endpoints
 		assetMW := []errchain.Middleware{
 			a.mwAuthToken,
+			a.mwScopes,
 			a.mwTenant,
 			a.mwRoles(RoleModeOr, authroles.RoleUser.String(), authroles.RoleAttachments.String()),
 		}
