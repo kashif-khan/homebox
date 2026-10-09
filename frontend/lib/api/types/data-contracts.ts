@@ -35,6 +35,12 @@ export enum EntityPathType {
   EntityPathTypeItem = "item",
 }
 
+export enum OauthtokenKind {
+  KindCode = "code",
+  KindAccess = "access",
+  KindRefresh = "refresh",
+}
+
 export enum ExportStatus {
   DefaultStatus = "pending",
   StatusPending = "pending",
@@ -128,12 +134,16 @@ export interface EntAPIKey {
   edges: EntAPIKeyEdges;
   /** ExpiresAt holds the value of the "expires_at" field. */
   expires_at: string;
+  /** GroupID holds the value of the "group_id" field. */
+  group_id: string;
   /** ID of the ent. */
   id: string;
   /** LastUsedAt holds the value of the "last_used_at" field. */
   last_used_at: string;
   /** Name holds the value of the "name" field. */
   name: string;
+  /** Scopes holds the value of the "scopes" field. */
+  scopes: string[];
   /** UpdatedAt holds the value of the "updated_at" field. */
   updated_at: string;
   /** UserID holds the value of the "user_id" field. */
@@ -141,6 +151,8 @@ export interface EntAPIKey {
 }
 
 export interface EntAPIKeyEdges {
+  /** Group holds the value of the group edge. */
+  group: EntGroup;
   /** User holds the value of the user edge. */
   user: EntUser;
 }
@@ -560,6 +572,8 @@ export interface EntGroup {
   edges: EntGroupEdges;
   /** ID of the ent. */
   id: string;
+  /** McpAccess holds the value of the "mcp_access" field. */
+  mcp_access: string;
   /** Name holds the value of the "name" field. */
   name: string;
   /** UpdatedAt holds the value of the "updated_at" field. */
@@ -581,6 +595,8 @@ export interface EntGroupEdges {
   invitation_tokens: EntGroupInvitationToken[];
   /** Notifiers holds the value of the notifiers edge. */
   notifiers: EntNotifier[];
+  /** OauthGrants holds the value of the oauth_grants edge. */
+  oauth_grants: EntOAuthGrant[];
   /** Tags holds the value of the tags edge. */
   tags: EntTag[];
   /** UserGroups holds the value of the user_groups edge. */
@@ -672,6 +688,126 @@ export interface EntNotifierEdges {
   group: EntGroup;
   /** User holds the value of the user edge. */
   user: EntUser;
+}
+
+export interface EntOAuthClient {
+  /** ClientID holds the value of the "client_id" field. */
+  client_id: string;
+  /** CreatedAt holds the value of the "created_at" field. */
+  created_at: string;
+  /**
+   * Edges holds the relations/edges for other nodes in the graph.
+   * The values are being populated by the OAuthClientQuery when eager-loading is set.
+   */
+  edges: EntOAuthClientEdges;
+  /** ID of the ent. */
+  id: string;
+  /** Name holds the value of the "name" field. */
+  name: string;
+  /** RedirectUris holds the value of the "redirect_uris" field. */
+  redirect_uris: string[];
+  /** UpdatedAt holds the value of the "updated_at" field. */
+  updated_at: string;
+}
+
+export interface EntOAuthClientEdges {
+  /** Grants holds the value of the grants edge. */
+  grants: EntOAuthGrant[];
+  /** Requests holds the value of the requests edge. */
+  requests: EntOAuthRequest[];
+}
+
+export interface EntOAuthGrant {
+  /** CreatedAt holds the value of the "created_at" field. */
+  created_at: string;
+  /**
+   * Edges holds the relations/edges for other nodes in the graph.
+   * The values are being populated by the OAuthGrantQuery when eager-loading is set.
+   */
+  edges: EntOAuthGrantEdges;
+  /** GroupID holds the value of the "group_id" field. */
+  group_id: string;
+  /** ID of the ent. */
+  id: string;
+  /** LastUsedAt holds the value of the "last_used_at" field. */
+  last_used_at: string;
+  /** Scopes holds the value of the "scopes" field. */
+  scopes: string[];
+  /** UpdatedAt holds the value of the "updated_at" field. */
+  updated_at: string;
+  /** UserID holds the value of the "user_id" field. */
+  user_id: string;
+}
+
+export interface EntOAuthGrantEdges {
+  /** Client holds the value of the client edge. */
+  client: EntOAuthClient;
+  /** Group holds the value of the group edge. */
+  group: EntGroup;
+  /** Tokens holds the value of the tokens edge. */
+  tokens: EntOAuthToken[];
+  /** User holds the value of the user edge. */
+  user: EntUser;
+}
+
+export interface EntOAuthRequest {
+  /** CodeChallenge holds the value of the "code_challenge" field. */
+  code_challenge: string;
+  /** CreatedAt holds the value of the "created_at" field. */
+  created_at: string;
+  /**
+   * Edges holds the relations/edges for other nodes in the graph.
+   * The values are being populated by the OAuthRequestQuery when eager-loading is set.
+   */
+  edges: EntOAuthRequestEdges;
+  /** ExpiresAt holds the value of the "expires_at" field. */
+  expires_at: string;
+  /** ID of the ent. */
+  id: string;
+  /** RedirectURI holds the value of the "redirect_uri" field. */
+  redirect_uri: string;
+  /** Resource holds the value of the "resource" field. */
+  resource: string;
+  /** Scopes holds the value of the "scopes" field. */
+  scopes: string[];
+  /** State holds the value of the "state" field. */
+  state: string;
+  /** UpdatedAt holds the value of the "updated_at" field. */
+  updated_at: string;
+}
+
+export interface EntOAuthRequestEdges {
+  /** Client holds the value of the client edge. */
+  client: EntOAuthClient;
+}
+
+export interface EntOAuthToken {
+  /** CodeChallenge holds the value of the "code_challenge" field. */
+  code_challenge: string;
+  /** CreatedAt holds the value of the "created_at" field. */
+  created_at: string;
+  /**
+   * Edges holds the relations/edges for other nodes in the graph.
+   * The values are being populated by the OAuthTokenQuery when eager-loading is set.
+   */
+  edges: EntOAuthTokenEdges;
+  /** ExpiresAt holds the value of the "expires_at" field. */
+  expires_at: string;
+  /** ID of the ent. */
+  id: string;
+  /** Kind holds the value of the "kind" field. */
+  kind: OauthtokenKind;
+  /** RedirectURI holds the value of the "redirect_uri" field. */
+  redirect_uri: string;
+  /** UpdatedAt holds the value of the "updated_at" field. */
+  updated_at: string;
+  /** UsedAt holds the value of the "used_at" field. */
+  used_at: string;
+}
+
+export interface EntOAuthTokenEdges {
+  /** Grant holds the value of the grant edge. */
+  grant: EntOAuthGrant;
 }
 
 export interface EntPasswordResetTokens {
@@ -808,6 +944,8 @@ export interface EntUserEdges {
   groups: EntGroup[];
   /** Notifiers holds the value of the notifiers edge. */
   notifiers: EntNotifier[];
+  /** OauthGrants holds the value of the oauth_grants edge. */
+  oauth_grants: EntOAuthGrant[];
   /** PasswordResetTokens holds the value of the password_reset_tokens edge. */
   password_reset_tokens: EntPasswordResetTokens[];
   /** UserGroups holds the value of the user_groups edge. */
@@ -835,21 +973,63 @@ export interface EntUserGroupEdges {
   user: EntUser;
 }
 
+export interface OauthserverConsentCollection {
+  /** Allowed are the requested scopes this collection's ceiling currently permits. */
+  allowed: string[];
+  id: string;
+  /**
+   * MCPAccess is the owner's ceiling: off, read, write or full. "off" means the
+   * application cannot be connected to this collection yet.
+   */
+  mcpAccess: string;
+  name: string;
+}
+
+export interface OauthserverConsentInfo {
+  clientId: string;
+  clientName: string;
+  collections: OauthserverConsentCollection[];
+  expiresAt: Date | string;
+  /**
+   * RedirectHost is where the user will be sent back to. Shown so a user can
+   * notice an application calling itself something it isn't.
+   */
+  redirectHost: string;
+  scopes: OauthserverConsentScope[];
+}
+
+export interface OauthserverConsentScope {
+  description: string;
+  mutating: boolean;
+  scope: string;
+}
+
 export interface APIKeyCreate {
   expiresAt?: string | null;
+  /** GroupID pins the key to one collection the user belongs to. */
+  groupId?: string | null;
   /**
    * @minLength 1
    * @maxLength 255
    */
   name: string;
+  /**
+   * Preset is a shortcut for Scopes: read-only, read-write or full. It is
+   * ignored when Scopes is set. With neither, the key is read-only.
+   */
+  preset: "read-only" | "read-write" | "full";
+  /** Scopes limits what the key may do, e.g. "items:read". */
+  scopes: string[];
 }
 
 export interface APIKeyCreatedOut {
   createdAt: Date | string;
   expiresAt?: string | null;
+  groupId?: string | null;
   id: string;
   lastUsedAt?: string | null;
   name: string;
+  scopes: string[];
   token: string;
   userId: string;
 }
@@ -857,9 +1037,11 @@ export interface APIKeyCreatedOut {
 export interface APIKeyOut {
   createdAt: Date | string;
   expiresAt?: string | null;
+  groupId?: string | null;
   id: string;
   lastUsedAt?: string | null;
   name: string;
+  scopes: string[];
   userId: string;
 }
 
@@ -1479,6 +1661,11 @@ export interface Group {
   createdAt: Date | string;
   currency: string;
   id: string;
+  /**
+   * MCPAccess is the ceiling for AI assistants connected over MCP:
+   * off, read, write or full.
+   */
+  mcpAccess: string;
   name: string;
   updatedAt: Date | string;
 }
@@ -1501,6 +1688,8 @@ export interface GroupStatistics {
 
 export interface GroupUpdate {
   currency: string;
+  /** MCPAccess is left unchanged when nil. */
+  mcpAccess?: string | null;
   name: string;
 }
 
@@ -1591,6 +1780,18 @@ export interface NotifierUpdate {
    */
   name: string;
   url?: string | null;
+}
+
+export interface OAuthGrantOut {
+  clientId: string;
+  clientName: string;
+  createdAt: Date | string;
+  groupId: string;
+  groupName: string;
+  id: string;
+  lastUsedAt?: string | null;
+  scopes: string[];
+  userId: string;
 }
 
 export interface PaginationResultEntitySummary {
@@ -1758,6 +1959,7 @@ export interface APISummary {
   health: boolean;
   labelPrinting: boolean;
   latest: Latest;
+  mcp: MCPStatus;
   message: string;
   oidc: OIDCStatus;
   telemetry: TelemetryStatus;
@@ -1863,6 +2065,26 @@ export interface LoginForm {
   stayLoggedIn: boolean;
   /** @example "admin@admin.com" */
   username: string;
+}
+
+export interface MCPStatus {
+  allowDelete: boolean;
+  allowWrites: boolean;
+  enabled: boolean;
+  /**
+   * OAuth is true when hosted assistants (Claude, ChatGPT) can connect with a
+   * sign-in flow instead of an API key.
+   */
+  oauth: boolean;
+}
+
+export interface OAuthApprove {
+  groupId: string;
+  scopes: string[];
+}
+
+export interface OAuthDecision {
+  redirectUrl: string;
 }
 
 export interface OIDCStatus {
