@@ -121,12 +121,14 @@ Tools appear only if the connection is allowed to use them, so a read-only conne
 | `search_items`, `get_item` | `items:read` | Find and read items and locations |
 | `list_locations`, `list_tags`, `list_entity_types` | `items:read` | Browse the structure |
 | `list_warranties_expiring` | `items:read` | Warranties ending in the next N days |
+| `list_templates`, `get_template` | `items:read` | Browse reusable item templates |
 | `list_maintenance` | `maintenance:read` | Scheduled and completed work, including what is due soon |
 | `get_statistics` | `collection:read` | Totals for the collection |
 | `create_item`, `create_location`, `create_tag` | `items:write` | Add things |
 | `update_item`, `update_tag`, `move_item`, `update_item_tags` | `items:write` | Change things; only the fields given are touched |
+| `create_template`, `update_template`, `create_item_from_template` | `items:write` | Make reusable templates (default name, quantity, tags, location, warranty, custom fields) and create pre-filled items from them |
 | `add_maintenance_entry`, `update_maintenance_entry` | `maintenance:write` | Schedule or log work |
-| `delete_item`, `delete_tag`, `delete_maintenance_entry` | `items:delete` | Remove things. Requires `confirm=true` |
+| `delete_item`, `delete_tag`, `delete_template`, `delete_maintenance_entry` | `items:delete` | Remove things. Requires `confirm=true` |
 
 Reference data is also offered as resources: `homebox://locations`, `homebox://tags` and `homebox://item/{id}`.
 

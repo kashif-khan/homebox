@@ -118,6 +118,7 @@ func hasScope(p *Principal, scope string) bool {
 func (s *Server) registerTools(srv *mcp.Server, p *Principal) {
 	registerReadTools(s, srv, p)
 	registerWriteTools(s, srv, p)
+	registerTemplateTools(s, srv, p)
 }
 
 // ---- errors ----

@@ -31,6 +31,9 @@ const (
 	argParentID = "parentId"
 	argItemID   = "itemId"
 	argConfirm  = "confirm"
+
+	argDefaultLocationID = "defaultLocationId"
+	argTemplateID        = "templateId"
 )
 
 type env struct {
@@ -751,3 +754,162 @@ func mustPreset(t *testing.T, name string) []string {
 }
 
 func ptr[T any](v T) *T { return &v }
+
+func TestTemplateLifecycle(t *testing.T) {
+	e := newEnv(t, defaultConf())
+	tn := e.newTenant("alice")
+	e.setAccess(tn, scopes.AccessFull)
+	cs := e.session(e.key(tn, []string{scopes.Full}, nil))
+
+	var tag TagInfo
+	require.Empty(t, callTool(t, cs, "create_tag", map[string]any{"name": "tools"}, &tag))
+	var shed ItemDetail
+	require.Empty(t, callTool(t, cs, "create_location", map[string]any{"name": "Shed"}, &shed))
+
+	var tpl TemplateDetail
+	require.Empty(t, callTool(t, cs, "create_template", map[string]any{
+		"name": "Power tool", "description": "Corded and cordless tools",
+		"defaultName": "Drill", "defaultQuantity": 1, "defaultManufacturer": "Acme",
+		"defaultWarrantyDetails": "2 years, receipt needed", "defaultInsured": true,
+		argDefaultLocationID: shed.ID, "defaultTagIds": []string{tag.ID},
+		"customFields": []map[string]any{{"name": "Voltage", "textValue": "18V"}, {"name": "Batteries", "type": "number"}},
+	}, &tpl))
+	assert.Equal(t, "Power tool", tpl.Name)
+	assert.Equal(t, "Acme", tpl.DefaultManufacturer)
+	assert.True(t, tpl.DefaultInsured)
+	require.NotNil(t, tpl.DefaultLocation)
+	assert.Equal(t, shed.ID, tpl.DefaultLocation.ID)
+	require.Len(t, tpl.DefaultTags, 1)
+	require.Len(t, tpl.CustomFields, 2)
+	assert.Equal(t, "text", tpl.CustomFields[0].Type, "type defaults to text")
+
+	var list ListTemplatesOut
+	require.Empty(t, callTool(t, cs, "list_templates", nil, &list))
+	require.Len(t, list.Templates, 1)
+	var got TemplateDetail
+	require.Empty(t, callTool(t, cs, "get_template", map[string]any{"id": tpl.ID}, &got))
+	assert.Equal(t, tpl.ID, got.ID)
+
+	// a partial update keeps everything it doesn't mention
+	var upd TemplateDetail
+	require.Empty(t, callTool(t, cs, "update_template", map[string]any{"id": tpl.ID, "defaultManufacturer": "Bosch", "defaultQuantity": 3}, &upd))
+	assert.Equal(t, "Bosch", upd.DefaultManufacturer)
+	assert.InDelta(t, 3, upd.DefaultQuantity, 0.0001)
+	assert.Equal(t, "Power tool", upd.Name)
+	assert.Equal(t, "Drill", upd.DefaultName)
+	assert.Equal(t, "2 years, receipt needed", upd.DefaultWarrantyDetails)
+	assert.True(t, upd.DefaultInsured)
+	assert.Len(t, upd.DefaultTags, 1)
+	assert.Len(t, upd.CustomFields, 2)
+	require.NotNil(t, upd.DefaultLocation)
+
+	// explicitly clearing and replacing (fresh value: omitted fields must not linger)
+	var cleared TemplateDetail
+	require.Empty(t, callTool(t, cs, "update_template", map[string]any{
+		"id": tpl.ID, argDefaultLocationID: "", "defaultTagIds": []string{},
+		"customFields": []map[string]any{{"name": "Serial"}},
+	}, &cleared))
+	assert.Nil(t, cleared.DefaultLocation)
+	assert.Empty(t, cleared.DefaultTags)
+	require.Len(t, cleared.CustomFields, 1)
+	assert.Equal(t, "Serial", cleared.CustomFields[0].Name)
+
+	// items from a template get its defaults and can override quantity
+	var item ItemDetail
+	require.Empty(t, callTool(t, cs, "create_item_from_template", map[string]any{
+		argTemplateID: tpl.ID, "name": "Garage drill", argParentID: shed.ID, "quantity": 2,
+	}, &item))
+	assert.Equal(t, "Garage drill", item.Name)
+	assert.Equal(t, "Bosch", item.Manufacturer)
+	assert.True(t, item.Insured)
+	assert.Equal(t, "2 years, receipt needed", item.WarrantyDetails)
+	assert.InDelta(t, 2, item.Quantity, 0.0001)
+	require.NotNil(t, item.Parent)
+	assert.Equal(t, shed.ID, item.Parent.ID)
+	require.Len(t, item.Fields, 1)
+	assert.Equal(t, "Serial", item.Fields[0].Name)
+
+	// deleting needs confirmation and leaves existing items alone
+	assert.Contains(t, callTool(t, cs, "delete_template", map[string]any{"id": tpl.ID, argConfirm: false}, nil), "confirm=true")
+	require.Empty(t, callTool(t, cs, "get_template", map[string]any{"id": tpl.ID}, nil))
+	require.Empty(t, callTool(t, cs, "delete_template", map[string]any{"id": tpl.ID, argConfirm: true}, nil))
+	assert.Equal(t, "not found", callTool(t, cs, "get_template", map[string]any{"id": tpl.ID}, nil))
+	require.Empty(t, callTool(t, cs, "get_item", map[string]any{"id": item.ID}, nil))
+}
+
+func TestTemplateToolPermissions(t *testing.T) {
+	e := newEnv(t, defaultConf())
+	tn := e.newTenant("alice")
+	full := e.key(tn, []string{scopes.Full}, nil)
+
+	e.setAccess(tn, scopes.AccessRead)
+	names := toolNames(t, e.session(full))
+	assert.Contains(t, names, "list_templates")
+	assert.Contains(t, names, "get_template")
+	for _, w := range []string{"create_template", "update_template", "create_item_from_template", "delete_template"} {
+		assert.NotContains(t, names, w, w)
+	}
+	e.setAccess(tn, scopes.AccessWrite)
+	names = toolNames(t, e.session(full))
+	assert.Contains(t, names, "create_template")
+	assert.Contains(t, names, "create_item_from_template")
+	assert.NotContains(t, names, "delete_template")
+	e.setAccess(tn, scopes.AccessFull)
+	assert.Contains(t, toolNames(t, e.session(full)), "delete_template")
+}
+
+func TestTemplateValidation(t *testing.T) {
+	e := newEnv(t, defaultConf())
+	tn := e.newTenant("alice")
+	e.setAccess(tn, scopes.AccessFull)
+	cs := e.session(e.key(tn, []string{scopes.Full}, nil))
+
+	assert.Contains(t, callTool(t, cs, "create_template", map[string]any{"name": "  "}, nil), "name")
+	assert.Contains(t, callTool(t, cs, "create_template", map[string]any{"name": "x", "customFields": []map[string]any{{"name": "f", "type": "color"}}}, nil), "type")
+	assert.Contains(t, callTool(t, cs, "create_template", map[string]any{"name": "x", "customFields": []map[string]any{{"name": " "}}}, nil), "field names")
+	assert.Contains(t, callTool(t, cs, "create_template", map[string]any{"name": "x", argDefaultLocationID: "nope"}, nil), "UUID")
+	assert.Contains(t, callTool(t, cs, "create_item_from_template", map[string]any{argTemplateID: uuid.NewString(), "name": "n", argParentID: uuid.NewString()}, nil), "not found")
+	var tpl TemplateDetail
+	require.Empty(t, callTool(t, cs, "create_template", map[string]any{"name": "ok"}, &tpl))
+	assert.Contains(t, callTool(t, cs, "create_item_from_template", map[string]any{argTemplateID: tpl.ID, "name": "n"}, nil), "parentId")
+}
+
+func TestTemplateTenantIsolation(t *testing.T) {
+	e := newEnv(t, defaultConf())
+	alice, bob := e.newTenant("alice"), e.newTenant("bob")
+	e.setAccess(alice, scopes.AccessFull)
+	e.setAccess(bob, scopes.AccessFull)
+	a := e.session(e.key(alice, []string{scopes.Full}, nil))
+	b := e.session(e.key(bob, []string{scopes.Full}, nil))
+
+	var aTag TagInfo
+	require.Empty(t, callTool(t, a, "create_tag", map[string]any{"name": "alice-secret-tag"}, &aTag))
+	var aLoc ItemDetail
+	require.Empty(t, callTool(t, a, "create_location", map[string]any{"name": "Alice vault"}, &aLoc))
+	var aTpl TemplateDetail
+	require.Empty(t, callTool(t, a, "create_template", map[string]any{"name": "Alice template", "defaultManufacturer": "Secret Co"}, &aTpl))
+
+	var list ListTemplatesOut
+	require.Empty(t, callTool(t, b, "list_templates", nil, &list))
+	assert.Empty(t, list.Templates)
+	assert.Equal(t, "not found", callTool(t, b, "get_template", map[string]any{"id": aTpl.ID}, nil))
+	assert.NotEmpty(t, callTool(t, b, "update_template", map[string]any{"id": aTpl.ID, "name": "pwned"}, nil))
+	assert.NotEmpty(t, callTool(t, b, "delete_template", map[string]any{"id": aTpl.ID, argConfirm: true}, nil))
+
+	// Bob can't reference Alice's tag or location in his own template…
+	assert.NotEmpty(t, callTool(t, b, "create_template", map[string]any{"name": "t", "defaultTagIds": []string{aTag.ID}}, nil))
+	assert.NotEmpty(t, callTool(t, b, "create_template", map[string]any{"name": "t", argDefaultLocationID: aLoc.ID}, nil))
+	var bTpl TemplateDetail
+	require.Empty(t, callTool(t, b, "create_template", map[string]any{"name": "Bob template"}, &bTpl))
+	assert.NotEmpty(t, callTool(t, b, "update_template", map[string]any{"id": bTpl.ID, "defaultTagIds": []string{aTag.ID}}, nil))
+	assert.NotEmpty(t, callTool(t, b, "update_template", map[string]any{"id": bTpl.ID, argDefaultLocationID: aLoc.ID}, nil))
+
+	// …nor use Alice's template, or put an item in Alice's location.
+	assert.NotEmpty(t, callTool(t, b, "create_item_from_template", map[string]any{argTemplateID: aTpl.ID, "name": "n", argParentID: uuid.NewString()}, nil))
+	assert.NotEmpty(t, callTool(t, b, "create_item_from_template", map[string]any{argTemplateID: bTpl.ID, "name": "n", argParentID: aLoc.ID}, nil))
+
+	var still TemplateDetail
+	require.Empty(t, callTool(t, a, "get_template", map[string]any{"id": aTpl.ID}, &still))
+	assert.Equal(t, "Alice template", still.Name)
+	assert.Equal(t, "Secret Co", still.DefaultManufacturer)
+}
