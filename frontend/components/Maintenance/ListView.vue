@@ -259,6 +259,15 @@
           </Button>
         </ButtonGroup>
       </BaseCard>
+      <div
+        v-if="!props.currentItemId && maintenanceDataList && maintenanceDataList.length === 0"
+        class="rounded-lg border-2 border-dashed p-8 text-center"
+        data-testid="maintenance-empty"
+      >
+        <MdiWrenchClock class="inline size-12" />
+        <p class="mt-2 text-sm font-medium text-foreground">{{ $t("maintenance.none") }}</p>
+        <p class="mx-auto mt-1 max-w-md text-sm text-muted-foreground">{{ $t("hints.maintenance") }}</p>
+      </div>
       <div v-if="props.currentItemId" class="hidden first:block">
         <button
           type="button"
@@ -277,6 +286,9 @@
           <MdiWrenchClock class="inline size-16" />
           <span class="mt-2 block text-sm font-medium text-foreground">
             {{ $t("maintenance.list.create_first") }}
+          </span>
+          <span class="mx-auto mt-1 block max-w-md text-sm text-muted-foreground">
+            {{ $t("hints.maintenance") }}
           </span>
         </button>
       </div>

@@ -1,7 +1,10 @@
 <template>
   <div v-if="!inline" v-bind="wrapperAttrs()" class="flex w-full flex-col gap-1.5" :class="wrapperClass()">
     <Label :for="fieldId" class="flex w-full px-1">
-      <span> {{ label }} </span>
+      <span>
+        {{ label }}
+        <span v-if="required || requiredMark" class="text-destructive" aria-hidden="true" title="Required">*</span>
+      </span>
       <span class="grow" />
       <span
         :class="{
@@ -27,13 +30,18 @@
       :maxlength="maxLength !== -1 ? maxLength : undefined"
       :passwordrules="passwordrules"
       :required="required"
+      :aria-invalid="error ? true : undefined"
       class="w-full"
       @input="markDirty"
     />
+    <p v-if="error" class="px-1 text-xs text-destructive" role="alert">{{ error }}</p>
   </div>
   <div v-else v-bind="wrapperAttrs()" class="sm:grid sm:grid-cols-4 sm:items-start sm:gap-4" :class="wrapperClass()">
     <Label class="flex w-full px-1 py-2" :for="fieldId">
-      <span> {{ label }} </span>
+      <span>
+        {{ label }}
+        <span v-if="required || requiredMark" class="text-destructive" aria-hidden="true" title="Required">*</span>
+      </span>
       <span class="grow" />
       <span
         :class="{
@@ -59,9 +67,11 @@
       :maxlength="maxLength !== -1 ? maxLength : undefined"
       :passwordrules="passwordrules"
       :required="required"
+      :aria-invalid="error ? true : undefined"
       class="col-span-3 mt-2 w-full"
       @input="markDirty"
     />
+    <p v-if="error" class="px-1 text-xs text-destructive sm:col-span-3 sm:col-start-2" role="alert">{{ error }}</p>
   </div>
 </template>
 
@@ -93,6 +103,17 @@
     required: {
       type: [Boolean],
       default: null,
+    },
+    // Shows the red asterisk without the browser's own required validation, for
+    // forms that validate in code and explain what is missing.
+    requiredMark: {
+      type: Boolean,
+      default: false,
+    },
+    // A message shown under the field in red, e.g. "Name is required".
+    error: {
+      type: String,
+      default: "",
     },
     type: {
       type: String,

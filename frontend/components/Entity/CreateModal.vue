@@ -51,7 +51,7 @@
     </template>
 
     <form class="flex min-w-0 flex-col gap-2" @submit.prevent="create()">
-      <LocationSelector v-model="form.location" />
+      <LocationSelector v-model="form.location" :required="!selectedEntityType?.isLocation" :error="locationError" />
 
       <!-- Template Info Display - Collapsible banner with distinct styling -->
       <div v-if="templateData" class="rounded-lg border-l-4 border-l-primary bg-primary/5 p-3">
@@ -161,6 +161,8 @@
         "
         :max-length="255"
         :min-length="1"
+        required-mark
+        :error="nameError"
       />
       <FormTextField
         v-if="!selectedEntityType?.isLocation"
@@ -626,6 +628,28 @@
     onUnmounted(cleanup);
   });
 
+  // Shown under the name field when Create is pressed without one.
+  const nameError = ref("");
+  const locationError = ref("");
+  watch(
+    () => form.name,
+    v => {
+      if (v.trim()) nameError.value = "";
+    }
+  );
+  watch(
+    () => selectedEntityType.value?.isLocation,
+    isLocation => {
+      if (isLocation) locationError.value = "";
+    }
+  );
+  watch(
+    () => form.location,
+    v => {
+      if (v?.id) locationError.value = "";
+    }
+  );
+
   async function create(close = true) {
     // An empty entityTypeId serializes to "" and fails UUID unmarshalling on the
     // backend, so block creation up front rather than firing a doomed request.
@@ -634,10 +658,20 @@
       return;
     }
 
+    // Check everything that is missing at once, so each gap is flagged together.
     // Items must live somewhere, but a top-level location has no parent, so the
-    // parent location selector is optional when creating a location.
-    if (!selectedEntityType.value?.isLocation && !form.location?.id) {
-      toast.error(t("components.entity.create_modal.toast.please_select_location"));
+    // parent location is optional when creating a location.
+    nameError.value = form.name.trim() ? "" : t("components.entity.create_modal.name_required");
+    locationError.value =
+      !selectedEntityType.value.isLocation && !form.location?.id
+        ? t("components.entity.create_modal.toast.please_select_location")
+        : "";
+    if (nameError.value || locationError.value) {
+      toast.error(nameError.value || locationError.value);
+      if (nameError.value) {
+        // nameInput is the FormTextField component, so reach its input element.
+        (nameInput.value as unknown as { $el?: HTMLElement } | null)?.$el?.querySelector("input")?.focus();
+      }
       return;
     }
 
@@ -747,6 +781,8 @@
     }
 
     form.name = "";
+    nameError.value = "";
+    locationError.value = "";
     form.quantity = 1;
     form.description = "";
     form.color = "";

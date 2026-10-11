@@ -167,7 +167,8 @@
                     "uploading_photos": "{count, plural, =0 {No photos to upload} =1 {Uploading 1 photo…} other {Uploading {count} photos…}}"
                 },
                 "upload_photos": "Upload Photos",
-                "uploaded": "Uploaded Photo"
+                "uploaded": "Uploaded Photo",
+                "name_required": "Please enter a name."
             },
             "selector": {
                 "placeholder": "Select a type…"
@@ -828,7 +829,8 @@
             "failed_to_update": "Failed to update entry"
         },
         "total_cost": "Total Cost",
-        "total_entries": "Total Entries"
+        "total_entries": "Total Entries",
+        "none": "No maintenance entries yet."
     },
     "menu": {
         "collection": "Collection",
@@ -1402,5 +1404,12 @@
             "redeliver_failed": "Could not queue the delivery",
             "redelivering": "Queued for delivery"
         }
+    },
+    "hints": {
+        "items": "Items are the things you own. Press Create to add one, then give it a location, tags and photos so you can find it later.",
+        "locations": "Locations are the places you keep things: rooms, shelves, boxes. Every item is filed under a location, so you always know where it is.",
+        "tags": "Tags are labels you stick on items, such as Fragile, Insured or Winter, so you can filter and group them however you like.",
+        "templates": "Templates are saved starting points for items you add often. They pre-fill things like the manufacturer, tags and custom fields, so adding a new router or medicine takes seconds.",
+        "maintenance": "Maintenance tracks work on your items: servicing, filter changes, battery swaps. Schedule it on an item and Homebox can remind you when it is due."
     }
 }
