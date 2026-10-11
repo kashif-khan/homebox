@@ -2477,6 +2477,133 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/notification-rules": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Rules"
+                ],
+                "summary": "List Alert Rules",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/repo.NotificationRuleOut"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Rules"
+                ],
+                "summary": "Create Alert Rule",
+                "parameters": [
+                    {
+                        "description": "Rule",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/repo.NotificationRuleIn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/repo.NotificationRuleOut"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/notification-rules/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Rules"
+                ],
+                "summary": "Update Alert Rule",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Rule ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Rule",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/repo.NotificationRuleIn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/repo.NotificationRuleOut"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "Notification Rules"
+                ],
+                "summary": "Delete Alert Rule",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Rule ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/v1/notifiers": {
             "get": {
                 "security": [
@@ -3842,6 +3969,311 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/v1/webhooks": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Webhooks"
+                ],
+                "summary": "List Webhooks",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/repo.WebhookEndpointOut"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "The response carries the signing secret. It is shown only this once.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Webhooks"
+                ],
+                "summary": "Create Webhook",
+                "parameters": [
+                    {
+                        "description": "Webhook",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/repo.WebhookEndpointIn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/repo.WebhookEndpointCreated"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/webhooks/events": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Webhooks"
+                ],
+                "summary": "List Webhook Events",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/webhooks.Event"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/webhooks/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Webhooks"
+                ],
+                "summary": "Update Webhook",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Webhook ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Webhook",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/repo.WebhookEndpointIn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/repo.WebhookEndpointOut"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "Webhooks"
+                ],
+                "summary": "Delete Webhook",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Webhook ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/v1/webhooks/{id}/deliveries": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Webhooks"
+                ],
+                "summary": "Webhook Delivery Log",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Webhook ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "deliveries per page (max 100)",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.WebhookDeliveriesPage"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/webhooks/{id}/deliveries/{deliveryId}/redeliver": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Queues a fresh copy of a past delivery. It keeps the event id.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Webhooks"
+                ],
+                "summary": "Redeliver",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Webhook ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Delivery ID",
+                        "name": "deliveryId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    }
+                }
+            }
+        },
+        "/v1/webhooks/{id}/rotate-secret": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Issues a new signing secret, shown only in this response. The old one stops working at once.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Webhooks"
+                ],
+                "summary": "Rotate Webhook Secret",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Webhook ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/repo.WebhookEndpointCreated"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/webhooks/{id}/test": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Webhooks"
+                ],
+                "summary": "Send Test Event",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Webhook ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.WebhookResult"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -4993,6 +5425,10 @@ const docTemplate = `{
         "ent.Group": {
             "type": "object",
             "properties": {
+                "alert_rules_seeded": {
+                    "description": "AlertRulesSeeded holds the value of the \"alert_rules_seeded\" field.",
+                    "type": "boolean"
+                },
                 "created_at": {
                     "description": "CreatedAt holds the value of the \"created_at\" field.",
                     "type": "string"
@@ -5020,6 +5456,10 @@ const docTemplate = `{
                 "name": {
                     "description": "Name holds the value of the \"name\" field.",
                     "type": "string"
+                },
+                "notify_hour": {
+                    "description": "NotifyHour holds the value of the \"notify_hour\" field.",
+                    "type": "integer"
                 },
                 "timezone": {
                     "description": "Timezone holds the value of the \"timezone\" field.",
@@ -5076,6 +5516,13 @@ const docTemplate = `{
                         "$ref": "#/definitions/ent.GroupInvitationToken"
                     }
                 },
+                "notification_rules": {
+                    "description": "NotificationRules holds the value of the notification_rules edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.NotificationRule"
+                    }
+                },
                 "notifiers": {
                     "description": "Notifiers holds the value of the notifiers edge.",
                     "type": "array",
@@ -5109,6 +5556,13 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/ent.User"
+                    }
+                },
+                "webhook_endpoints": {
+                    "description": "WebhookEndpoints holds the value of the webhook_endpoints edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.WebhookEndpoint"
                     }
                 }
             }
@@ -5225,6 +5679,155 @@ const docTemplate = `{
                             "$ref": "#/definitions/ent.Entity"
                         }
                     ]
+                }
+            }
+        },
+        "ent.NotificationLog": {
+            "type": "object",
+            "properties": {
+                "anchor_date": {
+                    "description": "AnchorDate holds the value of the \"anchor_date\" field.",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "CreatedAt holds the value of the \"created_at\" field.",
+                    "type": "string"
+                },
+                "due_on": {
+                    "description": "DueOn holds the value of the \"due_on\" field.",
+                    "type": "string"
+                },
+                "edges": {
+                    "description": "Edges holds the relations/edges for other nodes in the graph.\nThe values are being populated by the NotificationLogQuery when eager-loading is set.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.NotificationLogEdges"
+                        }
+                    ]
+                },
+                "id": {
+                    "description": "ID of the ent.",
+                    "type": "string"
+                },
+                "notifier_id": {
+                    "description": "NotifierID holds the value of the \"notifier_id\" field.",
+                    "type": "string"
+                },
+                "offset_days": {
+                    "description": "OffsetDays holds the value of the \"offset_days\" field.",
+                    "type": "integer"
+                },
+                "sent_at": {
+                    "description": "SentAt holds the value of the \"sent_at\" field.",
+                    "type": "string"
+                },
+                "subject_id": {
+                    "description": "SubjectID holds the value of the \"subject_id\" field.",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                }
+            }
+        },
+        "ent.NotificationLogEdges": {
+            "type": "object",
+            "properties": {
+                "rule": {
+                    "description": "Rule holds the value of the rule edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.NotificationRule"
+                        }
+                    ]
+                }
+            }
+        },
+        "ent.NotificationRule": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "CreatedAt holds the value of the \"created_at\" field.",
+                    "type": "string"
+                },
+                "edges": {
+                    "description": "Edges holds the relations/edges for other nodes in the graph.\nThe values are being populated by the NotificationRuleQuery when eager-loading is set.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.NotificationRuleEdges"
+                        }
+                    ]
+                },
+                "entity_type_id": {
+                    "description": "EntityTypeID holds the value of the \"entity_type_id\" field.",
+                    "type": "string"
+                },
+                "group_id": {
+                    "description": "GroupID holds the value of the \"group_id\" field.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID of the ent.",
+                    "type": "string"
+                },
+                "is_active": {
+                    "description": "IsActive holds the value of the \"is_active\" field.",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "Name holds the value of the \"name\" field.",
+                    "type": "string"
+                },
+                "notifier_ids": {
+                    "description": "NotifierIds holds the value of the \"notifier_ids\" field.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "offsets_days": {
+                    "description": "OffsetsDays holds the value of the \"offsets_days\" field.",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "tag_id": {
+                    "description": "TagID holds the value of the \"tag_id\" field.",
+                    "type": "string"
+                },
+                "trigger": {
+                    "description": "Trigger holds the value of the \"trigger\" field.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/notificationrule.Trigger"
+                        }
+                    ]
+                },
+                "updated_at": {
+                    "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                }
+            }
+        },
+        "ent.NotificationRuleEdges": {
+            "type": "object",
+            "properties": {
+                "group": {
+                    "description": "Group holds the value of the group edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.Group"
+                        }
+                    ]
+                },
+                "logs": {
+                    "description": "Logs holds the value of the logs edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.NotificationLog"
+                    }
                 }
             }
         },
@@ -5956,6 +6559,177 @@ const docTemplate = `{
                 }
             }
         },
+        "ent.WebhookDelivery": {
+            "type": "object",
+            "properties": {
+                "attempts": {
+                    "description": "Attempts holds the value of the \"attempts\" field.",
+                    "type": "integer"
+                },
+                "created_at": {
+                    "description": "CreatedAt holds the value of the \"created_at\" field.",
+                    "type": "string"
+                },
+                "data": {
+                    "description": "Data holds the value of the \"data\" field.",
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "dedupe_key": {
+                    "description": "DedupeKey holds the value of the \"dedupe_key\" field.",
+                    "type": "string"
+                },
+                "delivered_at": {
+                    "description": "DeliveredAt holds the value of the \"delivered_at\" field.",
+                    "type": "string"
+                },
+                "edges": {
+                    "description": "Edges holds the relations/edges for other nodes in the graph.\nThe values are being populated by the WebhookDeliveryQuery when eager-loading is set.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.WebhookDeliveryEdges"
+                        }
+                    ]
+                },
+                "event_id": {
+                    "description": "EventID holds the value of the \"event_id\" field.",
+                    "type": "string"
+                },
+                "event_type": {
+                    "description": "EventType holds the value of the \"event_type\" field.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID of the ent.",
+                    "type": "string"
+                },
+                "last_duration_ms": {
+                    "description": "LastDurationMs holds the value of the \"last_duration_ms\" field.",
+                    "type": "integer"
+                },
+                "last_error": {
+                    "description": "LastError holds the value of the \"last_error\" field.",
+                    "type": "string"
+                },
+                "last_status_code": {
+                    "description": "LastStatusCode holds the value of the \"last_status_code\" field.",
+                    "type": "integer"
+                },
+                "next_attempt_at": {
+                    "description": "NextAttemptAt holds the value of the \"next_attempt_at\" field.",
+                    "type": "string"
+                },
+                "occurred_at": {
+                    "description": "OccurredAt holds the value of the \"occurred_at\" field.",
+                    "type": "string"
+                },
+                "response_snippet": {
+                    "description": "ResponseSnippet holds the value of the \"response_snippet\" field.",
+                    "type": "string"
+                },
+                "scheduled_for": {
+                    "description": "ScheduledFor holds the value of the \"scheduled_for\" field.",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Status holds the value of the \"status\" field.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/webhookdelivery.Status"
+                        }
+                    ]
+                },
+                "updated_at": {
+                    "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                }
+            }
+        },
+        "ent.WebhookDeliveryEdges": {
+            "type": "object",
+            "properties": {
+                "endpoint": {
+                    "description": "Endpoint holds the value of the endpoint edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.WebhookEndpoint"
+                        }
+                    ]
+                }
+            }
+        },
+        "ent.WebhookEndpoint": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "CreatedAt holds the value of the \"created_at\" field.",
+                    "type": "string"
+                },
+                "edges": {
+                    "description": "Edges holds the relations/edges for other nodes in the graph.\nThe values are being populated by the WebhookEndpointQuery when eager-loading is set.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.WebhookEndpointEdges"
+                        }
+                    ]
+                },
+                "entity_type_id": {
+                    "description": "EntityTypeID holds the value of the \"entity_type_id\" field.",
+                    "type": "string"
+                },
+                "events": {
+                    "description": "Events holds the value of the \"events\" field.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "group_id": {
+                    "description": "GroupID holds the value of the \"group_id\" field.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID of the ent.",
+                    "type": "string"
+                },
+                "is_active": {
+                    "description": "IsActive holds the value of the \"is_active\" field.",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "Name holds the value of the \"name\" field.",
+                    "type": "string"
+                },
+                "tag_id": {
+                    "description": "TagID holds the value of the \"tag_id\" field.",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                }
+            }
+        },
+        "ent.WebhookEndpointEdges": {
+            "type": "object",
+            "properties": {
+                "deliveries": {
+                    "description": "Deliveries holds the value of the deliveries edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.WebhookDelivery"
+                    }
+                },
+                "group": {
+                    "description": "Group holds the value of the group edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.Group"
+                        }
+                    ]
+                }
+            }
+        },
         "entity.ExpiryKind": {
             "type": "string",
             "enum": [
@@ -6054,6 +6828,19 @@ const docTemplate = `{
                 "StatusRunning",
                 "StatusCompleted",
                 "StatusFailed"
+            ]
+        },
+        "notificationrule.Trigger": {
+            "type": "string",
+            "enum": [
+                "expires_at",
+                "warranty_expires",
+                "maintenance_due"
+            ],
+            "x-enum-varnames": [
+                "TriggerExpiresAt",
+                "TriggerWarrantyExpires",
+                "TriggerMaintenanceDue"
             ]
         },
         "oauthserver.ConsentCollection": {
@@ -7771,6 +8558,10 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "notifyHour": {
+                    "description": "NotifyHour is the local hour (0-23) from which a day's alerts go out.",
+                    "type": "integer"
+                },
                 "timezone": {
                     "description": "Timezone is the IANA zone the collection's alerts are scheduled in.",
                     "type": "string"
@@ -7834,6 +8625,12 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "notifyHour": {
+                    "description": "NotifyHour is left unchanged when nil.",
+                    "type": "integer",
+                    "x-nullable": true,
+                    "x-omitempty": true
                 },
                 "timezone": {
                     "description": "Timezone is left unchanged when nil.",
@@ -8000,6 +8797,91 @@ const docTemplate = `{
                 "MaintenanceFilterStatusCompleted",
                 "MaintenanceFilterStatusBoth"
             ]
+        },
+        "repo.NotificationRuleIn": {
+            "type": "object",
+            "properties": {
+                "entityTypeId": {
+                    "description": "EntityTypeID and TagID narrow the rule to matching items.",
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notifierIds": {
+                    "description": "NotifierIDs picks the notifiers; empty means every active one.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "offsetsDays": {
+                    "description": "OffsetsDays: positive fires that many days before the date, zero on\nthe day, negative that many days after. For example [30, 7, 1, 0, -7].",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "tagId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "trigger": {
+                    "description": "Trigger is expires_at, warranty_expires or maintenance_due.",
+                    "type": "string"
+                }
+            }
+        },
+        "repo.NotificationRuleOut": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "entityTypeId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notifierIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "offsetsDays": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "tagId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "trigger": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
         },
         "repo.NotifierCreate": {
             "type": "object",
@@ -8480,6 +9362,175 @@ const docTemplate = `{
                 }
             }
         },
+        "repo.WebhookDeliveryOut": {
+            "type": "object",
+            "properties": {
+                "attempts": {
+                    "type": "integer"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "deliveredAt": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "eventId": {
+                    "type": "string"
+                },
+                "eventType": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "lastDurationMs": {
+                    "type": "integer"
+                },
+                "lastError": {
+                    "type": "string"
+                },
+                "lastStatusCode": {
+                    "type": "integer"
+                },
+                "nextAttemptAt": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "occurredAt": {
+                    "type": "string"
+                },
+                "response": {
+                    "type": "string"
+                },
+                "scheduledFor": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "repo.WebhookEndpointCreated": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "entityTypeId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "secret": {
+                    "type": "string"
+                },
+                "tagId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "urlHost": {
+                    "type": "string"
+                }
+            }
+        },
+        "repo.WebhookEndpointIn": {
+            "type": "object",
+            "properties": {
+                "entityTypeId": {
+                    "description": "EntityTypeID and TagID narrow item events to matching items.",
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "events": {
+                    "description": "Events lists the event names to subscribe to.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "tagId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "url": {
+                    "description": "URL receives the events. On update, omit it (or send null) to keep the\nstored one; it is never returned by the API.",
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                }
+            }
+        },
+        "repo.WebhookEndpointOut": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "entityTypeId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "tagId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "urlHost": {
+                    "type": "string"
+                }
+            }
+        },
         "services.Latest": {
             "type": "object",
             "properties": {
@@ -8550,6 +9601,23 @@ const docTemplate = `{
                 },
                 "token": {
                     "type": "string"
+                }
+            }
+        },
+        "services.WebhookResult": {
+            "type": "object",
+            "properties": {
+                "durationMs": {
+                    "type": "integer"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "ok": {
+                    "type": "boolean"
+                },
+                "statusCode": {
+                    "type": "integer"
                 }
             }
         },
@@ -8634,6 +9702,9 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "webhooks": {
+                    "$ref": "#/definitions/v1.WebhooksStatus"
                 }
             }
         },
@@ -8971,6 +10042,28 @@ const docTemplate = `{
                 }
             }
         },
+        "v1.WebhookDeliveriesPage": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/repo.WebhookDeliveryOut"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.WebhooksStatus": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
         "v1.WipeInventoryOptions": {
             "type": "object",
             "properties": {
@@ -9015,6 +10108,36 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "fields": {
+                    "type": "string"
+                }
+            }
+        },
+        "webhookdelivery.Status": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "pending",
+                "delivered",
+                "failed"
+            ],
+            "x-enum-varnames": [
+                "DefaultStatus",
+                "StatusPending",
+                "StatusDelivered",
+                "StatusFailed"
+            ]
+        },
+        "webhooks.Event": {
+            "type": "object",
+            "properties": {
+                "dated": {
+                    "description": "Dated events come from alert rules: they fire for the rule's offsets\nrather than at the moment something is edited.",
+                    "type": "boolean"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 }
             }

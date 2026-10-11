@@ -58,10 +58,14 @@ func storedValue(f EntityFieldData) fieldtypes.Value {
 
 // timeValueFor hides time_value for types that do not use it: the column is
 // non-null and defaults to "now", which would otherwise leak into responses.
+// The instant is returned in UTC whatever zone the database driver hands back
+// (pgx decodes into the server's local zone), so a date's calendar components
+// read the same on every database and server.
 func timeValueFor(typ string, t time.Time) *time.Time {
 	switch fieldtypes.Type(typ) {
 	case fieldtypes.Date, fieldtypes.DateTime:
-		return &t
+		u := t.UTC()
+		return &u
 	}
 	return nil
 }

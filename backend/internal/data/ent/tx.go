@@ -38,6 +38,10 @@ type Tx struct {
 	GroupInvitationToken *GroupInvitationTokenClient
 	// MaintenanceEntry is the client for interacting with the MaintenanceEntry builders.
 	MaintenanceEntry *MaintenanceEntryClient
+	// NotificationLog is the client for interacting with the NotificationLog builders.
+	NotificationLog *NotificationLogClient
+	// NotificationRule is the client for interacting with the NotificationRule builders.
+	NotificationRule *NotificationRuleClient
 	// Notifier is the client for interacting with the Notifier builders.
 	Notifier *NotifierClient
 	// OAuthClient is the client for interacting with the OAuthClient builders.
@@ -58,6 +62,10 @@ type Tx struct {
 	User *UserClient
 	// UserGroup is the client for interacting with the UserGroup builders.
 	UserGroup *UserGroupClient
+	// WebhookDelivery is the client for interacting with the WebhookDelivery builders.
+	WebhookDelivery *WebhookDeliveryClient
+	// WebhookEndpoint is the client for interacting with the WebhookEndpoint builders.
+	WebhookEndpoint *WebhookEndpointClient
 
 	// lazily loaded.
 	client     *Client
@@ -202,6 +210,8 @@ func (tx *Tx) init() {
 	tx.Group = NewGroupClient(tx.config)
 	tx.GroupInvitationToken = NewGroupInvitationTokenClient(tx.config)
 	tx.MaintenanceEntry = NewMaintenanceEntryClient(tx.config)
+	tx.NotificationLog = NewNotificationLogClient(tx.config)
+	tx.NotificationRule = NewNotificationRuleClient(tx.config)
 	tx.Notifier = NewNotifierClient(tx.config)
 	tx.OAuthClient = NewOAuthClientClient(tx.config)
 	tx.OAuthGrant = NewOAuthGrantClient(tx.config)
@@ -212,6 +222,8 @@ func (tx *Tx) init() {
 	tx.TemplateField = NewTemplateFieldClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 	tx.UserGroup = NewUserGroupClient(tx.config)
+	tx.WebhookDelivery = NewWebhookDeliveryClient(tx.config)
+	tx.WebhookEndpoint = NewWebhookEndpointClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

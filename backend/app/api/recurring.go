@@ -65,16 +65,27 @@ func registerRecurringTasks(app *app, cfg *config.Config, runner *graceful.Runne
 		}))
 	}
 
-	runner.AddPlugin(NewTask("send-notifications", time.Hour, func(ctx context.Context) {
-		now := time.Now()
-		if now.Hour() == 8 {
-			fmt.Println("run notifiers")
-			err := app.services.BackgroundService.SendNotifiersToday(context.Background())
-			if err != nil {
-				log.Error().Err(err).Msg("failed to send notifiers")
-			}
+	// Alerts are worked out against each collection's own clock, so this only
+	// needs to run often enough that none goes out noticeably late. A tick that
+	// finds nothing new is a few indexed queries.
+	runner.AddPlugin(NewTask("send-alerts", 5*time.Minute, func(ctx context.Context) {
+		if err := app.services.BackgroundService.AlertTick(ctx, time.Now()); err != nil {
+			log.Error().Err(err).Msg("failed to send alerts")
 		}
 	}))
+
+	runner.AddPlugin(NewTask("purge-alert-log", 24*time.Hour, func(ctx context.Context) {
+		n, err := app.services.BackgroundService.PurgeAlertLog(ctx, time.Now())
+		if err != nil {
+			log.Error().Err(err).Msg("failed to purge the alert log")
+			return
+		}
+		log.Debug().Int("removed", n).Msg("purged old alert log entries")
+	}))
+
+	if cfg.Webhooks.Enabled {
+		runner.AddFunc("webhook-delivery", app.services.Webhooks.Run)
+	}
 
 	runner.AddFunc("collection-export-subscription", func(ctx context.Context) error {
 		return runJobSubscription(ctx, cfg, "collection_export", func(ctx context.Context, msg *pubsub.Message) {

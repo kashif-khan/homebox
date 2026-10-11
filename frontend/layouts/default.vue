@@ -476,6 +476,18 @@
           to: "/collection/notifiers",
         },
         {
+          id: 631,
+          active: computed(() => route.path === "/collection/alerts"),
+          name: computed(() => t("collection.tabs.alerts")),
+          to: "/collection/alerts",
+        },
+        {
+          id: 632,
+          active: computed(() => route.path === "/collection/webhooks"),
+          name: computed(() => t("collection.tabs.webhooks")),
+          to: "/collection/webhooks",
+        },
+        {
           id: 64,
           active: computed(() => route.path === "/collection/settings"),
           name: computed(() => t("collection.tabs.settings")),

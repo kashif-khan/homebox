@@ -66,6 +66,29 @@ type Config struct {
 	Search     SearchConf     `yaml:"search"`
 	Backup     BackupConf     `yaml:"backup"`
 	MCP        MCPConf        `yaml:"mcp"`
+	Webhooks   WebhooksConf   `yaml:"webhooks"`
+}
+
+// WebhooksConf controls outbound webhooks: signed HTTP callbacks that tell other
+// systems (n8n, Home Assistant, Node-RED) when something happens. They are off
+// by default. Destinations are checked against the notifier network policy
+// (HBOX_NOTIFIER_*), so what a webhook may reach is the same as for notifiers.
+type WebhooksConf struct {
+	// Enabled turns on endpoint management and delivery.
+	Enabled bool `yaml:"enabled" conf:"default:false"`
+	// Timeout is how long one delivery attempt may take.
+	Timeout time.Duration `yaml:"timeout" conf:"default:5s"`
+	// MaxAge is how long a delivery is retried before it is given up on. Retries
+	// back off from seconds to hours, so a receiver that was down overnight still
+	// gets what it missed.
+	MaxAge time.Duration `yaml:"max_age" conf:"default:24h"`
+	// MaxEndpoints caps the endpoints per collection.
+	MaxEndpoints int `yaml:"max_endpoints" conf:"default:20"`
+	// RatePerMinute caps deliveries to one endpoint per minute, to protect the
+	// receiver from a burst (an import, for example). Zero disables the cap.
+	RatePerMinute int `yaml:"rate_per_minute" conf:"default:120"`
+	// KeepDeliveries is how long delivery records are kept for the log.
+	KeepDeliveries time.Duration `yaml:"keep_deliveries" conf:"default:168h"`
 }
 
 // MCPConf controls the Model Context Protocol server that lets AI assistants

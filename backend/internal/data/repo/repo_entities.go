@@ -48,6 +48,9 @@ type EntityRepository struct {
 	bus         *eventbus.EventBus
 	attachments *AttachmentRepo
 	search      search.Engine
+	// events, when set, is told what changed (see repo_events.go). Nil in tests
+	// and when webhooks are off, in which case none of that work happens.
+	events EventSink
 }
 
 type (
@@ -1264,7 +1267,7 @@ func validateQuantity(op string, quantity float64) error {
 	return nil
 }
 
-func (r *EntityRepository) Create(ctx context.Context, gid uuid.UUID, data EntityCreate) (EntityOut, error) {
+func (r *EntityRepository) create(ctx context.Context, gid uuid.UUID, data EntityCreate) (EntityOut, error) {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.Create",
 		trace.WithAttributes(
 			attribute.String("group.id", gid.String()),
@@ -1376,7 +1379,7 @@ type EntityCreateFromTemplate struct {
 }
 
 // CreateFromTemplate creates an entity with all template data in a single transaction.
-func (r *EntityRepository) CreateFromTemplate(ctx context.Context, gid uuid.UUID, data EntityCreateFromTemplate) (EntityOut, error) {
+func (r *EntityRepository) createFromTemplate(ctx context.Context, gid uuid.UUID, data EntityCreateFromTemplate) (EntityOut, error) {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.CreateFromTemplate",
 		trace.WithAttributes(
 			attribute.String("group.id", gid.String()),
@@ -1541,7 +1544,7 @@ func (r *EntityRepository) CreateFromTemplate(ctx context.Context, gid uuid.UUID
 	return out, err
 }
 
-func (r *EntityRepository) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *EntityRepository) deleteByID(ctx context.Context, id uuid.UUID) error {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.Delete",
 		trace.WithAttributes(attribute.String("entity.id", id.String())))
 	defer span.End()
@@ -1597,7 +1600,7 @@ func (r *EntityRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *EntityRepository) DeleteByGroup(ctx context.Context, gid, id uuid.UUID) error {
+func (r *EntityRepository) deleteByGroup(ctx context.Context, gid, id uuid.UUID) error {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.DeleteByGroup",
 		trace.WithAttributes(
 			attribute.String("group.id", gid.String()),
@@ -1774,7 +1777,7 @@ func (r *EntityRepository) WipeInventory(ctx context.Context, gid uuid.UUID, wip
 	return deleted, nil
 }
 
-func (r *EntityRepository) UpdateByGroup(ctx context.Context, gid uuid.UUID, data EntityUpdate) (EntityOut, error) {
+func (r *EntityRepository) updateByGroup(ctx context.Context, gid uuid.UUID, data EntityUpdate) (EntityOut, error) {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.UpdateByGroup",
 		trace.WithAttributes(
 			attribute.String("group.id", gid.String()),
@@ -2133,7 +2136,7 @@ func patchSyncTags(ctx context.Context, tx *ent.Tx, gid, id uuid.UUID, want []uu
 	return nil
 }
 
-func (r *EntityRepository) Patch(ctx context.Context, gid, id uuid.UUID, data EntityPatch) error {
+func (r *EntityRepository) patch(ctx context.Context, gid, id uuid.UUID, data EntityPatch) error {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.Patch",
 		trace.WithAttributes(
 			attribute.String("group.id", gid.String()),
@@ -2547,7 +2550,7 @@ func (r *EntityRepository) SetPrimaryPhotos(ctx context.Context, gid uuid.UUID) 
 }
 
 // Duplicate creates a copy of an entity with configurable options for what data to copy.
-func (r *EntityRepository) Duplicate(ctx context.Context, gid, id uuid.UUID, options DuplicateOptions) (EntityOut, error) {
+func (r *EntityRepository) duplicate(ctx context.Context, gid, id uuid.UUID, options DuplicateOptions) (EntityOut, error) {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.Duplicate",
 		trace.WithAttributes(
 			attribute.String("group.id", gid.String()),
@@ -2895,7 +2898,7 @@ func (r *EntityRepository) GetContainerByGroup(ctx context.Context, gid, id uuid
 }
 
 // CreateContainer creates a container entity (with a location-type entity_type).
-func (r *EntityRepository) CreateContainer(ctx context.Context, gid uuid.UUID, data EntityCreate) (EntityOut, error) {
+func (r *EntityRepository) createContainer(ctx context.Context, gid uuid.UUID, data EntityCreate) (EntityOut, error) {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.CreateContainer",
 		trace.WithAttributes(
 			attribute.String("group.id", gid.String()),
@@ -3034,7 +3037,7 @@ func (r *EntityRepository) UpdateContainer(ctx context.Context, gid, id uuid.UUI
 }
 
 // DeleteContainerByGroup deletes a container entity by group.
-func (r *EntityRepository) DeleteContainerByGroup(ctx context.Context, gid, id uuid.UUID) error {
+func (r *EntityRepository) deleteContainerByGroup(ctx context.Context, gid, id uuid.UUID) error {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.DeleteContainerByGroup",
 		trace.WithAttributes(
 			attribute.String("group.id", gid.String()),

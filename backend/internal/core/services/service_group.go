@@ -60,6 +60,11 @@ func (svc *GroupService) UpdateGroup(ctx Context, data repo.GroupUpdate) (repo.G
 		data.Timezone = &tz
 	}
 
+	if data.NotifyHour != nil && (*data.NotifyHour < 0 || *data.NotifyHour > 23) {
+		return repo.Group{}, validate.NewRequestError(
+			errors.New("notifyHour must be between 0 and 23"), http.StatusUnprocessableEntity)
+	}
+
 	if data.MCPAccess != nil && !scopes.ValidAccess(*data.MCPAccess) {
 		return repo.Group{}, validate.NewRequestError(
 			errors.New("mcpAccess must be one of off, read, write, full"), http.StatusUnprocessableEntity)

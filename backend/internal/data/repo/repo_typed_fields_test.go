@@ -213,3 +213,14 @@ func TestFieldJSON_IgnoresDerivedValuesFromOlderClients(t *testing.T) {
 	assert.Contains(t, string(out), `"timeValue":"2026-03-01T00:00:00Z"`)
 	assert.Contains(t, string(out), `"decimalValue":2.5`)
 }
+
+func TestTimeValueIsAlwaysUTC(t *testing.T) {
+	// A driver may hand back the instant in the server's local zone.
+	est := time.FixedZone("EST", -5*3600)
+	local := time.Date(2027, 2, 28, 19, 0, 0, 0, est) // 2027-03-01T00:00:00Z
+	got := timeValueFor("date", local)
+	require.NotNil(t, got)
+	assert.Equal(t, time.UTC, got.Location())
+	assert.Equal(t, "2027-03-01", got.Format(time.DateOnly), "the calendar day survives")
+	assert.Nil(t, timeValueFor("text", local))
+}

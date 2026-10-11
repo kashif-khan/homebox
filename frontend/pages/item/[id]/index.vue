@@ -630,6 +630,9 @@
       ),
       includePurchaseFields: !!(item.value.purchaseFrom || item.value.purchasePrice || item.value.purchaseDate),
       includeSoldFields: !!(item.value.soldTo || item.value.soldPrice || item.value.soldDate),
+      includeExpiryFields: hasExpiry(item.value.expiresAt),
+      defaultExpiryOffsetDays: null,
+      defaultExpiryKind: item.value.expiryKind || "expires",
       fields: item.value.fields.map(field => ({
         id: NIL_UUID,
         name: field.name,

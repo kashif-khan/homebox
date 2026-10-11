@@ -28,6 +28,10 @@ type Group struct {
 	Currency string `json:"currency,omitempty"`
 	// Timezone holds the value of the "timezone" field.
 	Timezone string `json:"timezone,omitempty"`
+	// NotifyHour holds the value of the "notify_hour" field.
+	NotifyHour int `json:"notify_hour,omitempty"`
+	// AlertRulesSeeded holds the value of the "alert_rules_seeded" field.
+	AlertRulesSeeded bool `json:"alert_rules_seeded,omitempty"`
 	// McpAccess holds the value of the "mcp_access" field.
 	McpAccess string `json:"mcp_access,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -58,11 +62,15 @@ type GroupEdges struct {
 	BackupDestinations []*BackupDestination `json:"backup_destinations,omitempty"`
 	// OauthGrants holds the value of the oauth_grants edge.
 	OauthGrants []*OAuthGrant `json:"oauth_grants,omitempty"`
+	// NotificationRules holds the value of the notification_rules edge.
+	NotificationRules []*NotificationRule `json:"notification_rules,omitempty"`
+	// WebhookEndpoints holds the value of the webhook_endpoints edge.
+	WebhookEndpoints []*WebhookEndpoint `json:"webhook_endpoints,omitempty"`
 	// UserGroups holds the value of the user_groups edge.
 	UserGroups []*UserGroup `json:"user_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [11]bool
+	loadedTypes [13]bool
 }
 
 // UsersOrErr returns the Users value or an error if the edge
@@ -155,10 +163,28 @@ func (e GroupEdges) OauthGrantsOrErr() ([]*OAuthGrant, error) {
 	return nil, &NotLoadedError{edge: "oauth_grants"}
 }
 
+// NotificationRulesOrErr returns the NotificationRules value or an error if the edge
+// was not loaded in eager-loading.
+func (e GroupEdges) NotificationRulesOrErr() ([]*NotificationRule, error) {
+	if e.loadedTypes[10] {
+		return e.NotificationRules, nil
+	}
+	return nil, &NotLoadedError{edge: "notification_rules"}
+}
+
+// WebhookEndpointsOrErr returns the WebhookEndpoints value or an error if the edge
+// was not loaded in eager-loading.
+func (e GroupEdges) WebhookEndpointsOrErr() ([]*WebhookEndpoint, error) {
+	if e.loadedTypes[11] {
+		return e.WebhookEndpoints, nil
+	}
+	return nil, &NotLoadedError{edge: "webhook_endpoints"}
+}
+
 // UserGroupsOrErr returns the UserGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e GroupEdges) UserGroupsOrErr() ([]*UserGroup, error) {
-	if e.loadedTypes[10] {
+	if e.loadedTypes[12] {
 		return e.UserGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_groups"}
@@ -169,6 +195,10 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case group.FieldAlertRulesSeeded:
+			values[i] = new(sql.NullBool)
+		case group.FieldNotifyHour:
+			values[i] = new(sql.NullInt64)
 		case group.FieldName, group.FieldCurrency, group.FieldTimezone, group.FieldMcpAccess:
 			values[i] = new(sql.NullString)
 		case group.FieldCreatedAt, group.FieldUpdatedAt:
@@ -225,6 +255,18 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field timezone", values[i])
 			} else if value.Valid {
 				_m.Timezone = value.String
+			}
+		case group.FieldNotifyHour:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field notify_hour", values[i])
+			} else if value.Valid {
+				_m.NotifyHour = int(value.Int64)
+			}
+		case group.FieldAlertRulesSeeded:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field alert_rules_seeded", values[i])
+			} else if value.Valid {
+				_m.AlertRulesSeeded = value.Bool
 			}
 		case group.FieldMcpAccess:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -295,6 +337,16 @@ func (_m *Group) QueryOauthGrants() *OAuthGrantQuery {
 	return NewGroupClient(_m.config).QueryOauthGrants(_m)
 }
 
+// QueryNotificationRules queries the "notification_rules" edge of the Group entity.
+func (_m *Group) QueryNotificationRules() *NotificationRuleQuery {
+	return NewGroupClient(_m.config).QueryNotificationRules(_m)
+}
+
+// QueryWebhookEndpoints queries the "webhook_endpoints" edge of the Group entity.
+func (_m *Group) QueryWebhookEndpoints() *WebhookEndpointQuery {
+	return NewGroupClient(_m.config).QueryWebhookEndpoints(_m)
+}
+
 // QueryUserGroups queries the "user_groups" edge of the Group entity.
 func (_m *Group) QueryUserGroups() *UserGroupQuery {
 	return NewGroupClient(_m.config).QueryUserGroups(_m)
@@ -337,6 +389,12 @@ func (_m *Group) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("timezone=")
 	builder.WriteString(_m.Timezone)
+	builder.WriteString(", ")
+	builder.WriteString("notify_hour=")
+	builder.WriteString(fmt.Sprintf("%v", _m.NotifyHour))
+	builder.WriteString(", ")
+	builder.WriteString("alert_rules_seeded=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AlertRulesSeeded))
 	builder.WriteString(", ")
 	builder.WriteString("mcp_access=")
 	builder.WriteString(_m.McpAccess)

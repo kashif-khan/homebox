@@ -806,6 +806,10 @@ definitions:
     type: object
   ent.Group:
     properties:
+      alert_rules_seeded:
+        description: AlertRulesSeeded holds the value of the "alert_rules_seeded"
+          field.
+        type: boolean
       created_at:
         description: CreatedAt holds the value of the "created_at" field.
         type: string
@@ -827,6 +831,9 @@ definitions:
       name:
         description: Name holds the value of the "name" field.
         type: string
+      notify_hour:
+        description: NotifyHour holds the value of the "notify_hour" field.
+        type: integer
       timezone:
         description: Timezone holds the value of the "timezone" field.
         type: string
@@ -867,6 +874,11 @@ definitions:
         items:
           $ref: '#/definitions/ent.GroupInvitationToken'
         type: array
+      notification_rules:
+        description: NotificationRules holds the value of the notification_rules edge.
+        items:
+          $ref: '#/definitions/ent.NotificationRule'
+        type: array
       notifiers:
         description: Notifiers holds the value of the notifiers edge.
         items:
@@ -891,6 +903,11 @@ definitions:
         description: Users holds the value of the users edge.
         items:
           $ref: '#/definitions/ent.User'
+        type: array
+      webhook_endpoints:
+        description: WebhookEndpoints holds the value of the webhook_endpoints edge.
+        items:
+          $ref: '#/definitions/ent.WebhookEndpoint'
         type: array
     type: object
   ent.GroupInvitationToken:
@@ -971,6 +988,108 @@ definitions:
         allOf:
         - $ref: '#/definitions/ent.Entity'
         description: Entity holds the value of the entity edge.
+    type: object
+  ent.NotificationLog:
+    properties:
+      anchor_date:
+        description: AnchorDate holds the value of the "anchor_date" field.
+        type: string
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      due_on:
+        description: DueOn holds the value of the "due_on" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.NotificationLogEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the NotificationLogQuery when eager-loading is set.
+      id:
+        description: ID of the ent.
+        type: string
+      notifier_id:
+        description: NotifierID holds the value of the "notifier_id" field.
+        type: string
+      offset_days:
+        description: OffsetDays holds the value of the "offset_days" field.
+        type: integer
+      sent_at:
+        description: SentAt holds the value of the "sent_at" field.
+        type: string
+      subject_id:
+        description: SubjectID holds the value of the "subject_id" field.
+        type: string
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+    type: object
+  ent.NotificationLogEdges:
+    properties:
+      rule:
+        allOf:
+        - $ref: '#/definitions/ent.NotificationRule'
+        description: Rule holds the value of the rule edge.
+    type: object
+  ent.NotificationRule:
+    properties:
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.NotificationRuleEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the NotificationRuleQuery when eager-loading is set.
+      entity_type_id:
+        description: EntityTypeID holds the value of the "entity_type_id" field.
+        type: string
+      group_id:
+        description: GroupID holds the value of the "group_id" field.
+        type: string
+      id:
+        description: ID of the ent.
+        type: string
+      is_active:
+        description: IsActive holds the value of the "is_active" field.
+        type: boolean
+      name:
+        description: Name holds the value of the "name" field.
+        type: string
+      notifier_ids:
+        description: NotifierIds holds the value of the "notifier_ids" field.
+        items:
+          type: string
+        type: array
+      offsets_days:
+        description: OffsetsDays holds the value of the "offsets_days" field.
+        items:
+          type: integer
+        type: array
+      tag_id:
+        description: TagID holds the value of the "tag_id" field.
+        type: string
+      trigger:
+        allOf:
+        - $ref: '#/definitions/notificationrule.Trigger'
+        description: Trigger holds the value of the "trigger" field.
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+    type: object
+  ent.NotificationRuleEdges:
+    properties:
+      group:
+        allOf:
+        - $ref: '#/definitions/ent.Group'
+        description: Group holds the value of the group edge.
+      logs:
+        description: Logs holds the value of the logs edge.
+        items:
+          $ref: '#/definitions/ent.NotificationLog'
+        type: array
     type: object
   ent.Notifier:
     properties:
@@ -1468,6 +1587,125 @@ definitions:
         - $ref: '#/definitions/ent.User'
         description: User holds the value of the user edge.
     type: object
+  ent.WebhookDelivery:
+    properties:
+      attempts:
+        description: Attempts holds the value of the "attempts" field.
+        type: integer
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      data:
+        additionalProperties: true
+        description: Data holds the value of the "data" field.
+        type: object
+      dedupe_key:
+        description: DedupeKey holds the value of the "dedupe_key" field.
+        type: string
+      delivered_at:
+        description: DeliveredAt holds the value of the "delivered_at" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.WebhookDeliveryEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the WebhookDeliveryQuery when eager-loading is set.
+      event_id:
+        description: EventID holds the value of the "event_id" field.
+        type: string
+      event_type:
+        description: EventType holds the value of the "event_type" field.
+        type: string
+      id:
+        description: ID of the ent.
+        type: string
+      last_duration_ms:
+        description: LastDurationMs holds the value of the "last_duration_ms" field.
+        type: integer
+      last_error:
+        description: LastError holds the value of the "last_error" field.
+        type: string
+      last_status_code:
+        description: LastStatusCode holds the value of the "last_status_code" field.
+        type: integer
+      next_attempt_at:
+        description: NextAttemptAt holds the value of the "next_attempt_at" field.
+        type: string
+      occurred_at:
+        description: OccurredAt holds the value of the "occurred_at" field.
+        type: string
+      response_snippet:
+        description: ResponseSnippet holds the value of the "response_snippet" field.
+        type: string
+      scheduled_for:
+        description: ScheduledFor holds the value of the "scheduled_for" field.
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/webhookdelivery.Status'
+        description: Status holds the value of the "status" field.
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+    type: object
+  ent.WebhookDeliveryEdges:
+    properties:
+      endpoint:
+        allOf:
+        - $ref: '#/definitions/ent.WebhookEndpoint'
+        description: Endpoint holds the value of the endpoint edge.
+    type: object
+  ent.WebhookEndpoint:
+    properties:
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.WebhookEndpointEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the WebhookEndpointQuery when eager-loading is set.
+      entity_type_id:
+        description: EntityTypeID holds the value of the "entity_type_id" field.
+        type: string
+      events:
+        description: Events holds the value of the "events" field.
+        items:
+          type: string
+        type: array
+      group_id:
+        description: GroupID holds the value of the "group_id" field.
+        type: string
+      id:
+        description: ID of the ent.
+        type: string
+      is_active:
+        description: IsActive holds the value of the "is_active" field.
+        type: boolean
+      name:
+        description: Name holds the value of the "name" field.
+        type: string
+      tag_id:
+        description: TagID holds the value of the "tag_id" field.
+        type: string
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+    type: object
+  ent.WebhookEndpointEdges:
+    properties:
+      deliveries:
+        description: Deliveries holds the value of the deliveries edge.
+        items:
+          $ref: '#/definitions/ent.WebhookDelivery'
+        type: array
+      group:
+        allOf:
+        - $ref: '#/definitions/ent.Group'
+        description: Group holds the value of the group edge.
+    type: object
   entity.ExpiryKind:
     enum:
     - expires
@@ -1550,6 +1788,16 @@ definitions:
     - StatusRunning
     - StatusCompleted
     - StatusFailed
+  notificationrule.Trigger:
+    enum:
+    - expires_at
+    - warranty_expires
+    - maintenance_due
+    type: string
+    x-enum-varnames:
+    - TriggerExpiresAt
+    - TriggerWarrantyExpires
+    - TriggerMaintenanceDue
   oauthserver.ConsentCollection:
     properties:
       allowed:
@@ -2843,6 +3091,10 @@ definitions:
         type: string
       name:
         type: string
+      notifyHour:
+        description: NotifyHour is the local hour (0-23) from which a day's alerts
+          go out.
+        type: integer
       timezone:
         description: Timezone is the IANA zone the collection's alerts are scheduled
           in.
@@ -2887,6 +3139,11 @@ definitions:
         x-omitempty: true
       name:
         type: string
+      notifyHour:
+        description: NotifyHour is left unchanged when nil.
+        type: integer
+        x-nullable: true
+        x-omitempty: true
       timezone:
         description: Timezone is left unchanged when nil.
         type: string
@@ -2999,6 +3256,68 @@ definitions:
     - MaintenanceFilterStatusScheduled
     - MaintenanceFilterStatusCompleted
     - MaintenanceFilterStatusBoth
+  repo.NotificationRuleIn:
+    properties:
+      entityTypeId:
+        description: EntityTypeID and TagID narrow the rule to matching items.
+        type: string
+        x-nullable: true
+        x-omitempty: true
+      isActive:
+        type: boolean
+      name:
+        type: string
+      notifierIds:
+        description: NotifierIDs picks the notifiers; empty means every active one.
+        items:
+          type: string
+        type: array
+      offsetsDays:
+        description: |-
+          OffsetsDays: positive fires that many days before the date, zero on
+          the day, negative that many days after. For example [30, 7, 1, 0, -7].
+        items:
+          type: integer
+        type: array
+      tagId:
+        type: string
+        x-nullable: true
+        x-omitempty: true
+      trigger:
+        description: Trigger is expires_at, warranty_expires or maintenance_due.
+        type: string
+    type: object
+  repo.NotificationRuleOut:
+    properties:
+      createdAt:
+        type: string
+      entityTypeId:
+        type: string
+        x-nullable: true
+        x-omitempty: true
+      id:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        type: string
+      notifierIds:
+        items:
+          type: string
+        type: array
+      offsetsDays:
+        items:
+          type: integer
+        type: array
+      tagId:
+        type: string
+        x-nullable: true
+        x-omitempty: true
+      trigger:
+        type: string
+      updatedAt:
+        type: string
+    type: object
   repo.NotifierCreate:
     properties:
       isActive:
@@ -3325,6 +3644,127 @@ definitions:
       value:
         type: number
     type: object
+  repo.WebhookDeliveryOut:
+    properties:
+      attempts:
+        type: integer
+      createdAt:
+        type: string
+      deliveredAt:
+        type: string
+        x-nullable: true
+        x-omitempty: true
+      eventId:
+        type: string
+      eventType:
+        type: string
+      id:
+        type: string
+      lastDurationMs:
+        type: integer
+      lastError:
+        type: string
+      lastStatusCode:
+        type: integer
+      nextAttemptAt:
+        type: string
+        x-nullable: true
+        x-omitempty: true
+      occurredAt:
+        type: string
+      response:
+        type: string
+      scheduledFor:
+        type: string
+        x-nullable: true
+        x-omitempty: true
+      status:
+        type: string
+    type: object
+  repo.WebhookEndpointCreated:
+    properties:
+      createdAt:
+        type: string
+      entityTypeId:
+        type: string
+        x-nullable: true
+        x-omitempty: true
+      events:
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        type: string
+      secret:
+        type: string
+      tagId:
+        type: string
+        x-nullable: true
+        x-omitempty: true
+      updatedAt:
+        type: string
+      urlHost:
+        type: string
+    type: object
+  repo.WebhookEndpointIn:
+    properties:
+      entityTypeId:
+        description: EntityTypeID and TagID narrow item events to matching items.
+        type: string
+        x-nullable: true
+        x-omitempty: true
+      events:
+        description: Events lists the event names to subscribe to.
+        items:
+          type: string
+        type: array
+      isActive:
+        type: boolean
+      name:
+        type: string
+      tagId:
+        type: string
+        x-nullable: true
+        x-omitempty: true
+      url:
+        description: |-
+          URL receives the events. On update, omit it (or send null) to keep the
+          stored one; it is never returned by the API.
+        type: string
+        x-nullable: true
+        x-omitempty: true
+    type: object
+  repo.WebhookEndpointOut:
+    properties:
+      createdAt:
+        type: string
+      entityTypeId:
+        type: string
+        x-nullable: true
+        x-omitempty: true
+      events:
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        type: string
+      tagId:
+        type: string
+        x-nullable: true
+        x-omitempty: true
+      updatedAt:
+        type: string
+      urlHost:
+        type: string
+    type: object
   services.Latest:
     properties:
       date:
@@ -3377,6 +3817,17 @@ definitions:
         type: string
       token:
         type: string
+    type: object
+  services.WebhookResult:
+    properties:
+      durationMs:
+        type: integer
+      error:
+        type: string
+      ok:
+        type: boolean
+      statusCode:
+        type: integer
     type: object
   templatefield.Type:
     enum:
@@ -3440,6 +3891,8 @@ definitions:
         items:
           type: string
         type: array
+      webhooks:
+        $ref: '#/definitions/v1.WebhooksStatus'
     type: object
   v1.ActionAmountResult:
     properties:
@@ -3672,6 +4125,20 @@ definitions:
       token:
         type: string
     type: object
+  v1.WebhookDeliveriesPage:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/repo.WebhookDeliveryOut'
+        type: array
+      total:
+        type: integer
+    type: object
+  v1.WebhooksStatus:
+    properties:
+      enabled:
+        type: boolean
+    type: object
   v1.WipeInventoryOptions:
     properties:
       wipeLocations:
@@ -3701,6 +4168,30 @@ definitions:
       error:
         type: string
       fields:
+        type: string
+    type: object
+  webhookdelivery.Status:
+    enum:
+    - pending
+    - pending
+    - delivered
+    - failed
+    type: string
+    x-enum-varnames:
+    - DefaultStatus
+    - StatusPending
+    - StatusDelivered
+    - StatusFailed
+  webhooks.Event:
+    properties:
+      dated:
+        description: |-
+          Dated events come from alert rules: they fire for the rule's offsets
+          rather than at the moment something is edited.
+        type: boolean
+      description:
+        type: string
+      name:
         type: string
     type: object
 info:
@@ -5238,6 +5729,83 @@ paths:
       summary: Update Maintenance Entry
       tags:
       - Maintenance
+  /v1/notification-rules:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repo.NotificationRuleOut'
+            type: array
+      security:
+      - Bearer: []
+      summary: List Alert Rules
+      tags:
+      - Notification Rules
+    post:
+      parameters:
+      - description: Rule
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/repo.NotificationRuleIn'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/repo.NotificationRuleOut'
+      security:
+      - Bearer: []
+      summary: Create Alert Rule
+      tags:
+      - Notification Rules
+  /v1/notification-rules/{id}:
+    delete:
+      parameters:
+      - description: Rule ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+      - Bearer: []
+      summary: Delete Alert Rule
+      tags:
+      - Notification Rules
+    put:
+      parameters:
+      - description: Rule ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Rule
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/repo.NotificationRuleIn'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repo.NotificationRuleOut'
+      security:
+      - Bearer: []
+      summary: Update Alert Rule
+      tags:
+      - Notification Rules
   /v1/notifiers:
     get:
       produces:
@@ -6074,6 +6642,195 @@ paths:
       summary: Update user settings
       tags:
       - User
+  /v1/webhooks:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repo.WebhookEndpointOut'
+            type: array
+      security:
+      - Bearer: []
+      summary: List Webhooks
+      tags:
+      - Webhooks
+    post:
+      description: The response carries the signing secret. It is shown only this
+        once.
+      parameters:
+      - description: Webhook
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/repo.WebhookEndpointIn'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/repo.WebhookEndpointCreated'
+      security:
+      - Bearer: []
+      summary: Create Webhook
+      tags:
+      - Webhooks
+  /v1/webhooks/{id}:
+    delete:
+      parameters:
+      - description: Webhook ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+      - Bearer: []
+      summary: Delete Webhook
+      tags:
+      - Webhooks
+    put:
+      parameters:
+      - description: Webhook ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Webhook
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/repo.WebhookEndpointIn'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repo.WebhookEndpointOut'
+      security:
+      - Bearer: []
+      summary: Update Webhook
+      tags:
+      - Webhooks
+  /v1/webhooks/{id}/deliveries:
+    get:
+      parameters:
+      - description: Webhook ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: page number
+        in: query
+        name: page
+        type: integer
+      - description: deliveries per page (max 100)
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.WebhookDeliveriesPage'
+      security:
+      - Bearer: []
+      summary: Webhook Delivery Log
+      tags:
+      - Webhooks
+  /v1/webhooks/{id}/deliveries/{deliveryId}/redeliver:
+    post:
+      description: Queues a fresh copy of a past delivery. It keeps the event id.
+      parameters:
+      - description: Webhook ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Delivery ID
+        in: path
+        name: deliveryId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+      security:
+      - Bearer: []
+      summary: Redeliver
+      tags:
+      - Webhooks
+  /v1/webhooks/{id}/rotate-secret:
+    post:
+      description: Issues a new signing secret, shown only in this response. The old
+        one stops working at once.
+      parameters:
+      - description: Webhook ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repo.WebhookEndpointCreated'
+      security:
+      - Bearer: []
+      summary: Rotate Webhook Secret
+      tags:
+      - Webhooks
+  /v1/webhooks/{id}/test:
+    post:
+      parameters:
+      - description: Webhook ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.WebhookResult'
+      security:
+      - Bearer: []
+      summary: Send Test Event
+      tags:
+      - Webhooks
+  /v1/webhooks/events:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/webhooks.Event'
+            type: array
+      security:
+      - Bearer: []
+      summary: List Webhook Events
+      tags:
+      - Webhooks
 schemes:
 - https
 - http

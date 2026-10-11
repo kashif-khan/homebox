@@ -29,6 +29,8 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/group"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/groupinvitationtoken"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/maintenanceentry"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notificationlog"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notificationrule"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notifier"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/oauthclient"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/oauthgrant"
@@ -39,6 +41,8 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/templatefield"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/user"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/usergroup"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/webhookdelivery"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/webhookendpoint"
 )
 
 // Client is the client that holds all ent builders.
@@ -72,6 +76,10 @@ type Client struct {
 	GroupInvitationToken *GroupInvitationTokenClient
 	// MaintenanceEntry is the client for interacting with the MaintenanceEntry builders.
 	MaintenanceEntry *MaintenanceEntryClient
+	// NotificationLog is the client for interacting with the NotificationLog builders.
+	NotificationLog *NotificationLogClient
+	// NotificationRule is the client for interacting with the NotificationRule builders.
+	NotificationRule *NotificationRuleClient
 	// Notifier is the client for interacting with the Notifier builders.
 	Notifier *NotifierClient
 	// OAuthClient is the client for interacting with the OAuthClient builders.
@@ -92,6 +100,10 @@ type Client struct {
 	User *UserClient
 	// UserGroup is the client for interacting with the UserGroup builders.
 	UserGroup *UserGroupClient
+	// WebhookDelivery is the client for interacting with the WebhookDelivery builders.
+	WebhookDelivery *WebhookDeliveryClient
+	// WebhookEndpoint is the client for interacting with the WebhookEndpoint builders.
+	WebhookEndpoint *WebhookEndpointClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -116,6 +128,8 @@ func (c *Client) init() {
 	c.Group = NewGroupClient(c.config)
 	c.GroupInvitationToken = NewGroupInvitationTokenClient(c.config)
 	c.MaintenanceEntry = NewMaintenanceEntryClient(c.config)
+	c.NotificationLog = NewNotificationLogClient(c.config)
+	c.NotificationRule = NewNotificationRuleClient(c.config)
 	c.Notifier = NewNotifierClient(c.config)
 	c.OAuthClient = NewOAuthClientClient(c.config)
 	c.OAuthGrant = NewOAuthGrantClient(c.config)
@@ -126,6 +140,8 @@ func (c *Client) init() {
 	c.TemplateField = NewTemplateFieldClient(c.config)
 	c.User = NewUserClient(c.config)
 	c.UserGroup = NewUserGroupClient(c.config)
+	c.WebhookDelivery = NewWebhookDeliveryClient(c.config)
+	c.WebhookEndpoint = NewWebhookEndpointClient(c.config)
 }
 
 type (
@@ -231,6 +247,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Group:                NewGroupClient(cfg),
 		GroupInvitationToken: NewGroupInvitationTokenClient(cfg),
 		MaintenanceEntry:     NewMaintenanceEntryClient(cfg),
+		NotificationLog:      NewNotificationLogClient(cfg),
+		NotificationRule:     NewNotificationRuleClient(cfg),
 		Notifier:             NewNotifierClient(cfg),
 		OAuthClient:          NewOAuthClientClient(cfg),
 		OAuthGrant:           NewOAuthGrantClient(cfg),
@@ -241,6 +259,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		TemplateField:        NewTemplateFieldClient(cfg),
 		User:                 NewUserClient(cfg),
 		UserGroup:            NewUserGroupClient(cfg),
+		WebhookDelivery:      NewWebhookDeliveryClient(cfg),
+		WebhookEndpoint:      NewWebhookEndpointClient(cfg),
 	}, nil
 }
 
@@ -273,6 +293,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Group:                NewGroupClient(cfg),
 		GroupInvitationToken: NewGroupInvitationTokenClient(cfg),
 		MaintenanceEntry:     NewMaintenanceEntryClient(cfg),
+		NotificationLog:      NewNotificationLogClient(cfg),
+		NotificationRule:     NewNotificationRuleClient(cfg),
 		Notifier:             NewNotifierClient(cfg),
 		OAuthClient:          NewOAuthClientClient(cfg),
 		OAuthGrant:           NewOAuthGrantClient(cfg),
@@ -283,6 +305,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		TemplateField:        NewTemplateFieldClient(cfg),
 		User:                 NewUserClient(cfg),
 		UserGroup:            NewUserGroupClient(cfg),
+		WebhookDelivery:      NewWebhookDeliveryClient(cfg),
+		WebhookEndpoint:      NewWebhookEndpointClient(cfg),
 	}, nil
 }
 
@@ -314,9 +338,10 @@ func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.APIKey, c.Attachment, c.AuthRoles, c.AuthTokens, c.BackupDestination,
 		c.Entity, c.EntityField, c.EntityTemplate, c.EntityType, c.Export, c.Group,
-		c.GroupInvitationToken, c.MaintenanceEntry, c.Notifier, c.OAuthClient,
-		c.OAuthGrant, c.OAuthRequest, c.OAuthToken, c.PasswordResetTokens, c.Tag,
-		c.TemplateField, c.User, c.UserGroup,
+		c.GroupInvitationToken, c.MaintenanceEntry, c.NotificationLog,
+		c.NotificationRule, c.Notifier, c.OAuthClient, c.OAuthGrant, c.OAuthRequest,
+		c.OAuthToken, c.PasswordResetTokens, c.Tag, c.TemplateField, c.User,
+		c.UserGroup, c.WebhookDelivery, c.WebhookEndpoint,
 	} {
 		n.Use(hooks...)
 	}
@@ -328,9 +353,10 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.APIKey, c.Attachment, c.AuthRoles, c.AuthTokens, c.BackupDestination,
 		c.Entity, c.EntityField, c.EntityTemplate, c.EntityType, c.Export, c.Group,
-		c.GroupInvitationToken, c.MaintenanceEntry, c.Notifier, c.OAuthClient,
-		c.OAuthGrant, c.OAuthRequest, c.OAuthToken, c.PasswordResetTokens, c.Tag,
-		c.TemplateField, c.User, c.UserGroup,
+		c.GroupInvitationToken, c.MaintenanceEntry, c.NotificationLog,
+		c.NotificationRule, c.Notifier, c.OAuthClient, c.OAuthGrant, c.OAuthRequest,
+		c.OAuthToken, c.PasswordResetTokens, c.Tag, c.TemplateField, c.User,
+		c.UserGroup, c.WebhookDelivery, c.WebhookEndpoint,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -365,6 +391,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.GroupInvitationToken.mutate(ctx, m)
 	case *MaintenanceEntryMutation:
 		return c.MaintenanceEntry.mutate(ctx, m)
+	case *NotificationLogMutation:
+		return c.NotificationLog.mutate(ctx, m)
+	case *NotificationRuleMutation:
+		return c.NotificationRule.mutate(ctx, m)
 	case *NotifierMutation:
 		return c.Notifier.mutate(ctx, m)
 	case *OAuthClientMutation:
@@ -385,6 +415,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.User.mutate(ctx, m)
 	case *UserGroupMutation:
 		return c.UserGroup.mutate(ctx, m)
+	case *WebhookDeliveryMutation:
+		return c.WebhookDelivery.mutate(ctx, m)
+	case *WebhookEndpointMutation:
+		return c.WebhookEndpoint.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
 	}
@@ -2404,6 +2438,38 @@ func (c *GroupClient) QueryOauthGrants(_m *Group) *OAuthGrantQuery {
 	return query
 }
 
+// QueryNotificationRules queries the notification_rules edge of a Group.
+func (c *GroupClient) QueryNotificationRules(_m *Group) *NotificationRuleQuery {
+	query := (&NotificationRuleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, id),
+			sqlgraph.To(notificationrule.Table, notificationrule.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, group.NotificationRulesTable, group.NotificationRulesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryWebhookEndpoints queries the webhook_endpoints edge of a Group.
+func (c *GroupClient) QueryWebhookEndpoints(_m *Group) *WebhookEndpointQuery {
+	query := (&WebhookEndpointClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, id),
+			sqlgraph.To(webhookendpoint.Table, webhookendpoint.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, group.WebhookEndpointsTable, group.WebhookEndpointsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryUserGroups queries the user_groups edge of a Group.
 func (c *GroupClient) QueryUserGroups(_m *Group) *UserGroupQuery {
 	query := (&UserGroupClient{config: c.config}).Query()
@@ -2740,6 +2806,320 @@ func (c *MaintenanceEntryClient) mutate(ctx context.Context, m *MaintenanceEntry
 		return (&MaintenanceEntryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown MaintenanceEntry mutation op: %q", m.Op())
+	}
+}
+
+// NotificationLogClient is a client for the NotificationLog schema.
+type NotificationLogClient struct {
+	config
+}
+
+// NewNotificationLogClient returns a client for the NotificationLog from the given config.
+func NewNotificationLogClient(c config) *NotificationLogClient {
+	return &NotificationLogClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `notificationlog.Hooks(f(g(h())))`.
+func (c *NotificationLogClient) Use(hooks ...Hook) {
+	c.hooks.NotificationLog = append(c.hooks.NotificationLog, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `notificationlog.Intercept(f(g(h())))`.
+func (c *NotificationLogClient) Intercept(interceptors ...Interceptor) {
+	c.inters.NotificationLog = append(c.inters.NotificationLog, interceptors...)
+}
+
+// Create returns a builder for creating a NotificationLog entity.
+func (c *NotificationLogClient) Create() *NotificationLogCreate {
+	mutation := newNotificationLogMutation(c.config, OpCreate)
+	return &NotificationLogCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of NotificationLog entities.
+func (c *NotificationLogClient) CreateBulk(builders ...*NotificationLogCreate) *NotificationLogCreateBulk {
+	return &NotificationLogCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *NotificationLogClient) MapCreateBulk(slice any, setFunc func(*NotificationLogCreate, int)) *NotificationLogCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &NotificationLogCreateBulk{err: fmt.Errorf("calling to NotificationLogClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*NotificationLogCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &NotificationLogCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for NotificationLog.
+func (c *NotificationLogClient) Update() *NotificationLogUpdate {
+	mutation := newNotificationLogMutation(c.config, OpUpdate)
+	return &NotificationLogUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *NotificationLogClient) UpdateOne(_m *NotificationLog) *NotificationLogUpdateOne {
+	mutation := newNotificationLogMutation(c.config, OpUpdateOne, withNotificationLog(_m))
+	return &NotificationLogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *NotificationLogClient) UpdateOneID(id uuid.UUID) *NotificationLogUpdateOne {
+	mutation := newNotificationLogMutation(c.config, OpUpdateOne, withNotificationLogID(id))
+	return &NotificationLogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for NotificationLog.
+func (c *NotificationLogClient) Delete() *NotificationLogDelete {
+	mutation := newNotificationLogMutation(c.config, OpDelete)
+	return &NotificationLogDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *NotificationLogClient) DeleteOne(_m *NotificationLog) *NotificationLogDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *NotificationLogClient) DeleteOneID(id uuid.UUID) *NotificationLogDeleteOne {
+	builder := c.Delete().Where(notificationlog.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &NotificationLogDeleteOne{builder}
+}
+
+// Query returns a query builder for NotificationLog.
+func (c *NotificationLogClient) Query() *NotificationLogQuery {
+	return &NotificationLogQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeNotificationLog},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a NotificationLog entity by its id.
+func (c *NotificationLogClient) Get(ctx context.Context, id uuid.UUID) (*NotificationLog, error) {
+	return c.Query().Where(notificationlog.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *NotificationLogClient) GetX(ctx context.Context, id uuid.UUID) *NotificationLog {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryRule queries the rule edge of a NotificationLog.
+func (c *NotificationLogClient) QueryRule(_m *NotificationLog) *NotificationRuleQuery {
+	query := (&NotificationRuleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(notificationlog.Table, notificationlog.FieldID, id),
+			sqlgraph.To(notificationrule.Table, notificationrule.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, notificationlog.RuleTable, notificationlog.RuleColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *NotificationLogClient) Hooks() []Hook {
+	return c.hooks.NotificationLog
+}
+
+// Interceptors returns the client interceptors.
+func (c *NotificationLogClient) Interceptors() []Interceptor {
+	return c.inters.NotificationLog
+}
+
+func (c *NotificationLogClient) mutate(ctx context.Context, m *NotificationLogMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&NotificationLogCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&NotificationLogUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&NotificationLogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&NotificationLogDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown NotificationLog mutation op: %q", m.Op())
+	}
+}
+
+// NotificationRuleClient is a client for the NotificationRule schema.
+type NotificationRuleClient struct {
+	config
+}
+
+// NewNotificationRuleClient returns a client for the NotificationRule from the given config.
+func NewNotificationRuleClient(c config) *NotificationRuleClient {
+	return &NotificationRuleClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `notificationrule.Hooks(f(g(h())))`.
+func (c *NotificationRuleClient) Use(hooks ...Hook) {
+	c.hooks.NotificationRule = append(c.hooks.NotificationRule, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `notificationrule.Intercept(f(g(h())))`.
+func (c *NotificationRuleClient) Intercept(interceptors ...Interceptor) {
+	c.inters.NotificationRule = append(c.inters.NotificationRule, interceptors...)
+}
+
+// Create returns a builder for creating a NotificationRule entity.
+func (c *NotificationRuleClient) Create() *NotificationRuleCreate {
+	mutation := newNotificationRuleMutation(c.config, OpCreate)
+	return &NotificationRuleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of NotificationRule entities.
+func (c *NotificationRuleClient) CreateBulk(builders ...*NotificationRuleCreate) *NotificationRuleCreateBulk {
+	return &NotificationRuleCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *NotificationRuleClient) MapCreateBulk(slice any, setFunc func(*NotificationRuleCreate, int)) *NotificationRuleCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &NotificationRuleCreateBulk{err: fmt.Errorf("calling to NotificationRuleClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*NotificationRuleCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &NotificationRuleCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for NotificationRule.
+func (c *NotificationRuleClient) Update() *NotificationRuleUpdate {
+	mutation := newNotificationRuleMutation(c.config, OpUpdate)
+	return &NotificationRuleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *NotificationRuleClient) UpdateOne(_m *NotificationRule) *NotificationRuleUpdateOne {
+	mutation := newNotificationRuleMutation(c.config, OpUpdateOne, withNotificationRule(_m))
+	return &NotificationRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *NotificationRuleClient) UpdateOneID(id uuid.UUID) *NotificationRuleUpdateOne {
+	mutation := newNotificationRuleMutation(c.config, OpUpdateOne, withNotificationRuleID(id))
+	return &NotificationRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for NotificationRule.
+func (c *NotificationRuleClient) Delete() *NotificationRuleDelete {
+	mutation := newNotificationRuleMutation(c.config, OpDelete)
+	return &NotificationRuleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *NotificationRuleClient) DeleteOne(_m *NotificationRule) *NotificationRuleDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *NotificationRuleClient) DeleteOneID(id uuid.UUID) *NotificationRuleDeleteOne {
+	builder := c.Delete().Where(notificationrule.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &NotificationRuleDeleteOne{builder}
+}
+
+// Query returns a query builder for NotificationRule.
+func (c *NotificationRuleClient) Query() *NotificationRuleQuery {
+	return &NotificationRuleQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeNotificationRule},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a NotificationRule entity by its id.
+func (c *NotificationRuleClient) Get(ctx context.Context, id uuid.UUID) (*NotificationRule, error) {
+	return c.Query().Where(notificationrule.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *NotificationRuleClient) GetX(ctx context.Context, id uuid.UUID) *NotificationRule {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGroup queries the group edge of a NotificationRule.
+func (c *NotificationRuleClient) QueryGroup(_m *NotificationRule) *GroupQuery {
+	query := (&GroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(notificationrule.Table, notificationrule.FieldID, id),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, notificationrule.GroupTable, notificationrule.GroupColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryLogs queries the logs edge of a NotificationRule.
+func (c *NotificationRuleClient) QueryLogs(_m *NotificationRule) *NotificationLogQuery {
+	query := (&NotificationLogClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(notificationrule.Table, notificationrule.FieldID, id),
+			sqlgraph.To(notificationlog.Table, notificationlog.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, notificationrule.LogsTable, notificationrule.LogsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *NotificationRuleClient) Hooks() []Hook {
+	return c.hooks.NotificationRule
+}
+
+// Interceptors returns the client interceptors.
+func (c *NotificationRuleClient) Interceptors() []Interceptor {
+	return c.inters.NotificationRule
+}
+
+func (c *NotificationRuleClient) mutate(ctx context.Context, m *NotificationRuleMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&NotificationRuleCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&NotificationRuleUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&NotificationRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&NotificationRuleDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown NotificationRule mutation op: %q", m.Op())
 	}
 }
 
@@ -4424,18 +4804,334 @@ func (c *UserGroupClient) mutate(ctx context.Context, m *UserGroupMutation) (Val
 	}
 }
 
+// WebhookDeliveryClient is a client for the WebhookDelivery schema.
+type WebhookDeliveryClient struct {
+	config
+}
+
+// NewWebhookDeliveryClient returns a client for the WebhookDelivery from the given config.
+func NewWebhookDeliveryClient(c config) *WebhookDeliveryClient {
+	return &WebhookDeliveryClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `webhookdelivery.Hooks(f(g(h())))`.
+func (c *WebhookDeliveryClient) Use(hooks ...Hook) {
+	c.hooks.WebhookDelivery = append(c.hooks.WebhookDelivery, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `webhookdelivery.Intercept(f(g(h())))`.
+func (c *WebhookDeliveryClient) Intercept(interceptors ...Interceptor) {
+	c.inters.WebhookDelivery = append(c.inters.WebhookDelivery, interceptors...)
+}
+
+// Create returns a builder for creating a WebhookDelivery entity.
+func (c *WebhookDeliveryClient) Create() *WebhookDeliveryCreate {
+	mutation := newWebhookDeliveryMutation(c.config, OpCreate)
+	return &WebhookDeliveryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of WebhookDelivery entities.
+func (c *WebhookDeliveryClient) CreateBulk(builders ...*WebhookDeliveryCreate) *WebhookDeliveryCreateBulk {
+	return &WebhookDeliveryCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *WebhookDeliveryClient) MapCreateBulk(slice any, setFunc func(*WebhookDeliveryCreate, int)) *WebhookDeliveryCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &WebhookDeliveryCreateBulk{err: fmt.Errorf("calling to WebhookDeliveryClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*WebhookDeliveryCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &WebhookDeliveryCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for WebhookDelivery.
+func (c *WebhookDeliveryClient) Update() *WebhookDeliveryUpdate {
+	mutation := newWebhookDeliveryMutation(c.config, OpUpdate)
+	return &WebhookDeliveryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *WebhookDeliveryClient) UpdateOne(_m *WebhookDelivery) *WebhookDeliveryUpdateOne {
+	mutation := newWebhookDeliveryMutation(c.config, OpUpdateOne, withWebhookDelivery(_m))
+	return &WebhookDeliveryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *WebhookDeliveryClient) UpdateOneID(id uuid.UUID) *WebhookDeliveryUpdateOne {
+	mutation := newWebhookDeliveryMutation(c.config, OpUpdateOne, withWebhookDeliveryID(id))
+	return &WebhookDeliveryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for WebhookDelivery.
+func (c *WebhookDeliveryClient) Delete() *WebhookDeliveryDelete {
+	mutation := newWebhookDeliveryMutation(c.config, OpDelete)
+	return &WebhookDeliveryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *WebhookDeliveryClient) DeleteOne(_m *WebhookDelivery) *WebhookDeliveryDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *WebhookDeliveryClient) DeleteOneID(id uuid.UUID) *WebhookDeliveryDeleteOne {
+	builder := c.Delete().Where(webhookdelivery.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &WebhookDeliveryDeleteOne{builder}
+}
+
+// Query returns a query builder for WebhookDelivery.
+func (c *WebhookDeliveryClient) Query() *WebhookDeliveryQuery {
+	return &WebhookDeliveryQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeWebhookDelivery},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a WebhookDelivery entity by its id.
+func (c *WebhookDeliveryClient) Get(ctx context.Context, id uuid.UUID) (*WebhookDelivery, error) {
+	return c.Query().Where(webhookdelivery.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *WebhookDeliveryClient) GetX(ctx context.Context, id uuid.UUID) *WebhookDelivery {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryEndpoint queries the endpoint edge of a WebhookDelivery.
+func (c *WebhookDeliveryClient) QueryEndpoint(_m *WebhookDelivery) *WebhookEndpointQuery {
+	query := (&WebhookEndpointClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(webhookdelivery.Table, webhookdelivery.FieldID, id),
+			sqlgraph.To(webhookendpoint.Table, webhookendpoint.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, webhookdelivery.EndpointTable, webhookdelivery.EndpointColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *WebhookDeliveryClient) Hooks() []Hook {
+	return c.hooks.WebhookDelivery
+}
+
+// Interceptors returns the client interceptors.
+func (c *WebhookDeliveryClient) Interceptors() []Interceptor {
+	return c.inters.WebhookDelivery
+}
+
+func (c *WebhookDeliveryClient) mutate(ctx context.Context, m *WebhookDeliveryMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&WebhookDeliveryCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&WebhookDeliveryUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&WebhookDeliveryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&WebhookDeliveryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown WebhookDelivery mutation op: %q", m.Op())
+	}
+}
+
+// WebhookEndpointClient is a client for the WebhookEndpoint schema.
+type WebhookEndpointClient struct {
+	config
+}
+
+// NewWebhookEndpointClient returns a client for the WebhookEndpoint from the given config.
+func NewWebhookEndpointClient(c config) *WebhookEndpointClient {
+	return &WebhookEndpointClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `webhookendpoint.Hooks(f(g(h())))`.
+func (c *WebhookEndpointClient) Use(hooks ...Hook) {
+	c.hooks.WebhookEndpoint = append(c.hooks.WebhookEndpoint, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `webhookendpoint.Intercept(f(g(h())))`.
+func (c *WebhookEndpointClient) Intercept(interceptors ...Interceptor) {
+	c.inters.WebhookEndpoint = append(c.inters.WebhookEndpoint, interceptors...)
+}
+
+// Create returns a builder for creating a WebhookEndpoint entity.
+func (c *WebhookEndpointClient) Create() *WebhookEndpointCreate {
+	mutation := newWebhookEndpointMutation(c.config, OpCreate)
+	return &WebhookEndpointCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of WebhookEndpoint entities.
+func (c *WebhookEndpointClient) CreateBulk(builders ...*WebhookEndpointCreate) *WebhookEndpointCreateBulk {
+	return &WebhookEndpointCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *WebhookEndpointClient) MapCreateBulk(slice any, setFunc func(*WebhookEndpointCreate, int)) *WebhookEndpointCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &WebhookEndpointCreateBulk{err: fmt.Errorf("calling to WebhookEndpointClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*WebhookEndpointCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &WebhookEndpointCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for WebhookEndpoint.
+func (c *WebhookEndpointClient) Update() *WebhookEndpointUpdate {
+	mutation := newWebhookEndpointMutation(c.config, OpUpdate)
+	return &WebhookEndpointUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *WebhookEndpointClient) UpdateOne(_m *WebhookEndpoint) *WebhookEndpointUpdateOne {
+	mutation := newWebhookEndpointMutation(c.config, OpUpdateOne, withWebhookEndpoint(_m))
+	return &WebhookEndpointUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *WebhookEndpointClient) UpdateOneID(id uuid.UUID) *WebhookEndpointUpdateOne {
+	mutation := newWebhookEndpointMutation(c.config, OpUpdateOne, withWebhookEndpointID(id))
+	return &WebhookEndpointUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for WebhookEndpoint.
+func (c *WebhookEndpointClient) Delete() *WebhookEndpointDelete {
+	mutation := newWebhookEndpointMutation(c.config, OpDelete)
+	return &WebhookEndpointDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *WebhookEndpointClient) DeleteOne(_m *WebhookEndpoint) *WebhookEndpointDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *WebhookEndpointClient) DeleteOneID(id uuid.UUID) *WebhookEndpointDeleteOne {
+	builder := c.Delete().Where(webhookendpoint.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &WebhookEndpointDeleteOne{builder}
+}
+
+// Query returns a query builder for WebhookEndpoint.
+func (c *WebhookEndpointClient) Query() *WebhookEndpointQuery {
+	return &WebhookEndpointQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeWebhookEndpoint},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a WebhookEndpoint entity by its id.
+func (c *WebhookEndpointClient) Get(ctx context.Context, id uuid.UUID) (*WebhookEndpoint, error) {
+	return c.Query().Where(webhookendpoint.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *WebhookEndpointClient) GetX(ctx context.Context, id uuid.UUID) *WebhookEndpoint {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGroup queries the group edge of a WebhookEndpoint.
+func (c *WebhookEndpointClient) QueryGroup(_m *WebhookEndpoint) *GroupQuery {
+	query := (&GroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(webhookendpoint.Table, webhookendpoint.FieldID, id),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, webhookendpoint.GroupTable, webhookendpoint.GroupColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryDeliveries queries the deliveries edge of a WebhookEndpoint.
+func (c *WebhookEndpointClient) QueryDeliveries(_m *WebhookEndpoint) *WebhookDeliveryQuery {
+	query := (&WebhookDeliveryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(webhookendpoint.Table, webhookendpoint.FieldID, id),
+			sqlgraph.To(webhookdelivery.Table, webhookdelivery.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, webhookendpoint.DeliveriesTable, webhookendpoint.DeliveriesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *WebhookEndpointClient) Hooks() []Hook {
+	return c.hooks.WebhookEndpoint
+}
+
+// Interceptors returns the client interceptors.
+func (c *WebhookEndpointClient) Interceptors() []Interceptor {
+	return c.inters.WebhookEndpoint
+}
+
+func (c *WebhookEndpointClient) mutate(ctx context.Context, m *WebhookEndpointMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&WebhookEndpointCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&WebhookEndpointUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&WebhookEndpointUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&WebhookEndpointDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown WebhookEndpoint mutation op: %q", m.Op())
+	}
+}
+
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
 		APIKey, Attachment, AuthRoles, AuthTokens, BackupDestination, Entity,
 		EntityField, EntityTemplate, EntityType, Export, Group, GroupInvitationToken,
-		MaintenanceEntry, Notifier, OAuthClient, OAuthGrant, OAuthRequest, OAuthToken,
-		PasswordResetTokens, Tag, TemplateField, User, UserGroup []ent.Hook
+		MaintenanceEntry, NotificationLog, NotificationRule, Notifier, OAuthClient,
+		OAuthGrant, OAuthRequest, OAuthToken, PasswordResetTokens, Tag, TemplateField,
+		User, UserGroup, WebhookDelivery, WebhookEndpoint []ent.Hook
 	}
 	inters struct {
 		APIKey, Attachment, AuthRoles, AuthTokens, BackupDestination, Entity,
 		EntityField, EntityTemplate, EntityType, Export, Group, GroupInvitationToken,
-		MaintenanceEntry, Notifier, OAuthClient, OAuthGrant, OAuthRequest, OAuthToken,
-		PasswordResetTokens, Tag, TemplateField, User, UserGroup []ent.Interceptor
+		MaintenanceEntry, NotificationLog, NotificationRule, Notifier, OAuthClient,
+		OAuthGrant, OAuthRequest, OAuthToken, PasswordResetTokens, Tag, TemplateField,
+		User, UserGroup, WebhookDelivery, WebhookEndpoint []ent.Interceptor
 	}
 )

@@ -81,6 +81,16 @@ func Timezone(v string) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldTimezone, v))
 }
 
+// NotifyHour applies equality check predicate on the "notify_hour" field. It's identical to NotifyHourEQ.
+func NotifyHour(v int) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldNotifyHour, v))
+}
+
+// AlertRulesSeeded applies equality check predicate on the "alert_rules_seeded" field. It's identical to AlertRulesSeededEQ.
+func AlertRulesSeeded(v bool) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldAlertRulesSeeded, v))
+}
+
 // McpAccess applies equality check predicate on the "mcp_access" field. It's identical to McpAccessEQ.
 func McpAccess(v string) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldMcpAccess, v))
@@ -359,6 +369,56 @@ func TimezoneEqualFold(v string) predicate.Group {
 // TimezoneContainsFold applies the ContainsFold predicate on the "timezone" field.
 func TimezoneContainsFold(v string) predicate.Group {
 	return predicate.Group(sql.FieldContainsFold(FieldTimezone, v))
+}
+
+// NotifyHourEQ applies the EQ predicate on the "notify_hour" field.
+func NotifyHourEQ(v int) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldNotifyHour, v))
+}
+
+// NotifyHourNEQ applies the NEQ predicate on the "notify_hour" field.
+func NotifyHourNEQ(v int) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldNotifyHour, v))
+}
+
+// NotifyHourIn applies the In predicate on the "notify_hour" field.
+func NotifyHourIn(vs ...int) predicate.Group {
+	return predicate.Group(sql.FieldIn(FieldNotifyHour, vs...))
+}
+
+// NotifyHourNotIn applies the NotIn predicate on the "notify_hour" field.
+func NotifyHourNotIn(vs ...int) predicate.Group {
+	return predicate.Group(sql.FieldNotIn(FieldNotifyHour, vs...))
+}
+
+// NotifyHourGT applies the GT predicate on the "notify_hour" field.
+func NotifyHourGT(v int) predicate.Group {
+	return predicate.Group(sql.FieldGT(FieldNotifyHour, v))
+}
+
+// NotifyHourGTE applies the GTE predicate on the "notify_hour" field.
+func NotifyHourGTE(v int) predicate.Group {
+	return predicate.Group(sql.FieldGTE(FieldNotifyHour, v))
+}
+
+// NotifyHourLT applies the LT predicate on the "notify_hour" field.
+func NotifyHourLT(v int) predicate.Group {
+	return predicate.Group(sql.FieldLT(FieldNotifyHour, v))
+}
+
+// NotifyHourLTE applies the LTE predicate on the "notify_hour" field.
+func NotifyHourLTE(v int) predicate.Group {
+	return predicate.Group(sql.FieldLTE(FieldNotifyHour, v))
+}
+
+// AlertRulesSeededEQ applies the EQ predicate on the "alert_rules_seeded" field.
+func AlertRulesSeededEQ(v bool) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldAlertRulesSeeded, v))
+}
+
+// AlertRulesSeededNEQ applies the NEQ predicate on the "alert_rules_seeded" field.
+func AlertRulesSeededNEQ(v bool) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldAlertRulesSeeded, v))
 }
 
 // McpAccessEQ applies the EQ predicate on the "mcp_access" field.
@@ -648,6 +708,52 @@ func HasOauthGrants() predicate.Group {
 func HasOauthGrantsWith(preds ...predicate.OAuthGrant) predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {
 		step := newOauthGrantsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasNotificationRules applies the HasEdge predicate on the "notification_rules" edge.
+func HasNotificationRules() predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, NotificationRulesTable, NotificationRulesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasNotificationRulesWith applies the HasEdge predicate on the "notification_rules" edge with a given conditions (other predicates).
+func HasNotificationRulesWith(preds ...predicate.NotificationRule) predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := newNotificationRulesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasWebhookEndpoints applies the HasEdge predicate on the "webhook_endpoints" edge.
+func HasWebhookEndpoints() predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, WebhookEndpointsTable, WebhookEndpointsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasWebhookEndpointsWith applies the HasEdge predicate on the "webhook_endpoints" edge with a given conditions (other predicates).
+func HasWebhookEndpointsWith(preds ...predicate.WebhookEndpoint) predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := newWebhookEndpointsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
