@@ -153,6 +153,29 @@ export function regionFromLocale(locale: string): string {
   }
 }
 
+type LocaleWithZones = Intl.Locale & { getTimeZones?: () => string[] };
+
+/**
+ * The country a time zone belongs to. The zone is the best clue to where
+ * someone is, since the browser reports the real one, whereas the language
+ * only says what they read (an "en-US" browser can be anywhere). The built-in
+ * list is tried first, then the browser's own zone-by-country data, which most
+ * browsers have, searched over the countries we can price.
+ */
+export function countryFromTimezone(timezone: string): string {
+  if (!timezone) return "";
+  if (TIMEZONE_COUNTRY[timezone]) return TIMEZONE_COUNTRY[timezone];
+  for (const code of Object.keys(COUNTRY_CURRENCY)) {
+    try {
+      const zones = (new Intl.Locale(`und-${code}`) as LocaleWithZones).getTimeZones?.() ?? [];
+      if (zones.includes(timezone)) return code;
+    } catch {
+      return "";
+    }
+  }
+  return "";
+}
+
 export function currencyForCountry(country: string): string {
   return COUNTRY_CURRENCY[country.toUpperCase()] ?? "";
 }
@@ -172,7 +195,8 @@ export function detectRegionalDefaults(): RegionalDefaults {
     // some privacy modes hide the zone
   }
 
-  const country = regionFromLocale(locale) || TIMEZONE_COUNTRY[timezone] || "";
+  // Where you are (time zone) beats what you read (language region).
+  const country = countryFromTimezone(timezone) || regionFromLocale(locale);
   return { country, locale, timezone, currency: currencyForCountry(country) };
 }
 
