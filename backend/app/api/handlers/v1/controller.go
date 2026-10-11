@@ -140,6 +140,12 @@ type (
 		OIDC              OIDCStatus      `json:"oidc"`
 		Telemetry         TelemetryStatus `json:"telemetry"`
 		MCP               MCPStatus       `json:"mcp"`
+		Webhooks          WebhooksStatus  `json:"webhooks"`
+	}
+
+	// WebhooksStatus tells the web UI whether to offer outbound webhooks.
+	WebhooksStatus struct {
+		Enabled bool `json:"enabled"`
 	}
 
 	// MCPStatus tells the web UI whether to offer AI assistant connections.
@@ -227,6 +233,7 @@ func (ctrl *V1Controller) HandleBase(ready ReadyFunc, build Build) errchain.Hand
 				AllowWrites: ctrl.config.MCP.AllowWrites,
 				AllowDelete: ctrl.config.MCP.AllowWrites && ctrl.config.MCP.AllowDelete,
 			},
+			Webhooks: WebhooksStatus{Enabled: ctrl.config.Webhooks.Enabled},
 		})
 	}
 }

@@ -126,6 +126,11 @@ func Manufacturer(v string) predicate.Entity {
 	return predicate.Entity(sql.FieldEQ(FieldManufacturer, v))
 }
 
+// ExpiresAt applies equality check predicate on the "expires_at" field. It's identical to ExpiresAtEQ.
+func ExpiresAt(v time.Time) predicate.Entity {
+	return predicate.Entity(sql.FieldEQ(FieldExpiresAt, v))
+}
+
 // LifetimeWarranty applies equality check predicate on the "lifetime_warranty" field. It's identical to LifetimeWarrantyEQ.
 func LifetimeWarranty(v bool) predicate.Entity {
 	return predicate.Entity(sql.FieldEQ(FieldLifetimeWarranty, v))
@@ -879,6 +884,76 @@ func ManufacturerEqualFold(v string) predicate.Entity {
 // ManufacturerContainsFold applies the ContainsFold predicate on the "manufacturer" field.
 func ManufacturerContainsFold(v string) predicate.Entity {
 	return predicate.Entity(sql.FieldContainsFold(FieldManufacturer, v))
+}
+
+// ExpiresAtEQ applies the EQ predicate on the "expires_at" field.
+func ExpiresAtEQ(v time.Time) predicate.Entity {
+	return predicate.Entity(sql.FieldEQ(FieldExpiresAt, v))
+}
+
+// ExpiresAtNEQ applies the NEQ predicate on the "expires_at" field.
+func ExpiresAtNEQ(v time.Time) predicate.Entity {
+	return predicate.Entity(sql.FieldNEQ(FieldExpiresAt, v))
+}
+
+// ExpiresAtIn applies the In predicate on the "expires_at" field.
+func ExpiresAtIn(vs ...time.Time) predicate.Entity {
+	return predicate.Entity(sql.FieldIn(FieldExpiresAt, vs...))
+}
+
+// ExpiresAtNotIn applies the NotIn predicate on the "expires_at" field.
+func ExpiresAtNotIn(vs ...time.Time) predicate.Entity {
+	return predicate.Entity(sql.FieldNotIn(FieldExpiresAt, vs...))
+}
+
+// ExpiresAtGT applies the GT predicate on the "expires_at" field.
+func ExpiresAtGT(v time.Time) predicate.Entity {
+	return predicate.Entity(sql.FieldGT(FieldExpiresAt, v))
+}
+
+// ExpiresAtGTE applies the GTE predicate on the "expires_at" field.
+func ExpiresAtGTE(v time.Time) predicate.Entity {
+	return predicate.Entity(sql.FieldGTE(FieldExpiresAt, v))
+}
+
+// ExpiresAtLT applies the LT predicate on the "expires_at" field.
+func ExpiresAtLT(v time.Time) predicate.Entity {
+	return predicate.Entity(sql.FieldLT(FieldExpiresAt, v))
+}
+
+// ExpiresAtLTE applies the LTE predicate on the "expires_at" field.
+func ExpiresAtLTE(v time.Time) predicate.Entity {
+	return predicate.Entity(sql.FieldLTE(FieldExpiresAt, v))
+}
+
+// ExpiresAtIsNil applies the IsNil predicate on the "expires_at" field.
+func ExpiresAtIsNil() predicate.Entity {
+	return predicate.Entity(sql.FieldIsNull(FieldExpiresAt))
+}
+
+// ExpiresAtNotNil applies the NotNil predicate on the "expires_at" field.
+func ExpiresAtNotNil() predicate.Entity {
+	return predicate.Entity(sql.FieldNotNull(FieldExpiresAt))
+}
+
+// ExpiryKindEQ applies the EQ predicate on the "expiry_kind" field.
+func ExpiryKindEQ(v ExpiryKind) predicate.Entity {
+	return predicate.Entity(sql.FieldEQ(FieldExpiryKind, v))
+}
+
+// ExpiryKindNEQ applies the NEQ predicate on the "expiry_kind" field.
+func ExpiryKindNEQ(v ExpiryKind) predicate.Entity {
+	return predicate.Entity(sql.FieldNEQ(FieldExpiryKind, v))
+}
+
+// ExpiryKindIn applies the In predicate on the "expiry_kind" field.
+func ExpiryKindIn(vs ...ExpiryKind) predicate.Entity {
+	return predicate.Entity(sql.FieldIn(FieldExpiryKind, vs...))
+}
+
+// ExpiryKindNotIn applies the NotIn predicate on the "expiry_kind" field.
+func ExpiryKindNotIn(vs ...ExpiryKind) predicate.Entity {
+	return predicate.Entity(sql.FieldNotIn(FieldExpiryKind, vs...))
 }
 
 // LifetimeWarrantyEQ applies the EQ predicate on the "lifetime_warranty" field.

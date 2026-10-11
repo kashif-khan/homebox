@@ -132,6 +132,54 @@ func (_c *TemplateFieldCreate) SetNillableTimeValue(v *time.Time) *TemplateField
 	return _c
 }
 
+// SetDecimalValue sets the "decimal_value" field.
+func (_c *TemplateFieldCreate) SetDecimalValue(v float64) *TemplateFieldCreate {
+	_c.mutation.SetDecimalValue(v)
+	return _c
+}
+
+// SetNillableDecimalValue sets the "decimal_value" field if the given value is not nil.
+func (_c *TemplateFieldCreate) SetNillableDecimalValue(v *float64) *TemplateFieldCreate {
+	if v != nil {
+		_c.SetDecimalValue(*v)
+	}
+	return _c
+}
+
+// SetCurrencyCode sets the "currency_code" field.
+func (_c *TemplateFieldCreate) SetCurrencyCode(v string) *TemplateFieldCreate {
+	_c.mutation.SetCurrencyCode(v)
+	return _c
+}
+
+// SetNillableCurrencyCode sets the "currency_code" field if the given value is not nil.
+func (_c *TemplateFieldCreate) SetNillableCurrencyCode(v *string) *TemplateFieldCreate {
+	if v != nil {
+		_c.SetCurrencyCode(*v)
+	}
+	return _c
+}
+
+// SetTimezone sets the "timezone" field.
+func (_c *TemplateFieldCreate) SetTimezone(v string) *TemplateFieldCreate {
+	_c.mutation.SetTimezone(v)
+	return _c
+}
+
+// SetNillableTimezone sets the "timezone" field if the given value is not nil.
+func (_c *TemplateFieldCreate) SetNillableTimezone(v *string) *TemplateFieldCreate {
+	if v != nil {
+		_c.SetTimezone(*v)
+	}
+	return _c
+}
+
+// SetChoices sets the "choices" field.
+func (_c *TemplateFieldCreate) SetChoices(v []string) *TemplateFieldCreate {
+	_c.mutation.SetChoices(v)
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *TemplateFieldCreate) SetID(v uuid.UUID) *TemplateFieldCreate {
 	_c.mutation.SetID(v)
@@ -216,6 +264,14 @@ func (_c *TemplateFieldCreate) defaults() {
 		v := templatefield.DefaultTimeValue()
 		_c.mutation.SetTimeValue(v)
 	}
+	if _, ok := _c.mutation.CurrencyCode(); !ok {
+		v := templatefield.DefaultCurrencyCode
+		_c.mutation.SetCurrencyCode(v)
+	}
+	if _, ok := _c.mutation.Timezone(); !ok {
+		v := templatefield.DefaultTimezone
+		_c.mutation.SetTimezone(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := templatefield.DefaultID()
 		_c.mutation.SetID(v)
@@ -261,6 +317,22 @@ func (_c *TemplateFieldCreate) check() error {
 	}
 	if _, ok := _c.mutation.TimeValue(); !ok {
 		return &ValidationError{Name: "time_value", err: errors.New(`ent: missing required field "TemplateField.time_value"`)}
+	}
+	if _, ok := _c.mutation.CurrencyCode(); !ok {
+		return &ValidationError{Name: "currency_code", err: errors.New(`ent: missing required field "TemplateField.currency_code"`)}
+	}
+	if v, ok := _c.mutation.CurrencyCode(); ok {
+		if err := templatefield.CurrencyCodeValidator(v); err != nil {
+			return &ValidationError{Name: "currency_code", err: fmt.Errorf(`ent: validator failed for field "TemplateField.currency_code": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.Timezone(); !ok {
+		return &ValidationError{Name: "timezone", err: errors.New(`ent: missing required field "TemplateField.timezone"`)}
+	}
+	if v, ok := _c.mutation.Timezone(); ok {
+		if err := templatefield.TimezoneValidator(v); err != nil {
+			return &ValidationError{Name: "timezone", err: fmt.Errorf(`ent: validator failed for field "TemplateField.timezone": %w`, err)}
+		}
 	}
 	return nil
 }
@@ -332,6 +404,22 @@ func (_c *TemplateFieldCreate) createSpec() (*TemplateField, *sqlgraph.CreateSpe
 	if value, ok := _c.mutation.TimeValue(); ok {
 		_spec.SetField(templatefield.FieldTimeValue, field.TypeTime, value)
 		_node.TimeValue = value
+	}
+	if value, ok := _c.mutation.DecimalValue(); ok {
+		_spec.SetField(templatefield.FieldDecimalValue, field.TypeFloat64, value)
+		_node.DecimalValue = &value
+	}
+	if value, ok := _c.mutation.CurrencyCode(); ok {
+		_spec.SetField(templatefield.FieldCurrencyCode, field.TypeString, value)
+		_node.CurrencyCode = value
+	}
+	if value, ok := _c.mutation.Timezone(); ok {
+		_spec.SetField(templatefield.FieldTimezone, field.TypeString, value)
+		_node.Timezone = value
+	}
+	if value, ok := _c.mutation.Choices(); ok {
+		_spec.SetField(templatefield.FieldChoices, field.TypeJSON, value)
+		_node.Choices = value
 	}
 	if nodes := _c.mutation.EntityTemplateIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

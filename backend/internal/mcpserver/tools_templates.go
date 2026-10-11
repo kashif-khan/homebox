@@ -1,7 +1,9 @@
 package mcpserver
 
 import (
+	"github.com/sysadminsmedia/homebox/backend/internal/core/regional"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -430,11 +432,15 @@ func toolCreateItemFromTemplate(c *call, in CreateFromTemplateIn) (ItemDetail, e
 	}
 	fields := make([]repo.EntityFieldData, 0, len(t.Fields))
 	for _, f := range t.Fields {
-		fields = append(fields, repo.EntityFieldData{
-			Type: f.Type, Name: f.Name, TextValue: f.TextValue, NumberValue: f.NumberValue, BooleanValue: f.BooleanValue,
-		})
+		fields = append(fields, f.ToEntityField())
 	}
+	var tz string
+	if g, gerr := c.repos().Groups.GroupByID(c, c.gid()); gerr == nil {
+		tz = g.Timezone
+	}
+	expiresAt, expiryKind := repo.TemplateExpiry(t, time.Now(), regional.Location(tz))
 	out, err := c.repos().Entities.CreateFromTemplate(c, c.gid(), repo.EntityCreateFromTemplate{
+		ExpiresAt: expiresAt, ExpiryKind: expiryKind,
 		Name: name, Description: in.Description, Quantity: qty, ParentID: parent, LocationID: loc,
 		EntityTypeID: et, TagIDs: tags, Insured: t.DefaultInsured, Manufacturer: t.DefaultManufacturer,
 		ModelNumber: t.DefaultModelNumber, LifetimeWarranty: t.DefaultLifetimeWarranty,

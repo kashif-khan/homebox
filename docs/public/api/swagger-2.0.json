@@ -298,8 +298,20 @@
                     },
                     {
                         "type": "string",
-                        "description": "field to order by; valid values: name, createdAt, updatedAt, assetId",
+                        "description": "field to order by; valid values: name, createdAt, updatedAt, assetId, expiresAt (items without an expiry date sort last)",
                         "name": "orderBy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "only items expiring on or before this date (YYYY-MM-DD)",
+                        "name": "expiresBefore",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "only items expiring on or after this date (YYYY-MM-DD)",
+                        "name": "expiresAfter",
                         "in": "query"
                     },
                     {
@@ -347,6 +359,44 @@
                         "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/repo.EntityOut"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/entities/expiring": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Entities"
+                ],
+                "summary": "Expired and Expiring Entities",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "how many days ahead counts as expiring soon (default 30, max 3650)",
+                        "name": "days",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "most entries to return per list (default 50, max 500)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/repo.ExpiringResult"
                         }
                     }
                 }
@@ -2424,6 +2474,133 @@
                 }
             }
         },
+        "/v1/notification-rules": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Rules"
+                ],
+                "summary": "List Alert Rules",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/repo.NotificationRuleOut"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Rules"
+                ],
+                "summary": "Create Alert Rule",
+                "parameters": [
+                    {
+                        "description": "Rule",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/repo.NotificationRuleIn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/repo.NotificationRuleOut"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/notification-rules/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Rules"
+                ],
+                "summary": "Update Alert Rule",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Rule ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Rule",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/repo.NotificationRuleIn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/repo.NotificationRuleOut"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "Notification Rules"
+                ],
+                "summary": "Delete Alert Rule",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Rule ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/v1/notifiers": {
             "get": {
                 "security": [
@@ -3789,6 +3966,311 @@
                     }
                 }
             }
+        },
+        "/v1/webhooks": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Webhooks"
+                ],
+                "summary": "List Webhooks",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/repo.WebhookEndpointOut"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "The response carries the signing secret. It is shown only this once.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Webhooks"
+                ],
+                "summary": "Create Webhook",
+                "parameters": [
+                    {
+                        "description": "Webhook",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/repo.WebhookEndpointIn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/repo.WebhookEndpointCreated"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/webhooks/events": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Webhooks"
+                ],
+                "summary": "List Webhook Events",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/webhooks.Event"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/webhooks/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Webhooks"
+                ],
+                "summary": "Update Webhook",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Webhook ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Webhook",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/repo.WebhookEndpointIn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/repo.WebhookEndpointOut"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "Webhooks"
+                ],
+                "summary": "Delete Webhook",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Webhook ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/v1/webhooks/{id}/deliveries": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Webhooks"
+                ],
+                "summary": "Webhook Delivery Log",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Webhook ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "deliveries per page (max 100)",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.WebhookDeliveriesPage"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/webhooks/{id}/deliveries/{deliveryId}/redeliver": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Queues a fresh copy of a past delivery. It keeps the event id.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Webhooks"
+                ],
+                "summary": "Redeliver",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Webhook ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Delivery ID",
+                        "name": "deliveryId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    }
+                }
+            }
+        },
+        "/v1/webhooks/{id}/rotate-secret": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Issues a new signing secret, shown only in this response. The old one stops working at once.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Webhooks"
+                ],
+                "summary": "Rotate Webhook Secret",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Webhook ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/repo.WebhookEndpointCreated"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/webhooks/{id}/test": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Webhooks"
+                ],
+                "summary": "Send Test Event",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Webhook ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.WebhookResult"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -4380,6 +4862,18 @@
                         }
                     ]
                 },
+                "expires_at": {
+                    "description": "ExpiresAt holds the value of the \"expires_at\" field.",
+                    "type": "string"
+                },
+                "expiry_kind": {
+                    "description": "ExpiryKind holds the value of the \"expiry_kind\" field.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.ExpiryKind"
+                        }
+                    ]
+                },
                 "id": {
                     "description": "ID of the ent.",
                     "type": "string"
@@ -4552,9 +5046,24 @@
                     "description": "BooleanValue holds the value of the \"boolean_value\" field.",
                     "type": "boolean"
                 },
+                "choices": {
+                    "description": "Choices holds the value of the \"choices\" field.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "created_at": {
                     "description": "CreatedAt holds the value of the \"created_at\" field.",
                     "type": "string"
+                },
+                "currency_code": {
+                    "description": "CurrencyCode holds the value of the \"currency_code\" field.",
+                    "type": "string"
+                },
+                "decimal_value": {
+                    "description": "DecimalValue holds the value of the \"decimal_value\" field.",
+                    "type": "number"
                 },
                 "description": {
                     "description": "Description holds the value of the \"description\" field.",
@@ -4586,6 +5095,10 @@
                 },
                 "time_value": {
                     "description": "TimeValue holds the value of the \"time_value\" field.",
+                    "type": "string"
+                },
+                "timezone": {
+                    "description": "Timezone holds the value of the \"timezone\" field.",
                     "type": "string"
                 },
                 "type": {
@@ -4625,6 +5138,18 @@
                 "default_description": {
                     "description": "Default description for items created from this template",
                     "type": "string"
+                },
+                "default_expiry_kind": {
+                    "description": "DefaultExpiryKind holds the value of the \"default_expiry_kind\" field.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entitytemplate.DefaultExpiryKind"
+                        }
+                    ]
+                },
+                "default_expiry_offset_days": {
+                    "description": "Items created from this template expire this many days after they are added",
+                    "type": "integer"
                 },
                 "default_insured": {
                     "description": "DefaultInsured holds the value of the \"default_insured\" field.",
@@ -4676,6 +5201,10 @@
                 "id": {
                     "description": "ID of the ent.",
                     "type": "string"
+                },
+                "include_expiry_fields": {
+                    "description": "Whether to include the expiry date in items created from this template",
+                    "type": "boolean"
                 },
                 "include_purchase_fields": {
                     "description": "Whether to include purchase fields in items created from this template",
@@ -4749,6 +5278,10 @@
                             "$ref": "#/definitions/ent.EntityTypeEdges"
                         }
                     ]
+                },
+                "expiry_required": {
+                    "description": "ExpiryRequired holds the value of the \"expiry_required\" field.",
+                    "type": "boolean"
                 },
                 "icon": {
                     "description": "Icon holds the value of the \"icon\" field.",
@@ -4889,6 +5422,10 @@
         "ent.Group": {
             "type": "object",
             "properties": {
+                "alert_rules_seeded": {
+                    "description": "AlertRulesSeeded holds the value of the \"alert_rules_seeded\" field.",
+                    "type": "boolean"
+                },
                 "created_at": {
                     "description": "CreatedAt holds the value of the \"created_at\" field.",
                     "type": "string"
@@ -4915,6 +5452,14 @@
                 },
                 "name": {
                     "description": "Name holds the value of the \"name\" field.",
+                    "type": "string"
+                },
+                "notify_hour": {
+                    "description": "NotifyHour holds the value of the \"notify_hour\" field.",
+                    "type": "integer"
+                },
+                "timezone": {
+                    "description": "Timezone holds the value of the \"timezone\" field.",
                     "type": "string"
                 },
                 "updated_at": {
@@ -4968,6 +5513,13 @@
                         "$ref": "#/definitions/ent.GroupInvitationToken"
                     }
                 },
+                "notification_rules": {
+                    "description": "NotificationRules holds the value of the notification_rules edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.NotificationRule"
+                    }
+                },
                 "notifiers": {
                     "description": "Notifiers holds the value of the notifiers edge.",
                     "type": "array",
@@ -5001,6 +5553,13 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/ent.User"
+                    }
+                },
+                "webhook_endpoints": {
+                    "description": "WebhookEndpoints holds the value of the webhook_endpoints edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.WebhookEndpoint"
                     }
                 }
             }
@@ -5117,6 +5676,155 @@
                             "$ref": "#/definitions/ent.Entity"
                         }
                     ]
+                }
+            }
+        },
+        "ent.NotificationLog": {
+            "type": "object",
+            "properties": {
+                "anchor_date": {
+                    "description": "AnchorDate holds the value of the \"anchor_date\" field.",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "CreatedAt holds the value of the \"created_at\" field.",
+                    "type": "string"
+                },
+                "due_on": {
+                    "description": "DueOn holds the value of the \"due_on\" field.",
+                    "type": "string"
+                },
+                "edges": {
+                    "description": "Edges holds the relations/edges for other nodes in the graph.\nThe values are being populated by the NotificationLogQuery when eager-loading is set.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.NotificationLogEdges"
+                        }
+                    ]
+                },
+                "id": {
+                    "description": "ID of the ent.",
+                    "type": "string"
+                },
+                "notifier_id": {
+                    "description": "NotifierID holds the value of the \"notifier_id\" field.",
+                    "type": "string"
+                },
+                "offset_days": {
+                    "description": "OffsetDays holds the value of the \"offset_days\" field.",
+                    "type": "integer"
+                },
+                "sent_at": {
+                    "description": "SentAt holds the value of the \"sent_at\" field.",
+                    "type": "string"
+                },
+                "subject_id": {
+                    "description": "SubjectID holds the value of the \"subject_id\" field.",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                }
+            }
+        },
+        "ent.NotificationLogEdges": {
+            "type": "object",
+            "properties": {
+                "rule": {
+                    "description": "Rule holds the value of the rule edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.NotificationRule"
+                        }
+                    ]
+                }
+            }
+        },
+        "ent.NotificationRule": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "CreatedAt holds the value of the \"created_at\" field.",
+                    "type": "string"
+                },
+                "edges": {
+                    "description": "Edges holds the relations/edges for other nodes in the graph.\nThe values are being populated by the NotificationRuleQuery when eager-loading is set.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.NotificationRuleEdges"
+                        }
+                    ]
+                },
+                "entity_type_id": {
+                    "description": "EntityTypeID holds the value of the \"entity_type_id\" field.",
+                    "type": "string"
+                },
+                "group_id": {
+                    "description": "GroupID holds the value of the \"group_id\" field.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID of the ent.",
+                    "type": "string"
+                },
+                "is_active": {
+                    "description": "IsActive holds the value of the \"is_active\" field.",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "Name holds the value of the \"name\" field.",
+                    "type": "string"
+                },
+                "notifier_ids": {
+                    "description": "NotifierIds holds the value of the \"notifier_ids\" field.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "offsets_days": {
+                    "description": "OffsetsDays holds the value of the \"offsets_days\" field.",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "tag_id": {
+                    "description": "TagID holds the value of the \"tag_id\" field.",
+                    "type": "string"
+                },
+                "trigger": {
+                    "description": "Trigger holds the value of the \"trigger\" field.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/notificationrule.Trigger"
+                        }
+                    ]
+                },
+                "updated_at": {
+                    "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                }
+            }
+        },
+        "ent.NotificationRuleEdges": {
+            "type": "object",
+            "properties": {
+                "group": {
+                    "description": "Group holds the value of the group edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.Group"
+                        }
+                    ]
+                },
+                "logs": {
+                    "description": "Logs holds the value of the logs edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.NotificationLog"
+                    }
                 }
             }
         },
@@ -5588,9 +6296,24 @@
                     "description": "BooleanValue holds the value of the \"boolean_value\" field.",
                     "type": "boolean"
                 },
+                "choices": {
+                    "description": "Choices holds the value of the \"choices\" field.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "created_at": {
                     "description": "CreatedAt holds the value of the \"created_at\" field.",
                     "type": "string"
+                },
+                "currency_code": {
+                    "description": "CurrencyCode holds the value of the \"currency_code\" field.",
+                    "type": "string"
+                },
+                "decimal_value": {
+                    "description": "DecimalValue holds the value of the \"decimal_value\" field.",
+                    "type": "number"
                 },
                 "description": {
                     "description": "Description holds the value of the \"description\" field.",
@@ -5622,6 +6345,10 @@
                 },
                 "time_value": {
                     "description": "TimeValue holds the value of the \"time_value\" field.",
+                    "type": "string"
+                },
+                "timezone": {
+                    "description": "Timezone holds the value of the \"timezone\" field.",
                     "type": "string"
                 },
                 "type": {
@@ -5658,6 +6385,10 @@
                     "description": "ActivatedOn holds the value of the \"activated_on\" field.",
                     "type": "string"
                 },
+                "country": {
+                    "description": "Country holds the value of the \"country\" field.",
+                    "type": "string"
+                },
                 "created_at": {
                     "description": "CreatedAt holds the value of the \"created_at\" field.",
                     "type": "string"
@@ -5686,6 +6417,10 @@
                     "description": "IsSuperuser holds the value of the \"is_superuser\" field.",
                     "type": "boolean"
                 },
+                "locale": {
+                    "description": "Locale holds the value of the \"locale\" field.",
+                    "type": "string"
+                },
                 "name": {
                     "description": "Name holds the value of the \"name\" field.",
                     "type": "string"
@@ -5706,6 +6441,10 @@
                 "superuser": {
                     "description": "Superuser holds the value of the \"superuser\" field.",
                     "type": "boolean"
+                },
+                "timezone": {
+                    "description": "Timezone holds the value of the \"timezone\" field.",
+                    "type": "string"
                 },
                 "updated_at": {
                     "description": "UpdatedAt holds the value of the \"updated_at\" field.",
@@ -5817,19 +6556,232 @@
                 }
             }
         },
+        "ent.WebhookDelivery": {
+            "type": "object",
+            "properties": {
+                "attempts": {
+                    "description": "Attempts holds the value of the \"attempts\" field.",
+                    "type": "integer"
+                },
+                "created_at": {
+                    "description": "CreatedAt holds the value of the \"created_at\" field.",
+                    "type": "string"
+                },
+                "data": {
+                    "description": "Data holds the value of the \"data\" field.",
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "dedupe_key": {
+                    "description": "DedupeKey holds the value of the \"dedupe_key\" field.",
+                    "type": "string"
+                },
+                "delivered_at": {
+                    "description": "DeliveredAt holds the value of the \"delivered_at\" field.",
+                    "type": "string"
+                },
+                "edges": {
+                    "description": "Edges holds the relations/edges for other nodes in the graph.\nThe values are being populated by the WebhookDeliveryQuery when eager-loading is set.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.WebhookDeliveryEdges"
+                        }
+                    ]
+                },
+                "event_id": {
+                    "description": "EventID holds the value of the \"event_id\" field.",
+                    "type": "string"
+                },
+                "event_type": {
+                    "description": "EventType holds the value of the \"event_type\" field.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID of the ent.",
+                    "type": "string"
+                },
+                "last_duration_ms": {
+                    "description": "LastDurationMs holds the value of the \"last_duration_ms\" field.",
+                    "type": "integer"
+                },
+                "last_error": {
+                    "description": "LastError holds the value of the \"last_error\" field.",
+                    "type": "string"
+                },
+                "last_status_code": {
+                    "description": "LastStatusCode holds the value of the \"last_status_code\" field.",
+                    "type": "integer"
+                },
+                "next_attempt_at": {
+                    "description": "NextAttemptAt holds the value of the \"next_attempt_at\" field.",
+                    "type": "string"
+                },
+                "occurred_at": {
+                    "description": "OccurredAt holds the value of the \"occurred_at\" field.",
+                    "type": "string"
+                },
+                "response_snippet": {
+                    "description": "ResponseSnippet holds the value of the \"response_snippet\" field.",
+                    "type": "string"
+                },
+                "scheduled_for": {
+                    "description": "ScheduledFor holds the value of the \"scheduled_for\" field.",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Status holds the value of the \"status\" field.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/webhookdelivery.Status"
+                        }
+                    ]
+                },
+                "updated_at": {
+                    "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                }
+            }
+        },
+        "ent.WebhookDeliveryEdges": {
+            "type": "object",
+            "properties": {
+                "endpoint": {
+                    "description": "Endpoint holds the value of the endpoint edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.WebhookEndpoint"
+                        }
+                    ]
+                }
+            }
+        },
+        "ent.WebhookEndpoint": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "CreatedAt holds the value of the \"created_at\" field.",
+                    "type": "string"
+                },
+                "edges": {
+                    "description": "Edges holds the relations/edges for other nodes in the graph.\nThe values are being populated by the WebhookEndpointQuery when eager-loading is set.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.WebhookEndpointEdges"
+                        }
+                    ]
+                },
+                "entity_type_id": {
+                    "description": "EntityTypeID holds the value of the \"entity_type_id\" field.",
+                    "type": "string"
+                },
+                "events": {
+                    "description": "Events holds the value of the \"events\" field.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "group_id": {
+                    "description": "GroupID holds the value of the \"group_id\" field.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID of the ent.",
+                    "type": "string"
+                },
+                "is_active": {
+                    "description": "IsActive holds the value of the \"is_active\" field.",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "Name holds the value of the \"name\" field.",
+                    "type": "string"
+                },
+                "tag_id": {
+                    "description": "TagID holds the value of the \"tag_id\" field.",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                }
+            }
+        },
+        "ent.WebhookEndpointEdges": {
+            "type": "object",
+            "properties": {
+                "deliveries": {
+                    "description": "Deliveries holds the value of the deliveries edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.WebhookDelivery"
+                    }
+                },
+                "group": {
+                    "description": "Group holds the value of the group edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.Group"
+                        }
+                    ]
+                }
+            }
+        },
+        "entity.ExpiryKind": {
+            "type": "string",
+            "enum": [
+                "expires",
+                "expires",
+                "use_by",
+                "best_before"
+            ],
+            "x-enum-varnames": [
+                "DefaultExpiryKind",
+                "ExpiryKindExpires",
+                "ExpiryKindUseBy",
+                "ExpiryKindBestBefore"
+            ]
+        },
         "entityfield.Type": {
             "type": "string",
             "enum": [
                 "text",
                 "number",
                 "boolean",
-                "time"
+                "time",
+                "decimal",
+                "currency",
+                "date",
+                "datetime",
+                "url",
+                "select"
             ],
             "x-enum-varnames": [
                 "TypeText",
                 "TypeNumber",
                 "TypeBoolean",
-                "TypeTime"
+                "TypeTime",
+                "TypeDecimal",
+                "TypeCurrency",
+                "TypeDate",
+                "TypeDatetime",
+                "TypeURL",
+                "TypeSelect"
+            ]
+        },
+        "entitytemplate.DefaultExpiryKind": {
+            "type": "string",
+            "enum": [
+                "expires",
+                "expires",
+                "use_by",
+                "best_before"
+            ],
+            "x-enum-varnames": [
+                "DefaultDefaultExpiryKind",
+                "DefaultExpiryKindExpires",
+                "DefaultExpiryKindUseBy",
+                "DefaultExpiryKindBestBefore"
             ]
         },
         "export.Kind": {
@@ -5873,6 +6825,19 @@
                 "StatusRunning",
                 "StatusCompleted",
                 "StatusFailed"
+            ]
+        },
+        "notificationrule.Trigger": {
+            "type": "string",
+            "enum": [
+                "expires_at",
+                "warranty_expires",
+                "maintenance_due"
+            ],
+            "x-enum-varnames": [
+                "TriggerExpiresAt",
+                "TriggerWarrantyExpires",
+                "TriggerMaintenanceDue"
             ]
         },
         "oauthserver.ConsentCollection": {
@@ -6514,6 +7479,23 @@
                 "booleanValue": {
                     "type": "boolean"
                 },
+                "choices": {
+                    "description": "Choices lists the allowed values of a select field.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "currencyCode": {
+                    "description": "CurrencyCode is the ISO 4217 code of a currency field; NumberValue holds\nits amount in minor units.",
+                    "type": "string"
+                },
+                "decimalValue": {
+                    "description": "DecimalValue, TimeValue (a UTC instant) and the other typed values are\nderived from TextValue by the server.",
+                    "type": "number",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
                 "id": {
                     "type": "string"
                 },
@@ -6524,6 +7506,15 @@
                     "type": "integer"
                 },
                 "textValue": {
+                    "type": "string"
+                },
+                "timeValue": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "timezone": {
+                    "description": "Timezone is the IANA zone a datetime field was entered in.",
                     "type": "string"
                 },
                 "type": {
@@ -6591,6 +7582,13 @@
                     ],
                     "x-nullable": true,
                     "x-omitempty": true
+                },
+                "expiresAt": {
+                    "description": "ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind\nsays whether that is a use-by, best-before or plain expiry date.",
+                    "type": "string"
+                },
+                "expiryKind": {
+                    "type": "string"
                 },
                 "fields": {
                     "type": "array",
@@ -6721,6 +7719,17 @@
                     "x-nullable": true,
                     "x-omitempty": true
                 },
+                "expiresAt": {
+                    "description": "ExpiresAt sets the expiry date; an empty date clears it. ExpiryKind is\nexpires, use_by or best_before. Both are left alone when nil.",
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "expiryKind": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
                 "id": {
                     "type": "string"
                 },
@@ -6799,6 +7808,13 @@
                     "x-nullable": true,
                     "x-omitempty": true
                 },
+                "expiresAt": {
+                    "description": "ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind\nsays whether that is a use-by, best-before or plain expiry date.",
+                    "type": "string"
+                },
+                "expiryKind": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },
@@ -6864,6 +7880,13 @@
                     "maxLength": 1000,
                     "x-nullable": true
                 },
+                "defaultExpiryKind": {
+                    "type": "string"
+                },
+                "defaultExpiryOffsetDays": {
+                    "type": "integer",
+                    "x-nullable": true
+                },
                 "defaultInsured": {
                     "type": "boolean"
                 },
@@ -6918,6 +7941,10 @@
                         "$ref": "#/definitions/repo.TemplateField"
                     }
                 },
+                "includeExpiryFields": {
+                    "description": "Expiry: items made from the template expire DefaultExpiryOffsetDays days\nafter they are added, when it is set.",
+                    "type": "boolean"
+                },
                 "includePurchaseFields": {
                     "type": "boolean"
                 },
@@ -6947,6 +7974,13 @@
                 },
                 "defaultDescription": {
                     "type": "string"
+                },
+                "defaultExpiryKind": {
+                    "type": "string"
+                },
+                "defaultExpiryOffsetDays": {
+                    "type": "integer",
+                    "x-nullable": true
                 },
                 "defaultInsured": {
                     "type": "boolean"
@@ -6996,6 +8030,10 @@
                 },
                 "id": {
                     "type": "string"
+                },
+                "includeExpiryFields": {
+                    "description": "Expiry: items made from the template expire DefaultExpiryOffsetDays days\nafter they are added, when it is set.",
+                    "type": "boolean"
                 },
                 "includePurchaseFields": {
                     "type": "boolean"
@@ -7049,6 +8087,13 @@
                     "maxLength": 1000,
                     "x-nullable": true
                 },
+                "defaultExpiryKind": {
+                    "type": "string"
+                },
+                "defaultExpiryOffsetDays": {
+                    "type": "integer",
+                    "x-nullable": true
+                },
                 "defaultInsured": {
                     "type": "boolean"
                 },
@@ -7106,6 +8151,10 @@
                 "id": {
                     "type": "string"
                 },
+                "includeExpiryFields": {
+                    "description": "Expiry: items made from the template expire DefaultExpiryOffsetDays days\nafter they are added, when it is set.",
+                    "type": "boolean"
+                },
                 "includePurchaseFields": {
                     "type": "boolean"
                 },
@@ -7133,6 +8182,10 @@
                 "defaultTemplateId": {
                     "type": "string"
                 },
+                "expiryRequired": {
+                    "description": "ExpiryRequired makes an expiry date mandatory on items of this type.",
+                    "type": "boolean"
+                },
                 "icon": {
                     "type": "string"
                 },
@@ -7159,6 +8212,9 @@
                 "description": {
                     "type": "string"
                 },
+                "expiryRequired": {
+                    "type": "boolean"
+                },
                 "icon": {
                     "type": "string"
                 },
@@ -7181,6 +8237,10 @@
             "properties": {
                 "defaultTemplateId": {
                     "type": "string"
+                },
+                "expiryRequired": {
+                    "description": "ExpiryRequired makes an expiry date mandatory on items of this type.",
+                    "type": "boolean"
                 },
                 "icon": {
                     "type": "string"
@@ -7213,6 +8273,13 @@
                     "maxLength": 1000
                 },
                 "entityTypeId": {
+                    "type": "string"
+                },
+                "expiresAt": {
+                    "description": "ExpiresAt is the consumable expiry date; leave it empty to clear it.\nExpiryKind is expires, use_by or best_before; empty means expires.",
+                    "type": "string"
+                },
+                "expiryKind": {
                     "type": "string"
                 },
                 "fields": {
@@ -7311,6 +8378,119 @@
                 }
             }
         },
+        "repo.ExpiringResult": {
+            "type": "object",
+            "properties": {
+                "expired": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/repo.ExpiryEntry"
+                    }
+                },
+                "expiredTotal": {
+                    "type": "integer"
+                },
+                "soon": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/repo.ExpiryEntry"
+                    }
+                },
+                "soonTotal": {
+                    "type": "integer"
+                }
+            }
+        },
+        "repo.ExpiryEntry": {
+            "type": "object",
+            "properties": {
+                "archived": {
+                    "type": "boolean"
+                },
+                "assetId": {
+                    "type": "string",
+                    "example": "0"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "daysLeft": {
+                    "description": "DaysLeft is negative once the date has passed.",
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "entityType": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/repo.EntityTypeSummary"
+                        }
+                    ],
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "expiresAt": {
+                    "description": "ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind\nsays whether that is a use-by, best-before or plain expiry date.",
+                    "type": "string"
+                },
+                "expiryKind": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "imageId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "insured": {
+                    "type": "boolean"
+                },
+                "itemCount": {
+                    "description": "Container-specific (populated when querying locations)",
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parent": {
+                    "description": "Edges",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/repo.EntitySummary"
+                        }
+                    ],
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "purchasePrice": {
+                    "type": "number"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "soldDate": {
+                    "description": "Sale details",
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/repo.TagSummary"
+                    }
+                },
+                "thumbnailId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
         "repo.ExportOut": {
             "type": "object",
             "properties": {
@@ -7375,6 +8555,14 @@
                 "name": {
                     "type": "string"
                 },
+                "notifyHour": {
+                    "description": "NotifyHour is the local hour (0-23) from which a day's alerts go out.",
+                    "type": "integer"
+                },
+                "timezone": {
+                    "description": "Timezone is the IANA zone the collection's alerts are scheduled in.",
+                    "type": "string"
+                },
                 "updatedAt": {
                     "type": "string"
                 }
@@ -7434,6 +8622,18 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "notifyHour": {
+                    "description": "NotifyHour is left unchanged when nil.",
+                    "type": "integer",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "timezone": {
+                    "description": "Timezone is left unchanged when nil.",
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
                 }
             }
         },
@@ -7594,6 +8794,91 @@
                 "MaintenanceFilterStatusCompleted",
                 "MaintenanceFilterStatusBoth"
             ]
+        },
+        "repo.NotificationRuleIn": {
+            "type": "object",
+            "properties": {
+                "entityTypeId": {
+                    "description": "EntityTypeID and TagID narrow the rule to matching items.",
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notifierIds": {
+                    "description": "NotifierIDs picks the notifiers; empty means every active one.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "offsetsDays": {
+                    "description": "OffsetsDays: positive fires that many days before the date, zero on\nthe day, negative that many days after. For example [30, 7, 1, 0, -7].",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "tagId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "trigger": {
+                    "description": "Trigger is expires_at, warranty_expires or maintenance_due.",
+                    "type": "string"
+                }
+            }
+        },
+        "repo.NotificationRuleOut": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "entityTypeId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notifierIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "offsetsDays": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "tagId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "trigger": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
         },
         "repo.NotifierCreate": {
             "type": "object",
@@ -7859,6 +9144,21 @@
                 "booleanValue": {
                     "type": "boolean"
                 },
+                "choices": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "currencyCode": {
+                    "type": "string"
+                },
+                "decimalValue": {
+                    "description": "DecimalValue, TimeValue and the rest are derived from TextValue by the\nserver; see EntityFieldData.",
+                    "type": "number",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
                 "id": {
                     "type": "string"
                 },
@@ -7872,6 +9172,11 @@
                     "type": "string"
                 },
                 "timeValue": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "timezone": {
                     "type": "string"
                 },
                 "type": {
@@ -7938,6 +9243,9 @@
         "repo.UserOut": {
             "type": "object",
             "properties": {
+                "country": {
+                    "type": "string"
+                },
                 "defaultGroupId": {
                     "type": "string"
                 },
@@ -7956,6 +9264,9 @@
                 "isSuperuser": {
                     "type": "boolean"
                 },
+                "locale": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -7963,6 +9274,9 @@
                     "type": "string"
                 },
                 "oidcSubject": {
+                    "type": "string"
+                },
+                "timezone": {
                     "type": "string"
                 }
             }
@@ -7984,11 +9298,27 @@
         "repo.UserUpdate": {
             "type": "object",
             "properties": {
+                "country": {
+                    "description": "Regional preferences. Nil leaves the stored value unchanged; an empty\nstring clears it.",
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
                 "email": {
                     "type": "string"
                 },
+                "locale": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
                 "name": {
                     "type": "string"
+                },
+                "timezone": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
                 }
             }
         },
@@ -8026,6 +9356,175 @@
                 },
                 "value": {
                     "type": "number"
+                }
+            }
+        },
+        "repo.WebhookDeliveryOut": {
+            "type": "object",
+            "properties": {
+                "attempts": {
+                    "type": "integer"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "deliveredAt": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "eventId": {
+                    "type": "string"
+                },
+                "eventType": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "lastDurationMs": {
+                    "type": "integer"
+                },
+                "lastError": {
+                    "type": "string"
+                },
+                "lastStatusCode": {
+                    "type": "integer"
+                },
+                "nextAttemptAt": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "occurredAt": {
+                    "type": "string"
+                },
+                "response": {
+                    "type": "string"
+                },
+                "scheduledFor": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "repo.WebhookEndpointCreated": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "entityTypeId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "secret": {
+                    "type": "string"
+                },
+                "tagId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "urlHost": {
+                    "type": "string"
+                }
+            }
+        },
+        "repo.WebhookEndpointIn": {
+            "type": "object",
+            "properties": {
+                "entityTypeId": {
+                    "description": "EntityTypeID and TagID narrow item events to matching items.",
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "events": {
+                    "description": "Events lists the event names to subscribe to.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "tagId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "url": {
+                    "description": "URL receives the events. On update, omit it (or send null) to keep the\nstored one; it is never returned by the API.",
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                }
+            }
+        },
+        "repo.WebhookEndpointOut": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "entityTypeId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "tagId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "urlHost": {
+                    "type": "string"
                 }
             }
         },
@@ -8075,7 +9574,17 @@
         "services.UserRegistration": {
             "type": "object",
             "properties": {
+                "country": {
+                    "description": "Optional regional hints, normally taken from the browser. Invalid\nvalues are ignored. Currency and Timezone only apply when the\nregistration creates a new collection.",
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
                 "email": {
+                    "type": "string"
+                },
+                "locale": {
                     "type": "string"
                 },
                 "name": {
@@ -8084,8 +9593,28 @@
                 "password": {
                     "type": "string"
                 },
+                "timezone": {
+                    "type": "string"
+                },
                 "token": {
                     "type": "string"
+                }
+            }
+        },
+        "services.WebhookResult": {
+            "type": "object",
+            "properties": {
+                "durationMs": {
+                    "type": "integer"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "ok": {
+                    "type": "boolean"
+                },
+                "statusCode": {
+                    "type": "integer"
                 }
             }
         },
@@ -8095,13 +9624,25 @@
                 "text",
                 "number",
                 "boolean",
-                "time"
+                "time",
+                "decimal",
+                "currency",
+                "date",
+                "datetime",
+                "url",
+                "select"
             ],
             "x-enum-varnames": [
                 "TypeText",
                 "TypeNumber",
                 "TypeBoolean",
-                "TypeTime"
+                "TypeTime",
+                "TypeDecimal",
+                "TypeCurrency",
+                "TypeDate",
+                "TypeDatetime",
+                "TypeURL",
+                "TypeSelect"
             ]
         },
         "usergroup.Role": {
@@ -8158,6 +9699,9 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "webhooks": {
+                    "$ref": "#/definitions/v1.WebhooksStatus"
                 }
             }
         },
@@ -8495,6 +10039,28 @@
                 }
             }
         },
+        "v1.WebhookDeliveriesPage": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/repo.WebhookDeliveryOut"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.WebhooksStatus": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
         "v1.WipeInventoryOptions": {
             "type": "object",
             "properties": {
@@ -8539,6 +10105,36 @@
                     "type": "string"
                 },
                 "fields": {
+                    "type": "string"
+                }
+            }
+        },
+        "webhookdelivery.Status": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "pending",
+                "delivered",
+                "failed"
+            ],
+            "x-enum-varnames": [
+                "DefaultStatus",
+                "StatusPending",
+                "StatusDelivered",
+                "StatusFailed"
+            ]
+        },
+        "webhooks.Event": {
+            "type": "object",
+            "properties": {
+                "dated": {
+                    "description": "Dated events come from alert rules: they fire for the rule's offsets\nrather than at the moment something is edited.",
+                    "type": "boolean"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 }
             }

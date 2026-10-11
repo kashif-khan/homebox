@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
@@ -159,6 +160,79 @@ func (_u *EntityFieldUpdate) SetNillableTimeValue(v *time.Time) *EntityFieldUpda
 	return _u
 }
 
+// SetDecimalValue sets the "decimal_value" field.
+func (_u *EntityFieldUpdate) SetDecimalValue(v float64) *EntityFieldUpdate {
+	_u.mutation.ResetDecimalValue()
+	_u.mutation.SetDecimalValue(v)
+	return _u
+}
+
+// SetNillableDecimalValue sets the "decimal_value" field if the given value is not nil.
+func (_u *EntityFieldUpdate) SetNillableDecimalValue(v *float64) *EntityFieldUpdate {
+	if v != nil {
+		_u.SetDecimalValue(*v)
+	}
+	return _u
+}
+
+// AddDecimalValue adds value to the "decimal_value" field.
+func (_u *EntityFieldUpdate) AddDecimalValue(v float64) *EntityFieldUpdate {
+	_u.mutation.AddDecimalValue(v)
+	return _u
+}
+
+// ClearDecimalValue clears the value of the "decimal_value" field.
+func (_u *EntityFieldUpdate) ClearDecimalValue() *EntityFieldUpdate {
+	_u.mutation.ClearDecimalValue()
+	return _u
+}
+
+// SetCurrencyCode sets the "currency_code" field.
+func (_u *EntityFieldUpdate) SetCurrencyCode(v string) *EntityFieldUpdate {
+	_u.mutation.SetCurrencyCode(v)
+	return _u
+}
+
+// SetNillableCurrencyCode sets the "currency_code" field if the given value is not nil.
+func (_u *EntityFieldUpdate) SetNillableCurrencyCode(v *string) *EntityFieldUpdate {
+	if v != nil {
+		_u.SetCurrencyCode(*v)
+	}
+	return _u
+}
+
+// SetTimezone sets the "timezone" field.
+func (_u *EntityFieldUpdate) SetTimezone(v string) *EntityFieldUpdate {
+	_u.mutation.SetTimezone(v)
+	return _u
+}
+
+// SetNillableTimezone sets the "timezone" field if the given value is not nil.
+func (_u *EntityFieldUpdate) SetNillableTimezone(v *string) *EntityFieldUpdate {
+	if v != nil {
+		_u.SetTimezone(*v)
+	}
+	return _u
+}
+
+// SetChoices sets the "choices" field.
+func (_u *EntityFieldUpdate) SetChoices(v []string) *EntityFieldUpdate {
+	_u.mutation.SetChoices(v)
+	return _u
+}
+
+// AppendChoices appends value to the "choices" field.
+func (_u *EntityFieldUpdate) AppendChoices(v []string) *EntityFieldUpdate {
+	_u.mutation.AppendChoices(v)
+	return _u
+}
+
+// ClearChoices clears the value of the "choices" field.
+func (_u *EntityFieldUpdate) ClearChoices() *EntityFieldUpdate {
+	_u.mutation.ClearChoices()
+	return _u
+}
+
 // SetEntityID sets the "entity" edge to the Entity entity by ID.
 func (_u *EntityFieldUpdate) SetEntityID(id uuid.UUID) *EntityFieldUpdate {
 	_u.mutation.SetEntityID(id)
@@ -247,6 +321,16 @@ func (_u *EntityFieldUpdate) check() error {
 			return &ValidationError{Name: "text_value", err: fmt.Errorf(`ent: validator failed for field "EntityField.text_value": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.CurrencyCode(); ok {
+		if err := entityfield.CurrencyCodeValidator(v); err != nil {
+			return &ValidationError{Name: "currency_code", err: fmt.Errorf(`ent: validator failed for field "EntityField.currency_code": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Timezone(); ok {
+		if err := entityfield.TimezoneValidator(v); err != nil {
+			return &ValidationError{Name: "timezone", err: fmt.Errorf(`ent: validator failed for field "EntityField.timezone": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -297,6 +381,32 @@ func (_u *EntityFieldUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	}
 	if value, ok := _u.mutation.TimeValue(); ok {
 		_spec.SetField(entityfield.FieldTimeValue, field.TypeTime, value)
+	}
+	if value, ok := _u.mutation.DecimalValue(); ok {
+		_spec.SetField(entityfield.FieldDecimalValue, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDecimalValue(); ok {
+		_spec.AddField(entityfield.FieldDecimalValue, field.TypeFloat64, value)
+	}
+	if _u.mutation.DecimalValueCleared() {
+		_spec.ClearField(entityfield.FieldDecimalValue, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.CurrencyCode(); ok {
+		_spec.SetField(entityfield.FieldCurrencyCode, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Timezone(); ok {
+		_spec.SetField(entityfield.FieldTimezone, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Choices(); ok {
+		_spec.SetField(entityfield.FieldChoices, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedChoices(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, entityfield.FieldChoices, value)
+		})
+	}
+	if _u.mutation.ChoicesCleared() {
+		_spec.ClearField(entityfield.FieldChoices, field.TypeJSON)
 	}
 	if _u.mutation.EntityCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -476,6 +586,79 @@ func (_u *EntityFieldUpdateOne) SetNillableTimeValue(v *time.Time) *EntityFieldU
 	return _u
 }
 
+// SetDecimalValue sets the "decimal_value" field.
+func (_u *EntityFieldUpdateOne) SetDecimalValue(v float64) *EntityFieldUpdateOne {
+	_u.mutation.ResetDecimalValue()
+	_u.mutation.SetDecimalValue(v)
+	return _u
+}
+
+// SetNillableDecimalValue sets the "decimal_value" field if the given value is not nil.
+func (_u *EntityFieldUpdateOne) SetNillableDecimalValue(v *float64) *EntityFieldUpdateOne {
+	if v != nil {
+		_u.SetDecimalValue(*v)
+	}
+	return _u
+}
+
+// AddDecimalValue adds value to the "decimal_value" field.
+func (_u *EntityFieldUpdateOne) AddDecimalValue(v float64) *EntityFieldUpdateOne {
+	_u.mutation.AddDecimalValue(v)
+	return _u
+}
+
+// ClearDecimalValue clears the value of the "decimal_value" field.
+func (_u *EntityFieldUpdateOne) ClearDecimalValue() *EntityFieldUpdateOne {
+	_u.mutation.ClearDecimalValue()
+	return _u
+}
+
+// SetCurrencyCode sets the "currency_code" field.
+func (_u *EntityFieldUpdateOne) SetCurrencyCode(v string) *EntityFieldUpdateOne {
+	_u.mutation.SetCurrencyCode(v)
+	return _u
+}
+
+// SetNillableCurrencyCode sets the "currency_code" field if the given value is not nil.
+func (_u *EntityFieldUpdateOne) SetNillableCurrencyCode(v *string) *EntityFieldUpdateOne {
+	if v != nil {
+		_u.SetCurrencyCode(*v)
+	}
+	return _u
+}
+
+// SetTimezone sets the "timezone" field.
+func (_u *EntityFieldUpdateOne) SetTimezone(v string) *EntityFieldUpdateOne {
+	_u.mutation.SetTimezone(v)
+	return _u
+}
+
+// SetNillableTimezone sets the "timezone" field if the given value is not nil.
+func (_u *EntityFieldUpdateOne) SetNillableTimezone(v *string) *EntityFieldUpdateOne {
+	if v != nil {
+		_u.SetTimezone(*v)
+	}
+	return _u
+}
+
+// SetChoices sets the "choices" field.
+func (_u *EntityFieldUpdateOne) SetChoices(v []string) *EntityFieldUpdateOne {
+	_u.mutation.SetChoices(v)
+	return _u
+}
+
+// AppendChoices appends value to the "choices" field.
+func (_u *EntityFieldUpdateOne) AppendChoices(v []string) *EntityFieldUpdateOne {
+	_u.mutation.AppendChoices(v)
+	return _u
+}
+
+// ClearChoices clears the value of the "choices" field.
+func (_u *EntityFieldUpdateOne) ClearChoices() *EntityFieldUpdateOne {
+	_u.mutation.ClearChoices()
+	return _u
+}
+
 // SetEntityID sets the "entity" edge to the Entity entity by ID.
 func (_u *EntityFieldUpdateOne) SetEntityID(id uuid.UUID) *EntityFieldUpdateOne {
 	_u.mutation.SetEntityID(id)
@@ -577,6 +760,16 @@ func (_u *EntityFieldUpdateOne) check() error {
 			return &ValidationError{Name: "text_value", err: fmt.Errorf(`ent: validator failed for field "EntityField.text_value": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.CurrencyCode(); ok {
+		if err := entityfield.CurrencyCodeValidator(v); err != nil {
+			return &ValidationError{Name: "currency_code", err: fmt.Errorf(`ent: validator failed for field "EntityField.currency_code": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Timezone(); ok {
+		if err := entityfield.TimezoneValidator(v); err != nil {
+			return &ValidationError{Name: "timezone", err: fmt.Errorf(`ent: validator failed for field "EntityField.timezone": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -644,6 +837,32 @@ func (_u *EntityFieldUpdateOne) sqlSave(ctx context.Context) (_node *EntityField
 	}
 	if value, ok := _u.mutation.TimeValue(); ok {
 		_spec.SetField(entityfield.FieldTimeValue, field.TypeTime, value)
+	}
+	if value, ok := _u.mutation.DecimalValue(); ok {
+		_spec.SetField(entityfield.FieldDecimalValue, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDecimalValue(); ok {
+		_spec.AddField(entityfield.FieldDecimalValue, field.TypeFloat64, value)
+	}
+	if _u.mutation.DecimalValueCleared() {
+		_spec.ClearField(entityfield.FieldDecimalValue, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.CurrencyCode(); ok {
+		_spec.SetField(entityfield.FieldCurrencyCode, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Timezone(); ok {
+		_spec.SetField(entityfield.FieldTimezone, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Choices(); ok {
+		_spec.SetField(entityfield.FieldChoices, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedChoices(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, entityfield.FieldChoices, value)
+		})
+	}
+	if _u.mutation.ChoicesCleared() {
+		_spec.ClearField(entityfield.FieldChoices, field.TypeJSON)
 	}
 	if _u.mutation.EntityCleared() {
 		edge := &sqlgraph.EdgeSpec{

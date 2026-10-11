@@ -57,14 +57,23 @@
   );
 
   const sorting = ref<SortingState>([]);
+  // Columns added after a user saved their layout are not in it. Show them at
+  // the end but hidden, rather than having a new column appear unannounced.
+  const unsavedColumns = computed(() =>
+    props.columns
+      .filter(c => c.enableHiding !== false && c.id && !tableHeaders.value?.some(h => h.value === c.id))
+      .map(c => c.id as string)
+  );
   const columnOrder = ref<string[]>([
     "select",
     ...(tableHeaders.value ? tableHeaders.value.map(h => h.value) : []),
+    ...unsavedColumns.value,
     "actions",
   ]);
-  const columnVisibility = ref<VisibilityState>(
-    tableHeaders.value?.reduce((acc, h) => ({ ...acc, [h.value]: h.enabled }), {})
-  );
+  const columnVisibility = ref<VisibilityState>({
+    ...tableHeaders.value?.reduce((acc, h) => ({ ...acc, [h.value]: h.enabled }), {}),
+    ...Object.fromEntries(unsavedColumns.value.map(id => [id, false])),
+  });
   const rowSelection = ref({});
   const expanded = ref<ExpandedState>({});
   const pagination = ref({

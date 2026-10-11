@@ -25,6 +25,8 @@
   import MarkdownEditor from "~/components/Form/MarkdownEditor.vue";
   import FormDatePicker from "~/components/Form/DatePicker.vue";
   import FormCheckbox from "~/components/Form/Checkbox.vue";
+  import FormCustomFieldRow from "~/components/Form/CustomFieldRow.vue";
+  import { blankField, useFieldDefaults, type EditableField } from "~/composables/use-custom-fields";
   import LocationSelector from "~/components/Location/Selector.vue";
   import ItemSelector from "~/components/Item/Selector.vue";
   import TagSelector from "~/components/Tag/Selector.vue";
@@ -44,6 +46,11 @@
 
   const route = useRoute();
   const api = useUserApi();
+  const {
+    currencies: fieldCurrencies,
+    defaultCurrency: fieldDefaultCurrency,
+    defaultTimezone: fieldDefaultTimezone,
+  } = useFieldDefaults();
   const preferences = useViewPreferences();
 
   const entityTypeStore = useEntityTypeStore();
@@ -180,6 +187,8 @@
     label: string;
     ref: NonNullableNumberKeys<EntityOut> | NonNullableStringKeys<EntityOut>;
     min?: number;
+    /** An amount of money: shown with the collection's currency and two decimals. */
+    money?: boolean;
   };
 
   interface BoolFormField {
@@ -268,13 +277,21 @@
       type: "number",
       label: "items.purchase_price",
       ref: "purchasePrice",
+      money: true,
     },
     {
       type: "date",
       label: "items.purchase_date",
       ref: "purchaseDate",
     },
+    {
+      type: "date",
+      label: "items.expires_at",
+      ref: "expiresAt",
+    },
   ];
+
+  const expiryKinds = ["expires", "use_by", "best_before"] as const;
 
   const warrantyFields: FormField[] = [
     {
@@ -306,6 +323,7 @@
       type: "number",
       label: "items.sold_price",
       ref: "soldPrice",
+      money: true,
     },
     {
       type: "date",
@@ -508,15 +526,17 @@
     toast.success(t("items.toast.attachment_updated"));
   }
 
+  /** A money field's label carries the collection's currency, e.g. "Purchase Price (GBP)". */
+  function fieldLabel(field: { label: string; money?: boolean }) {
+    return field.money && fieldDefaultCurrency.value
+      ? `${t(field.label)} (${fieldDefaultCurrency.value})`
+      : t(field.label);
+  }
+
   function addField() {
     item.value.fields.push({
-      id: null,
+      ...blankField({ currency: fieldDefaultCurrency.value, timezone: fieldDefaultTimezone.value }),
       name: "Field Name",
-      type: "text",
-      textValue: "",
-      numberValue: 0,
-      booleanValue: false,
-      timeValue: null,
     } as unknown as EntityFieldData);
   }
 
@@ -742,9 +762,9 @@
                   v-else-if="field.type === 'number'"
                   v-model.number="item[field.ref]"
                   type="number"
-                  step="any"
-                  :min="field.min"
-                  :label="$t(field.label)"
+                  :step="field.money ? '0.01' : 'any'"
+                  :min="field.money ? 0 : field.min"
+                  :label="fieldLabel(field)"
                   inline
                 />
                 <FormDatePicker
@@ -761,30 +781,42 @@
                 />
               </div>
             </div>
+            <div v-if="item.expiresAt" class="border-b px-4 pb-4 pt-2 sm:px-6" data-testid="expiry-kind">
+              <div class="sm:grid sm:grid-cols-4 sm:items-start sm:gap-4">
+                <Label for="expiry-kind" class="flex w-full px-1 py-2">{{ $t("items.expiry_kind") }}</Label>
+                <Select id="expiry-kind" v-model="item.expiryKind">
+                  <SelectTrigger class="sm:col-span-3">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="k in expiryKinds" :key="k" :value="k">{{
+                      $t(`items.expiry_kinds.${k}`)
+                    }}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
         </BaseCard>
 
         <BaseCard v-if="preferences.editorAdvancedView">
           <template #title> {{ $t("items.custom_fields") }} </template>
           <div class="space-y-4 divide-y border-t px-5">
-            <div
-              v-for="(field, idx) in item.fields"
-              :key="`field-${idx}`"
-              class="grid grid-cols-2 gap-2 pt-4 md:grid-cols-4"
-            >
-              <!-- <FormSelect v-model:value="field.type" label="Field Type" :items="fieldTypes" value-key="value" /> -->
-              <FormTextField v-model="field.name" :label="$t('global.name')" />
-              <div class="col-span-3 flex items-end">
-                <FormTextField v-model="field.textValue" :label="$t('global.value')" :max-length="500" />
-                <Tooltip>
-                  <TooltipTrigger as-child>
-                    <Button size="icon" variant="destructive" class="ml-2" @click="item.fields.splice(idx, 1)">
-                      <MdiDelete />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>{{ $t("global.delete") }}</TooltipContent>
-                </Tooltip>
-              </div>
+            <div v-for="(field, idx) in item.fields" :key="`field-${idx}`" class="flex items-end gap-2 pt-4">
+              <FormCustomFieldRow
+                :model-value="field as unknown as EditableField"
+                :currencies="fieldCurrencies"
+                :default-currency="fieldDefaultCurrency"
+                :default-timezone="fieldDefaultTimezone"
+              />
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <Button size="icon" variant="destructive" @click="item.fields.splice(idx, 1)">
+                    <MdiDelete />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{{ $t("global.delete") }}</TooltipContent>
+              </Tooltip>
             </div>
           </div>
           <div class="mt-4 flex justify-end px-5 pb-4">
@@ -929,9 +961,9 @@
                   v-else-if="field.type === 'number'"
                   v-model.number="item[field.ref]"
                   type="number"
-                  step="any"
-                  :min="field.min"
-                  :label="$t(field.label)"
+                  :step="field.money ? '0.01' : 'any'"
+                  :min="field.money ? 0 : field.min"
+                  :label="fieldLabel(field)"
                   inline
                 />
                 <FormDatePicker
@@ -978,9 +1010,9 @@
                   v-else-if="field.type === 'number'"
                   v-model.number="item[field.ref]"
                   type="number"
-                  step="any"
-                  :min="field.min"
-                  :label="$t(field.label)"
+                  :step="field.money ? '0.01' : 'any'"
+                  :min="field.money ? 0 : field.min"
+                  :label="fieldLabel(field)"
                   inline
                 />
                 <FormDatePicker
@@ -1027,9 +1059,9 @@
                   v-else-if="field.type === 'number'"
                   v-model.number="item[field.ref]"
                   type="number"
-                  step="any"
-                  :min="field.min"
-                  :label="$t(field.label)"
+                  :step="field.money ? '0.01' : 'any'"
+                  :min="field.money ? 0 : field.min"
+                  :label="fieldLabel(field)"
                   inline
                 />
                 <FormDatePicker

@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/regional"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/scopes"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/repo"
 )
@@ -110,6 +111,25 @@ type WarrantyOf struct {
 	Item            ItemSummary `json:"item"`
 	WarrantyExpires string      `json:"warrantyExpires"`
 	DaysLeft        int         `json:"daysLeft"`
+}
+
+// ---- expiry ----
+
+type ExpiringIn struct {
+	Days int `json:"days,omitempty" jsonschema:"look ahead this many days (default 30, max 3650)"`
+}
+type ExpiringOut struct {
+	Today        string       `json:"today"        jsonschema:"the collection's date, YYYY-MM-DD"`
+	ExpiredTotal int          `json:"expiredTotal"`
+	Expired      []ExpiringOf `json:"expired"      jsonschema:"already past their date, most recent first"`
+	SoonTotal    int          `json:"soonTotal"`
+	Soon         []ExpiringOf `json:"soon"         jsonschema:"expiring within the window, soonest first"`
+}
+type ExpiringOf struct {
+	Item       ItemSummary `json:"item"`
+	ExpiresAt  string      `json:"expiresAt"`
+	ExpiryKind string      `json:"expiryKind"`
+	DaysLeft   int         `json:"daysLeft"    jsonschema:"negative once expired"`
 }
 
 // ---- maintenance ----
@@ -342,6 +362,46 @@ func registerReadTools(s *Server, srv *mcp.Server, p *Principal) {
 				})
 			}
 			return out, nil
+		},
+	})
+
+	addTool(s, srv, p, toolDef[ExpiringIn, ExpiringOut]{
+		name: "list_expiring", title: "Expired and expiring items",
+		description: "List food, medicine and other consumables that have already expired or expire within the next N days. This is the item's own expiry date, not its warranty (use list_warranties_expiring for that). Archived items are excluded." + untrusted,
+		scope:       scopes.ItemsRead, kind: kindRead,
+		handler: func(c *call, in ExpiringIn) (ExpiringOut, error) {
+			days := in.Days
+			if days <= 0 {
+				days = 30
+			}
+			days = min(days, 3650)
+			limit := c.s.deps.Conf.MaxPageSize
+			if limit <= 0 {
+				limit = 50
+			}
+			var tz string
+			if g, err := c.repos().Groups.GroupByID(c, c.gid()); err == nil {
+				tz = g.Timezone
+			}
+			now := time.Now().In(regional.Location(tz))
+			res, err := c.repos().Entities.Expiring(c, c.gid(), now, days, limit)
+			if err != nil {
+				return ExpiringOut{}, err
+			}
+			conv := func(in []repo.ExpiryEntry) []ExpiringOf {
+				out := make([]ExpiringOf, 0, len(in))
+				for _, e := range in {
+					out = append(out, ExpiringOf{
+						Item: c.summary(e.EntitySummary), ExpiresAt: e.ExpiresAt.String(),
+						ExpiryKind: e.ExpiryKind, DaysLeft: e.DaysLeft,
+					})
+				}
+				return out
+			}
+			return ExpiringOut{
+				Today: now.Format("2006-01-02"), ExpiredTotal: res.ExpiredTotal, Expired: conv(res.Expired),
+				SoonTotal: res.SoonTotal, Soon: conv(res.Soon),
+			}, nil
 		},
 	})
 

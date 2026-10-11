@@ -202,7 +202,16 @@ func run(cfg *config.Config) error {
 		services.WithExportPlumbing(app.bus, app.db, cfg.Storage, cfg.Database.PubSubConnString, sqlDialect),
 		services.WithMailer(&app.mailer),
 		services.WithBackupConfig(cfg.Backup),
+		services.WithWebhooks(cfg.Webhooks),
 	)
+
+	// Outbound webhooks hear about changes through the repositories and date
+	// alerts through the background service; both stay unhooked when off, so
+	// nothing is computed for them.
+	if cfg.Webhooks.Enabled {
+		app.repos.SetEventSink(app.services.Webhooks)
+		app.services.BackgroundService.SetAlertSink(app.services.Webhooks)
+	}
 
 	ensureAssetIDs(app)
 

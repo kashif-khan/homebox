@@ -36,6 +36,10 @@ function user(): UserRegistration {
     password: faker.internet.password(),
     name: faker.person.firstName(),
     token: "",
+    country: "",
+    currency: "",
+    locale: "",
+    timezone: "",
   };
 }
 

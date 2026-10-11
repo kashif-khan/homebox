@@ -18,10 +18,12 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/export"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/group"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/groupinvitationtoken"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notificationrule"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notifier"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/oauthgrant"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/tag"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/user"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/webhookendpoint"
 )
 
 // GroupCreate is the builder for creating a Group entity.
@@ -75,6 +77,48 @@ func (_c *GroupCreate) SetCurrency(v string) *GroupCreate {
 func (_c *GroupCreate) SetNillableCurrency(v *string) *GroupCreate {
 	if v != nil {
 		_c.SetCurrency(*v)
+	}
+	return _c
+}
+
+// SetTimezone sets the "timezone" field.
+func (_c *GroupCreate) SetTimezone(v string) *GroupCreate {
+	_c.mutation.SetTimezone(v)
+	return _c
+}
+
+// SetNillableTimezone sets the "timezone" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableTimezone(v *string) *GroupCreate {
+	if v != nil {
+		_c.SetTimezone(*v)
+	}
+	return _c
+}
+
+// SetNotifyHour sets the "notify_hour" field.
+func (_c *GroupCreate) SetNotifyHour(v int) *GroupCreate {
+	_c.mutation.SetNotifyHour(v)
+	return _c
+}
+
+// SetNillableNotifyHour sets the "notify_hour" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableNotifyHour(v *int) *GroupCreate {
+	if v != nil {
+		_c.SetNotifyHour(*v)
+	}
+	return _c
+}
+
+// SetAlertRulesSeeded sets the "alert_rules_seeded" field.
+func (_c *GroupCreate) SetAlertRulesSeeded(v bool) *GroupCreate {
+	_c.mutation.SetAlertRulesSeeded(v)
+	return _c
+}
+
+// SetNillableAlertRulesSeeded sets the "alert_rules_seeded" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableAlertRulesSeeded(v *bool) *GroupCreate {
+	if v != nil {
+		_c.SetAlertRulesSeeded(*v)
 	}
 	return _c
 }
@@ -257,6 +301,36 @@ func (_c *GroupCreate) AddOauthGrants(v ...*OAuthGrant) *GroupCreate {
 	return _c.AddOauthGrantIDs(ids...)
 }
 
+// AddNotificationRuleIDs adds the "notification_rules" edge to the NotificationRule entity by IDs.
+func (_c *GroupCreate) AddNotificationRuleIDs(ids ...uuid.UUID) *GroupCreate {
+	_c.mutation.AddNotificationRuleIDs(ids...)
+	return _c
+}
+
+// AddNotificationRules adds the "notification_rules" edges to the NotificationRule entity.
+func (_c *GroupCreate) AddNotificationRules(v ...*NotificationRule) *GroupCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddNotificationRuleIDs(ids...)
+}
+
+// AddWebhookEndpointIDs adds the "webhook_endpoints" edge to the WebhookEndpoint entity by IDs.
+func (_c *GroupCreate) AddWebhookEndpointIDs(ids ...uuid.UUID) *GroupCreate {
+	_c.mutation.AddWebhookEndpointIDs(ids...)
+	return _c
+}
+
+// AddWebhookEndpoints adds the "webhook_endpoints" edges to the WebhookEndpoint entity.
+func (_c *GroupCreate) AddWebhookEndpoints(v ...*WebhookEndpoint) *GroupCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddWebhookEndpointIDs(ids...)
+}
+
 // Mutation returns the GroupMutation object of the builder.
 func (_c *GroupCreate) Mutation() *GroupMutation {
 	return _c.mutation
@@ -304,6 +378,18 @@ func (_c *GroupCreate) defaults() {
 		v := group.DefaultCurrency
 		_c.mutation.SetCurrency(v)
 	}
+	if _, ok := _c.mutation.Timezone(); !ok {
+		v := group.DefaultTimezone
+		_c.mutation.SetTimezone(v)
+	}
+	if _, ok := _c.mutation.NotifyHour(); !ok {
+		v := group.DefaultNotifyHour
+		_c.mutation.SetNotifyHour(v)
+	}
+	if _, ok := _c.mutation.AlertRulesSeeded(); !ok {
+		v := group.DefaultAlertRulesSeeded
+		_c.mutation.SetAlertRulesSeeded(v)
+	}
 	if _, ok := _c.mutation.McpAccess(); !ok {
 		v := group.DefaultMcpAccess
 		_c.mutation.SetMcpAccess(v)
@@ -332,6 +418,20 @@ func (_c *GroupCreate) check() error {
 	}
 	if _, ok := _c.mutation.Currency(); !ok {
 		return &ValidationError{Name: "currency", err: errors.New(`ent: missing required field "Group.currency"`)}
+	}
+	if _, ok := _c.mutation.Timezone(); !ok {
+		return &ValidationError{Name: "timezone", err: errors.New(`ent: missing required field "Group.timezone"`)}
+	}
+	if v, ok := _c.mutation.Timezone(); ok {
+		if err := group.TimezoneValidator(v); err != nil {
+			return &ValidationError{Name: "timezone", err: fmt.Errorf(`ent: validator failed for field "Group.timezone": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.NotifyHour(); !ok {
+		return &ValidationError{Name: "notify_hour", err: errors.New(`ent: missing required field "Group.notify_hour"`)}
+	}
+	if _, ok := _c.mutation.AlertRulesSeeded(); !ok {
+		return &ValidationError{Name: "alert_rules_seeded", err: errors.New(`ent: missing required field "Group.alert_rules_seeded"`)}
 	}
 	if _, ok := _c.mutation.McpAccess(); !ok {
 		return &ValidationError{Name: "mcp_access", err: errors.New(`ent: missing required field "Group.mcp_access"`)}
@@ -386,6 +486,18 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Currency(); ok {
 		_spec.SetField(group.FieldCurrency, field.TypeString, value)
 		_node.Currency = value
+	}
+	if value, ok := _c.mutation.Timezone(); ok {
+		_spec.SetField(group.FieldTimezone, field.TypeString, value)
+		_node.Timezone = value
+	}
+	if value, ok := _c.mutation.NotifyHour(); ok {
+		_spec.SetField(group.FieldNotifyHour, field.TypeInt, value)
+		_node.NotifyHour = value
+	}
+	if value, ok := _c.mutation.AlertRulesSeeded(); ok {
+		_spec.SetField(group.FieldAlertRulesSeeded, field.TypeBool, value)
+		_node.AlertRulesSeeded = value
 	}
 	if value, ok := _c.mutation.McpAccess(); ok {
 		_spec.SetField(group.FieldMcpAccess, field.TypeString, value)
@@ -548,6 +660,38 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(oauthgrant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.NotificationRulesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.NotificationRulesTable,
+			Columns: []string{group.NotificationRulesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(notificationrule.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.WebhookEndpointsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.WebhookEndpointsTable,
+			Columns: []string{group.WebhookEndpointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(webhookendpoint.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

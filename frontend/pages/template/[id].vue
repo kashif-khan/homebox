@@ -1,4 +1,13 @@
 <script setup lang="ts">
+  import TemplateExpiryDefaults from "~/components/Template/ExpiryDefaults.vue";
+  import FormCustomFieldRow from "~/components/Form/CustomFieldRow.vue";
+  import {
+    blankField,
+    displayFieldValue,
+    isFieldType,
+    useFieldDefaults,
+    type EditableField,
+  } from "~/composables/use-custom-fields";
   import { useI18n } from "vue-i18n";
   import { toast } from "@/components/ui/sonner";
   import MdiPencil from "~icons/mdi/pencil";
@@ -36,7 +45,7 @@
 
   const templateId = computed<string>(() => route.params.id as string);
 
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   const { data: template, refresh } = useAsyncData(templateId.value, async () => {
     const { data, error } = await api.templates.get(templateId.value);
@@ -80,8 +89,17 @@
     includeWarrantyFields: false,
     includePurchaseFields: false,
     includeSoldFields: false,
-    fields: [] as Array<{ id: string; name: string; type: "text"; textValue: string }>,
+    includeExpiryFields: false,
+    defaultExpiryOffsetDays: null as number | null,
+    defaultExpiryKind: "expires",
+    fields: [] as EditableField[],
   });
+
+  const {
+    currencies: fieldCurrencies,
+    defaultCurrency: fieldDefaultCurrency,
+    defaultTimezone: fieldDefaultTimezone,
+  } = useFieldDefaults();
 
   function openUpdate() {
     if (!template.value) return;
@@ -103,12 +121,23 @@
       includeWarrantyFields: template.value.includeWarrantyFields,
       includePurchaseFields: template.value.includePurchaseFields,
       includeSoldFields: template.value.includeSoldFields,
-      fields: template.value.fields.map(f => ({
-        id: f.id,
-        name: f.name,
-        type: "text" as const,
-        textValue: f.textValue,
-      })),
+      includeExpiryFields: template.value.includeExpiryFields,
+      defaultExpiryOffsetDays: template.value.defaultExpiryOffsetDays ?? null,
+      defaultExpiryKind: template.value.defaultExpiryKind || "expires",
+      fields: template.value.fields.map(
+        f =>
+          ({
+            id: f.id,
+            name: f.name,
+            type: isFieldType(f.type) ? f.type : "text",
+            textValue: f.textValue,
+            numberValue: f.numberValue,
+            booleanValue: f.booleanValue,
+            currencyCode: f.currencyCode ?? "",
+            timezone: f.timezone ?? "",
+            choices: f.choices ?? [],
+          }) satisfies EditableField
+      ),
     });
     openDialog(DialogID.UpdateTemplate);
   }
@@ -120,6 +149,7 @@
     const payload = {
       ...updateData,
       defaultLocationId: updateData.defaultLocation?.id ?? null,
+      defaultExpiryOffsetDays: updateData.includeExpiryFields ? updateData.defaultExpiryOffsetDays : null,
     };
 
     const { error, data } = await api.templates.update(templateId.value, payload);
@@ -208,30 +238,38 @@
         </div>
 
         <Separator class="my-2" />
+        <TemplateExpiryDefaults
+          v-model:include="updateData.includeExpiryFields"
+          v-model:offset-days="updateData.defaultExpiryOffsetDays"
+          v-model:kind="updateData.defaultExpiryKind"
+        />
+
+        <Separator class="my-2" />
         <div class="flex items-center justify-between">
           <h3 class="text-sm font-medium">{{ $t("components.template.form.custom_fields") }}</h3>
           <Button
             type="button"
             size="sm"
             variant="outline"
-            @click="updateData.fields.push({ id: NIL_UUID, name: '', type: 'text', textValue: '' })"
+            @click="
+              updateData.fields.push({
+                ...blankField({ currency: fieldDefaultCurrency, timezone: fieldDefaultTimezone }),
+                id: NIL_UUID,
+              })
+            "
           >
             <MdiPlus class="mr-1 size-4" />
             {{ $t("global.add") }}
           </Button>
         </div>
-        <div v-if="updateData.fields.length > 0" class="flex flex-col gap-2">
+        <div v-if="updateData.fields.length > 0" class="flex flex-col gap-3">
           <div v-for="(field, idx) in updateData.fields" :key="idx" class="flex items-end gap-2">
-            <FormTextField
-              v-model="field.name"
-              :label="$t('components.template.form.field_name')"
-              :max-length="255"
-              class="flex-1"
-            />
-            <FormTextField
-              v-model="field.textValue"
-              :label="$t('components.template.form.default_value')"
-              class="flex-1"
+            <FormCustomFieldRow
+              :model-value="field"
+              :currencies="fieldCurrencies"
+              :default-currency="fieldDefaultCurrency"
+              :default-timezone="fieldDefaultTimezone"
+              :value-label="$t('components.template.form.default_value')"
             />
             <Button type="button" size="icon" variant="ghost" @click="updateData.fields.splice(idx, 1)">
               <MdiDelete class="size-4" />
@@ -319,12 +357,27 @@
             </div>
           </dl>
         </div>
+        <div v-if="template.includeExpiryFields">
+          <h3 class="mb-2 font-medium">{{ $t("items.expires_at") }}</h3>
+          <p class="text-sm" data-testid="template-expiry-summary">
+            {{
+              template.defaultExpiryOffsetDays == null
+                ? $t("components.template.form.expiry_by_hand")
+                : $t("components.template.form.expiry_after", { n: template.defaultExpiryOffsetDays })
+            }}
+            <span v-if="template.defaultExpiryKind && template.defaultExpiryKind !== 'expires'">
+              · {{ $t(`items.expiry_kinds.${template.defaultExpiryKind}`) }}
+            </span>
+          </p>
+        </div>
         <div v-if="template.fields.length > 0">
           <h3 class="mb-2 font-medium">{{ $t("components.template.form.custom_fields") }}</h3>
           <dl class="flex flex-col gap-1">
             <div v-for="field in template.fields" :key="field.id" class="flex justify-between">
               <dt class="text-muted-foreground">{{ field.name }}</dt>
-              <dd>{{ field.textValue || "—" }}</dd>
+              <dd>
+                {{ displayFieldValue(field, locale, { yes: $t("global.yes"), no: $t("global.no") }) || "—" }}
+              </dd>
             </div>
           </dl>
         </div>

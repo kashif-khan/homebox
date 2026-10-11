@@ -18,6 +18,8 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/group"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/groupinvitationtoken"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/maintenanceentry"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notificationlog"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notificationrule"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notifier"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/oauthclient"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/oauthgrant"
@@ -28,6 +30,8 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/tag"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/templatefield"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/user"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/webhookdelivery"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/webhookendpoint"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -368,23 +372,23 @@ func init() {
 	// entity.ManufacturerValidator is a validator for the "manufacturer" field. It is called by the builders before save.
 	entity.ManufacturerValidator = entityDescManufacturer.Validators[0].(func(string) error)
 	// entityDescLifetimeWarranty is the schema descriptor for lifetime_warranty field.
-	entityDescLifetimeWarranty := entityFields[10].Descriptor()
+	entityDescLifetimeWarranty := entityFields[12].Descriptor()
 	// entity.DefaultLifetimeWarranty holds the default value on creation for the lifetime_warranty field.
 	entity.DefaultLifetimeWarranty = entityDescLifetimeWarranty.Default.(bool)
 	// entityDescWarrantyDetails is the schema descriptor for warranty_details field.
-	entityDescWarrantyDetails := entityFields[12].Descriptor()
+	entityDescWarrantyDetails := entityFields[14].Descriptor()
 	// entity.WarrantyDetailsValidator is a validator for the "warranty_details" field. It is called by the builders before save.
 	entity.WarrantyDetailsValidator = entityDescWarrantyDetails.Validators[0].(func(string) error)
 	// entityDescPurchasePrice is the schema descriptor for purchase_price field.
-	entityDescPurchasePrice := entityFields[15].Descriptor()
+	entityDescPurchasePrice := entityFields[17].Descriptor()
 	// entity.DefaultPurchasePrice holds the default value on creation for the purchase_price field.
 	entity.DefaultPurchasePrice = entityDescPurchasePrice.Default.(float64)
 	// entityDescSoldPrice is the schema descriptor for sold_price field.
-	entityDescSoldPrice := entityFields[18].Descriptor()
+	entityDescSoldPrice := entityFields[20].Descriptor()
 	// entity.DefaultSoldPrice holds the default value on creation for the sold_price field.
 	entity.DefaultSoldPrice = entityDescSoldPrice.Default.(float64)
 	// entityDescSoldNotes is the schema descriptor for sold_notes field.
-	entityDescSoldNotes := entityFields[19].Descriptor()
+	entityDescSoldNotes := entityFields[21].Descriptor()
 	// entity.SoldNotesValidator is a validator for the "sold_notes" field. It is called by the builders before save.
 	entity.SoldNotesValidator = entityDescSoldNotes.Validators[0].(func(string) error)
 	// entityDescID is the schema descriptor for id field.
@@ -442,6 +446,18 @@ func init() {
 	entityfieldDescTimeValue := entityfieldFields[4].Descriptor()
 	// entityfield.DefaultTimeValue holds the default value on creation for the time_value field.
 	entityfield.DefaultTimeValue = entityfieldDescTimeValue.Default.(func() time.Time)
+	// entityfieldDescCurrencyCode is the schema descriptor for currency_code field.
+	entityfieldDescCurrencyCode := entityfieldFields[6].Descriptor()
+	// entityfield.DefaultCurrencyCode holds the default value on creation for the currency_code field.
+	entityfield.DefaultCurrencyCode = entityfieldDescCurrencyCode.Default.(string)
+	// entityfield.CurrencyCodeValidator is a validator for the "currency_code" field. It is called by the builders before save.
+	entityfield.CurrencyCodeValidator = entityfieldDescCurrencyCode.Validators[0].(func(string) error)
+	// entityfieldDescTimezone is the schema descriptor for timezone field.
+	entityfieldDescTimezone := entityfieldFields[7].Descriptor()
+	// entityfield.DefaultTimezone holds the default value on creation for the timezone field.
+	entityfield.DefaultTimezone = entityfieldDescTimezone.Default.(string)
+	// entityfield.TimezoneValidator is a validator for the "timezone" field. It is called by the builders before save.
+	entityfield.TimezoneValidator = entityfieldDescTimezone.Validators[0].(func(string) error)
 	// entityfieldDescID is the schema descriptor for id field.
 	entityfieldDescID := entityfieldMixinFields0[0].Descriptor()
 	// entityfield.DefaultID holds the default value on creation for the id field.
@@ -533,6 +549,10 @@ func init() {
 	entitytemplateDescIncludeSoldFields := entitytemplateFields[11].Descriptor()
 	// entitytemplate.DefaultIncludeSoldFields holds the default value on creation for the include_sold_fields field.
 	entitytemplate.DefaultIncludeSoldFields = entitytemplateDescIncludeSoldFields.Default.(bool)
+	// entitytemplateDescIncludeExpiryFields is the schema descriptor for include_expiry_fields field.
+	entitytemplateDescIncludeExpiryFields := entitytemplateFields[12].Descriptor()
+	// entitytemplate.DefaultIncludeExpiryFields holds the default value on creation for the include_expiry_fields field.
+	entitytemplate.DefaultIncludeExpiryFields = entitytemplateDescIncludeExpiryFields.Default.(bool)
 	// entitytemplateDescID is the schema descriptor for id field.
 	entitytemplateDescID := entitytemplateMixinFields0[0].Descriptor()
 	// entitytemplate.DefaultID holds the default value on creation for the id field.
@@ -584,6 +604,10 @@ func init() {
 	entitytypeDescIcon := entitytypeFields[1].Descriptor()
 	// entitytype.IconValidator is a validator for the "icon" field. It is called by the builders before save.
 	entitytype.IconValidator = entitytypeDescIcon.Validators[0].(func(string) error)
+	// entitytypeDescExpiryRequired is the schema descriptor for expiry_required field.
+	entitytypeDescExpiryRequired := entitytypeFields[2].Descriptor()
+	// entitytype.DefaultExpiryRequired holds the default value on creation for the expiry_required field.
+	entitytype.DefaultExpiryRequired = entitytypeDescExpiryRequired.Default.(bool)
 	// entitytypeDescID is the schema descriptor for id field.
 	entitytypeDescID := entitytypeMixinFields0[0].Descriptor()
 	// entitytype.DefaultID holds the default value on creation for the id field.
@@ -656,8 +680,22 @@ func init() {
 	groupDescCurrency := groupFields[1].Descriptor()
 	// group.DefaultCurrency holds the default value on creation for the currency field.
 	group.DefaultCurrency = groupDescCurrency.Default.(string)
+	// groupDescTimezone is the schema descriptor for timezone field.
+	groupDescTimezone := groupFields[2].Descriptor()
+	// group.DefaultTimezone holds the default value on creation for the timezone field.
+	group.DefaultTimezone = groupDescTimezone.Default.(string)
+	// group.TimezoneValidator is a validator for the "timezone" field. It is called by the builders before save.
+	group.TimezoneValidator = groupDescTimezone.Validators[0].(func(string) error)
+	// groupDescNotifyHour is the schema descriptor for notify_hour field.
+	groupDescNotifyHour := groupFields[3].Descriptor()
+	// group.DefaultNotifyHour holds the default value on creation for the notify_hour field.
+	group.DefaultNotifyHour = groupDescNotifyHour.Default.(int)
+	// groupDescAlertRulesSeeded is the schema descriptor for alert_rules_seeded field.
+	groupDescAlertRulesSeeded := groupFields[4].Descriptor()
+	// group.DefaultAlertRulesSeeded holds the default value on creation for the alert_rules_seeded field.
+	group.DefaultAlertRulesSeeded = groupDescAlertRulesSeeded.Default.(bool)
 	// groupDescMcpAccess is the schema descriptor for mcp_access field.
-	groupDescMcpAccess := groupFields[2].Descriptor()
+	groupDescMcpAccess := groupFields[5].Descriptor()
 	// group.DefaultMcpAccess holds the default value on creation for the mcp_access field.
 	group.DefaultMcpAccess = groupDescMcpAccess.Default.(string)
 	// groupDescID is the schema descriptor for id field.
@@ -736,6 +774,66 @@ func init() {
 	maintenanceentryDescID := maintenanceentryMixinFields0[0].Descriptor()
 	// maintenanceentry.DefaultID holds the default value on creation for the id field.
 	maintenanceentry.DefaultID = maintenanceentryDescID.Default.(func() uuid.UUID)
+	notificationlogMixin := schema.NotificationLog{}.Mixin()
+	notificationlogMixinFields0 := notificationlogMixin[0].Fields()
+	_ = notificationlogMixinFields0
+	notificationlogFields := schema.NotificationLog{}.Fields()
+	_ = notificationlogFields
+	// notificationlogDescCreatedAt is the schema descriptor for created_at field.
+	notificationlogDescCreatedAt := notificationlogMixinFields0[1].Descriptor()
+	// notificationlog.DefaultCreatedAt holds the default value on creation for the created_at field.
+	notificationlog.DefaultCreatedAt = notificationlogDescCreatedAt.Default.(func() time.Time)
+	// notificationlogDescUpdatedAt is the schema descriptor for updated_at field.
+	notificationlogDescUpdatedAt := notificationlogMixinFields0[2].Descriptor()
+	// notificationlog.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	notificationlog.DefaultUpdatedAt = notificationlogDescUpdatedAt.Default.(func() time.Time)
+	// notificationlog.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	notificationlog.UpdateDefaultUpdatedAt = notificationlogDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// notificationlogDescID is the schema descriptor for id field.
+	notificationlogDescID := notificationlogMixinFields0[0].Descriptor()
+	// notificationlog.DefaultID holds the default value on creation for the id field.
+	notificationlog.DefaultID = notificationlogDescID.Default.(func() uuid.UUID)
+	notificationruleMixin := schema.NotificationRule{}.Mixin()
+	notificationruleMixinFields0 := notificationruleMixin[0].Fields()
+	_ = notificationruleMixinFields0
+	notificationruleFields := schema.NotificationRule{}.Fields()
+	_ = notificationruleFields
+	// notificationruleDescCreatedAt is the schema descriptor for created_at field.
+	notificationruleDescCreatedAt := notificationruleMixinFields0[1].Descriptor()
+	// notificationrule.DefaultCreatedAt holds the default value on creation for the created_at field.
+	notificationrule.DefaultCreatedAt = notificationruleDescCreatedAt.Default.(func() time.Time)
+	// notificationruleDescUpdatedAt is the schema descriptor for updated_at field.
+	notificationruleDescUpdatedAt := notificationruleMixinFields0[2].Descriptor()
+	// notificationrule.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	notificationrule.DefaultUpdatedAt = notificationruleDescUpdatedAt.Default.(func() time.Time)
+	// notificationrule.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	notificationrule.UpdateDefaultUpdatedAt = notificationruleDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// notificationruleDescName is the schema descriptor for name field.
+	notificationruleDescName := notificationruleFields[0].Descriptor()
+	// notificationrule.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	notificationrule.NameValidator = func() func(string) error {
+		validators := notificationruleDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// notificationruleDescIsActive is the schema descriptor for is_active field.
+	notificationruleDescIsActive := notificationruleFields[6].Descriptor()
+	// notificationrule.DefaultIsActive holds the default value on creation for the is_active field.
+	notificationrule.DefaultIsActive = notificationruleDescIsActive.Default.(bool)
+	// notificationruleDescID is the schema descriptor for id field.
+	notificationruleDescID := notificationruleMixinFields0[0].Descriptor()
+	// notificationrule.DefaultID holds the default value on creation for the id field.
+	notificationrule.DefaultID = notificationruleDescID.Default.(func() uuid.UUID)
 	notifierMixin := schema.Notifier{}.Mixin()
 	notifierMixinFields0 := notifierMixin[0].Fields()
 	_ = notifierMixinFields0
@@ -1084,6 +1182,18 @@ func init() {
 	templatefieldDescTimeValue := templatefieldFields[4].Descriptor()
 	// templatefield.DefaultTimeValue holds the default value on creation for the time_value field.
 	templatefield.DefaultTimeValue = templatefieldDescTimeValue.Default.(func() time.Time)
+	// templatefieldDescCurrencyCode is the schema descriptor for currency_code field.
+	templatefieldDescCurrencyCode := templatefieldFields[6].Descriptor()
+	// templatefield.DefaultCurrencyCode holds the default value on creation for the currency_code field.
+	templatefield.DefaultCurrencyCode = templatefieldDescCurrencyCode.Default.(string)
+	// templatefield.CurrencyCodeValidator is a validator for the "currency_code" field. It is called by the builders before save.
+	templatefield.CurrencyCodeValidator = templatefieldDescCurrencyCode.Validators[0].(func(string) error)
+	// templatefieldDescTimezone is the schema descriptor for timezone field.
+	templatefieldDescTimezone := templatefieldFields[7].Descriptor()
+	// templatefield.DefaultTimezone holds the default value on creation for the timezone field.
+	templatefield.DefaultTimezone = templatefieldDescTimezone.Default.(string)
+	// templatefield.TimezoneValidator is a validator for the "timezone" field. It is called by the builders before save.
+	templatefield.TimezoneValidator = templatefieldDescTimezone.Validators[0].(func(string) error)
 	// templatefieldDescID is the schema descriptor for id field.
 	templatefieldDescID := templatefieldMixinFields0[0].Descriptor()
 	// templatefield.DefaultID holds the default value on creation for the id field.
@@ -1151,10 +1261,170 @@ func init() {
 	userDescSuperuser := userFields[4].Descriptor()
 	// user.DefaultSuperuser holds the default value on creation for the superuser field.
 	user.DefaultSuperuser = userDescSuperuser.Default.(bool)
+	// userDescCountry is the schema descriptor for country field.
+	userDescCountry := userFields[10].Descriptor()
+	// user.DefaultCountry holds the default value on creation for the country field.
+	user.DefaultCountry = userDescCountry.Default.(string)
+	// user.CountryValidator is a validator for the "country" field. It is called by the builders before save.
+	user.CountryValidator = userDescCountry.Validators[0].(func(string) error)
+	// userDescTimezone is the schema descriptor for timezone field.
+	userDescTimezone := userFields[11].Descriptor()
+	// user.DefaultTimezone holds the default value on creation for the timezone field.
+	user.DefaultTimezone = userDescTimezone.Default.(string)
+	// user.TimezoneValidator is a validator for the "timezone" field. It is called by the builders before save.
+	user.TimezoneValidator = userDescTimezone.Validators[0].(func(string) error)
+	// userDescLocale is the schema descriptor for locale field.
+	userDescLocale := userFields[12].Descriptor()
+	// user.DefaultLocale holds the default value on creation for the locale field.
+	user.DefaultLocale = userDescLocale.Default.(string)
+	// user.LocaleValidator is a validator for the "locale" field. It is called by the builders before save.
+	user.LocaleValidator = userDescLocale.Validators[0].(func(string) error)
 	// userDescID is the schema descriptor for id field.
 	userDescID := userMixinFields0[0].Descriptor()
 	// user.DefaultID holds the default value on creation for the id field.
 	user.DefaultID = userDescID.Default.(func() uuid.UUID)
 	usergroupFields := schema.UserGroup{}.Fields()
 	_ = usergroupFields
+	webhookdeliveryMixin := schema.WebhookDelivery{}.Mixin()
+	webhookdeliveryMixinFields0 := webhookdeliveryMixin[0].Fields()
+	_ = webhookdeliveryMixinFields0
+	webhookdeliveryFields := schema.WebhookDelivery{}.Fields()
+	_ = webhookdeliveryFields
+	// webhookdeliveryDescCreatedAt is the schema descriptor for created_at field.
+	webhookdeliveryDescCreatedAt := webhookdeliveryMixinFields0[1].Descriptor()
+	// webhookdelivery.DefaultCreatedAt holds the default value on creation for the created_at field.
+	webhookdelivery.DefaultCreatedAt = webhookdeliveryDescCreatedAt.Default.(func() time.Time)
+	// webhookdeliveryDescUpdatedAt is the schema descriptor for updated_at field.
+	webhookdeliveryDescUpdatedAt := webhookdeliveryMixinFields0[2].Descriptor()
+	// webhookdelivery.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	webhookdelivery.DefaultUpdatedAt = webhookdeliveryDescUpdatedAt.Default.(func() time.Time)
+	// webhookdelivery.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	webhookdelivery.UpdateDefaultUpdatedAt = webhookdeliveryDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// webhookdeliveryDescEventType is the schema descriptor for event_type field.
+	webhookdeliveryDescEventType := webhookdeliveryFields[0].Descriptor()
+	// webhookdelivery.EventTypeValidator is a validator for the "event_type" field. It is called by the builders before save.
+	webhookdelivery.EventTypeValidator = func() func(string) error {
+		validators := webhookdeliveryDescEventType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(event_type string) error {
+			for _, fn := range fns {
+				if err := fn(event_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// webhookdeliveryDescDedupeKey is the schema descriptor for dedupe_key field.
+	webhookdeliveryDescDedupeKey := webhookdeliveryFields[5].Descriptor()
+	// webhookdelivery.DedupeKeyValidator is a validator for the "dedupe_key" field. It is called by the builders before save.
+	webhookdelivery.DedupeKeyValidator = webhookdeliveryDescDedupeKey.Validators[0].(func(string) error)
+	// webhookdeliveryDescAttempts is the schema descriptor for attempts field.
+	webhookdeliveryDescAttempts := webhookdeliveryFields[7].Descriptor()
+	// webhookdelivery.DefaultAttempts holds the default value on creation for the attempts field.
+	webhookdelivery.DefaultAttempts = webhookdeliveryDescAttempts.Default.(int)
+	// webhookdeliveryDescLastStatusCode is the schema descriptor for last_status_code field.
+	webhookdeliveryDescLastStatusCode := webhookdeliveryFields[10].Descriptor()
+	// webhookdelivery.DefaultLastStatusCode holds the default value on creation for the last_status_code field.
+	webhookdelivery.DefaultLastStatusCode = webhookdeliveryDescLastStatusCode.Default.(int)
+	// webhookdeliveryDescLastError is the schema descriptor for last_error field.
+	webhookdeliveryDescLastError := webhookdeliveryFields[11].Descriptor()
+	// webhookdelivery.DefaultLastError holds the default value on creation for the last_error field.
+	webhookdelivery.DefaultLastError = webhookdeliveryDescLastError.Default.(string)
+	// webhookdelivery.LastErrorValidator is a validator for the "last_error" field. It is called by the builders before save.
+	webhookdelivery.LastErrorValidator = webhookdeliveryDescLastError.Validators[0].(func(string) error)
+	// webhookdeliveryDescLastDurationMs is the schema descriptor for last_duration_ms field.
+	webhookdeliveryDescLastDurationMs := webhookdeliveryFields[12].Descriptor()
+	// webhookdelivery.DefaultLastDurationMs holds the default value on creation for the last_duration_ms field.
+	webhookdelivery.DefaultLastDurationMs = webhookdeliveryDescLastDurationMs.Default.(int)
+	// webhookdeliveryDescResponseSnippet is the schema descriptor for response_snippet field.
+	webhookdeliveryDescResponseSnippet := webhookdeliveryFields[13].Descriptor()
+	// webhookdelivery.DefaultResponseSnippet holds the default value on creation for the response_snippet field.
+	webhookdelivery.DefaultResponseSnippet = webhookdeliveryDescResponseSnippet.Default.(string)
+	// webhookdelivery.ResponseSnippetValidator is a validator for the "response_snippet" field. It is called by the builders before save.
+	webhookdelivery.ResponseSnippetValidator = webhookdeliveryDescResponseSnippet.Validators[0].(func(string) error)
+	// webhookdeliveryDescID is the schema descriptor for id field.
+	webhookdeliveryDescID := webhookdeliveryMixinFields0[0].Descriptor()
+	// webhookdelivery.DefaultID holds the default value on creation for the id field.
+	webhookdelivery.DefaultID = webhookdeliveryDescID.Default.(func() uuid.UUID)
+	webhookendpointMixin := schema.WebhookEndpoint{}.Mixin()
+	webhookendpointMixinFields0 := webhookendpointMixin[0].Fields()
+	_ = webhookendpointMixinFields0
+	webhookendpointFields := schema.WebhookEndpoint{}.Fields()
+	_ = webhookendpointFields
+	// webhookendpointDescCreatedAt is the schema descriptor for created_at field.
+	webhookendpointDescCreatedAt := webhookendpointMixinFields0[1].Descriptor()
+	// webhookendpoint.DefaultCreatedAt holds the default value on creation for the created_at field.
+	webhookendpoint.DefaultCreatedAt = webhookendpointDescCreatedAt.Default.(func() time.Time)
+	// webhookendpointDescUpdatedAt is the schema descriptor for updated_at field.
+	webhookendpointDescUpdatedAt := webhookendpointMixinFields0[2].Descriptor()
+	// webhookendpoint.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	webhookendpoint.DefaultUpdatedAt = webhookendpointDescUpdatedAt.Default.(func() time.Time)
+	// webhookendpoint.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	webhookendpoint.UpdateDefaultUpdatedAt = webhookendpointDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// webhookendpointDescName is the schema descriptor for name field.
+	webhookendpointDescName := webhookendpointFields[0].Descriptor()
+	// webhookendpoint.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	webhookendpoint.NameValidator = func() func(string) error {
+		validators := webhookendpointDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// webhookendpointDescURL is the schema descriptor for url field.
+	webhookendpointDescURL := webhookendpointFields[1].Descriptor()
+	// webhookendpoint.URLValidator is a validator for the "url" field. It is called by the builders before save.
+	webhookendpoint.URLValidator = func() func(string) error {
+		validators := webhookendpointDescURL.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(url string) error {
+			for _, fn := range fns {
+				if err := fn(url); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// webhookendpointDescSecret is the schema descriptor for secret field.
+	webhookendpointDescSecret := webhookendpointFields[2].Descriptor()
+	// webhookendpoint.SecretValidator is a validator for the "secret" field. It is called by the builders before save.
+	webhookendpoint.SecretValidator = func() func(string) error {
+		validators := webhookendpointDescSecret.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(secret string) error {
+			for _, fn := range fns {
+				if err := fn(secret); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// webhookendpointDescIsActive is the schema descriptor for is_active field.
+	webhookendpointDescIsActive := webhookendpointFields[6].Descriptor()
+	// webhookendpoint.DefaultIsActive holds the default value on creation for the is_active field.
+	webhookendpoint.DefaultIsActive = webhookendpointDescIsActive.Default.(bool)
+	// webhookendpointDescID is the schema descriptor for id field.
+	webhookendpointDescID := webhookendpointMixinFields0[0].Descriptor()
+	// webhookendpoint.DefaultID holds the default value on creation for the id field.
+	webhookendpoint.DefaultID = webhookendpointDescID.Default.(func() uuid.UUID)
 }

@@ -24,6 +24,7 @@
   import DetailsSection from "@/components/global/DetailsSection/DetailsSection.vue";
   import DateTime from "@/components/global/DateTime.vue";
   import PasswordScore from "~/components/global/PasswordScore.vue";
+  import FormRegionalFields from "~/components/Form/RegionalFields.vue";
   import { PASSWORD_MIN_LENGTH, PASSWORD_RULES } from "~/lib/passwords";
   import type { APIKeyOut, OAuthGrantOut } from "~~/lib/api/types/data-contracts";
   import { Badge } from "@/components/ui/badge";
@@ -68,6 +69,33 @@
       },
     ] as Detail[];
   });
+
+  const regional = reactive({
+    country: auth.user?.country ?? "",
+    timezone: auth.user?.timezone ?? "",
+  });
+  const savingRegional = ref(false);
+
+  async function saveRegional() {
+    savingRegional.value = true;
+    const { data, error } = await api.user.update({
+      name: auth.user?.name ?? "",
+      email: auth.user?.email ?? "",
+      country: regional.country,
+      timezone: regional.timezone,
+    });
+    savingRegional.value = false;
+
+    if (error || !data) {
+      toast.error(t("regional.toast.failed"));
+      return;
+    }
+    if (auth.user) {
+      auth.user.country = data.item.country;
+      auth.user.timezone = data.item.timezone;
+    }
+    toast.success(t("regional.toast.saved"));
+  }
 
   async function deleteProfile() {
     const result = await confirm.open(t("profile.delete_account_confirm"));
@@ -468,6 +496,21 @@
           </div>
         </div>
         <LanguageSelector />
+      </BaseCard>
+
+      <BaseCard>
+        <template #title>
+          <BaseSectionHeader>
+            {{ $t("regional.section_title") }}
+            <template #description> {{ $t("regional.profile_sub") }} </template>
+          </BaseSectionHeader>
+        </template>
+        <div class="p-4">
+          <FormRegionalFields v-model:country="regional.country" v-model:timezone="regional.timezone" />
+          <Button class="mt-3" size="sm" :disabled="savingRegional" @click="saveRegional">
+            {{ $t("global.save") }}
+          </Button>
+        </div>
       </BaseCard>
 
       <BaseCard>

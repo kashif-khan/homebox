@@ -3,6 +3,7 @@ package repo
 import (
 	"context"
 	"fmt"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/fieldtypes"
 	"math"
 	"strings"
 	"time"
@@ -47,6 +48,9 @@ type EntityRepository struct {
 	bus         *eventbus.EventBus
 	attachments *AttachmentRepo
 	search      search.Engine
+	// events, when set, is told what changed (see repo_events.go). Nil in tests
+	// and when webhooks are off, in which case none of that work happens.
+	events EventSink
 }
 
 type (
@@ -75,6 +79,10 @@ type (
 		OnlyWithPhoto    bool    `json:"onlyWithPhoto"`
 		IncludeArchived  bool    `json:"includeArchived"`
 		FilterChildren   bool    `json:"filterChildren"` // when true, only return root entities (no parent)
+		// ExpiresBefore and ExpiresAfter keep entities whose expiry date falls on
+		// or before / on or after the given day. Entities without one never match.
+		ExpiresBefore *time.Time `json:"expiresBefore"`
+		ExpiresAfter  *time.Time `json:"expiresAfter"`
 	}
 
 	DuplicateOptions struct {
@@ -84,6 +92,10 @@ type (
 		CopyPrefix       string `json:"copyPrefix"`
 	}
 
+	// EntityFieldData is a custom field. Fields of the newer types (decimal,
+	// currency, date, datetime, time, url, select) are sent as a type plus a
+	// canonical TextValue; the server validates it and fills in the typed
+	// values, which are read-only on input.
 	EntityFieldData struct {
 		ID           uuid.UUID `json:"id,omitempty"`
 		Type         string    `json:"type"`
@@ -91,6 +103,17 @@ type (
 		TextValue    string    `json:"textValue"`
 		NumberValue  int       `json:"numberValue"`
 		BooleanValue bool      `json:"booleanValue"`
+		// DecimalValue, TimeValue (a UTC instant) and the other typed values are
+		// derived from TextValue by the server.
+		DecimalValue *float64   `json:"decimalValue,omitempty" extensions:"x-nullable,x-omitempty"`
+		TimeValue    *time.Time `json:"timeValue,omitempty" extensions:"x-nullable,x-omitempty"`
+		// CurrencyCode is the ISO 4217 code of a currency field; NumberValue holds
+		// its amount in minor units.
+		CurrencyCode string `json:"currencyCode,omitempty"`
+		// Timezone is the IANA zone a datetime field was entered in.
+		Timezone string `json:"timezone,omitempty"`
+		// Choices lists the allowed values of a select field.
+		Choices []string `json:"choices,omitempty"`
 	}
 
 	EntityCreate struct {
@@ -115,6 +138,10 @@ type (
 
 	EntityUpdate struct {
 		WarrantyExpires types.Date `json:"warrantyExpires"`
+		// ExpiresAt is the consumable expiry date; leave it empty to clear it.
+		// ExpiryKind is expires, use_by or best_before; empty means expires.
+		ExpiresAt  types.Date `json:"expiresAt"`
+		ExpiryKind string     `json:"expiryKind"`
 		// Purchase
 		PurchaseDate types.Date `json:"purchaseDate"`
 		// Sold
@@ -159,6 +186,10 @@ type (
 		LocationID   uuid.UUID   `json:"locationId"         extensions:"x-nullable,x-omitempty"`
 		EntityTypeID uuid.UUID   `json:"entityTypeId"       extensions:"x-nullable,x-omitempty"`
 		TagIDs       []uuid.UUID `json:"tagIds"             extensions:"x-nullable,x-omitempty"`
+		// ExpiresAt sets the expiry date; an empty date clears it. ExpiryKind is
+		// expires, use_by or best_before. Both are left alone when nil.
+		ExpiresAt  *types.Date `json:"expiresAt,omitempty"  extensions:"x-nullable,x-omitempty"`
+		ExpiryKind *string     `json:"expiryKind,omitempty" extensions:"x-nullable,x-omitempty"`
 	}
 
 	EntitySummary struct {
@@ -185,6 +216,11 @@ type (
 
 		// Sale details
 		SoldDate types.Date `json:"soldDate"`
+
+		// ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind
+		// says whether that is a use-by, best-before or plain expiry date.
+		ExpiresAt  types.Date `json:"expiresAt"`
+		ExpiryKind string     `json:"expiryKind"`
 
 		// Container-specific (populated when querying locations)
 		ItemCount float64 `json:"itemCount,omitempty"`
@@ -295,6 +331,10 @@ func mapEntitySummary(e *ent.Entity) EntitySummary {
 
 		// Sale
 		SoldDate: types.DateFromDBTime(e.SoldDate),
+
+		// Expiry
+		ExpiresAt:  types.DateFromDBTime(e.ExpiresAt),
+		ExpiryKind: string(e.ExpiryKind),
 	}
 }
 
@@ -312,6 +352,11 @@ func mapEntityFields(fields []*ent.EntityField) []EntityFieldData {
 			TextValue:    f.TextValue,
 			NumberValue:  f.NumberValue,
 			BooleanValue: f.BooleanValue,
+			DecimalValue: f.DecimalValue,
+			TimeValue:    timeValueFor(f.Type.String(), f.TimeValue),
+			CurrencyCode: f.CurrencyCode,
+			Timezone:     f.Timezone,
+			Choices:      f.Choices,
 		}
 	})
 }
@@ -790,6 +835,9 @@ func applyEntityOrder(qb *ent.EntityQuery, gid uuid.UUID, q EntityQuery) (*ent.E
 		orderBy = entity.FieldArchived
 	case "purchasePrice":
 		orderBy = entity.FieldPurchasePrice
+	case "expiresAt":
+		// Items without an expiry date always sort last, in both directions.
+		return qb.Order(orderByNullsLast(entity.FieldExpiresAt, q.OrderDirection == "desc")), "expiresAt"
 	case "location":
 		// Sort by the name of the nearest location ancestor.
 		return qb.Order(orderByLocation(gid, q.OrderDirection == "desc")), "location"
@@ -813,6 +861,9 @@ func (r *EntityRepository) QueryByGroup(ctx context.Context, gid uuid.UUID, q En
 	qb := r.db.Entity.Query().Where(
 		entity.HasGroupWith(group.ID(gid)),
 	)
+	if preds := expiryPredicates(q); len(preds) > 0 {
+		qb = qb.Where(preds...)
+	}
 
 	// Filter by exact entity types when provided; otherwise use legacy
 	// location-vs-item behavior for backward compatibility.
@@ -1216,7 +1267,7 @@ func validateQuantity(op string, quantity float64) error {
 	return nil
 }
 
-func (r *EntityRepository) Create(ctx context.Context, gid uuid.UUID, data EntityCreate) (EntityOut, error) {
+func (r *EntityRepository) create(ctx context.Context, gid uuid.UUID, data EntityCreate) (EntityOut, error) {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.Create",
 		trace.WithAttributes(
 			attribute.String("group.id", gid.String()),
@@ -1322,10 +1373,13 @@ type EntityCreateFromTemplate struct {
 	EntityTypeID     uuid.UUID
 	Insured          bool
 	LifetimeWarranty bool
+	// ExpiresAt and ExpiryKind come from the template's expiry defaults.
+	ExpiresAt  types.Date
+	ExpiryKind string
 }
 
 // CreateFromTemplate creates an entity with all template data in a single transaction.
-func (r *EntityRepository) CreateFromTemplate(ctx context.Context, gid uuid.UUID, data EntityCreateFromTemplate) (EntityOut, error) {
+func (r *EntityRepository) createFromTemplate(ctx context.Context, gid uuid.UUID, data EntityCreateFromTemplate) (EntityOut, error) {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.CreateFromTemplate",
 		trace.WithAttributes(
 			attribute.String("group.id", gid.String()),
@@ -1354,6 +1408,10 @@ func (r *EntityRepository) CreateFromTemplate(ctx context.Context, gid uuid.UUID
 		return EntityOut{}, err
 	}
 	if err := assertTagsInGroup(ctx, r.db.Tag, gid, data.TagIDs); err != nil {
+		recordSpanError(span, err)
+		return EntityOut{}, err
+	}
+	if err := r.validateExpiry(ctx, gid, uuid.Nil, data.EntityTypeID, data.ExpiryKind, data.ExpiresAt); err != nil {
 		recordSpanError(span, err)
 		return EntityOut{}, err
 	}
@@ -1415,7 +1473,11 @@ func (r *EntityRepository) CreateFromTemplate(ctx context.Context, gid uuid.UUID
 		SetManufacturer(data.Manufacturer).
 		SetModelNumber(data.ModelNumber).
 		SetLifetimeWarranty(data.LifetimeWarranty).
-		SetWarrantyDetails(data.WarrantyDetails)
+		SetWarrantyDetails(data.WarrantyDetails).
+		SetExpiryKind(entity.ExpiryKind(expiryKindOrDefault(data.ExpiryKind)))
+	if t := data.ExpiresAt.Time(); !t.IsZero() {
+		entityBuilder.SetExpiresAt(t)
+	}
 
 	if templateParentID != uuid.Nil {
 		entityBuilder.SetParentID(templateParentID)
@@ -1444,11 +1506,16 @@ func (r *EntityRepository) CreateFromTemplate(ctx context.Context, gid uuid.UUID
 		fieldsCtx, fieldsSpan := entityTracer().Start(ctx, "repo.EntityRepository.CreateFromTemplate.fields",
 			trace.WithAttributes(attribute.Int("fields.count", len(data.Fields))))
 		for _, field := range data.Fields {
-			_, err = tx.EntityField.Create().
+			val, verr := normalizeField(field)
+			if verr != nil {
+				recordSpanError(fieldsSpan, verr)
+				fieldsSpan.End()
+				recordSpanError(span, verr)
+				return EntityOut{}, verr
+			}
+			_, err = applyFieldCreate(tx.EntityField.Create().
 				SetEntityID(newEntityID).
-				SetType(entityfield.Type(field.Type)).
-				SetName(field.Name).
-				SetTextValue(field.TextValue).
+				SetName(field.Name), val).
 				Save(fieldsCtx)
 			if err != nil {
 				wrapped := fmt.Errorf("failed to create field %s: %w", field.Name, err)
@@ -1477,7 +1544,7 @@ func (r *EntityRepository) CreateFromTemplate(ctx context.Context, gid uuid.UUID
 	return out, err
 }
 
-func (r *EntityRepository) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *EntityRepository) deleteByID(ctx context.Context, id uuid.UUID) error {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.Delete",
 		trace.WithAttributes(attribute.String("entity.id", id.String())))
 	defer span.End()
@@ -1533,7 +1600,7 @@ func (r *EntityRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *EntityRepository) DeleteByGroup(ctx context.Context, gid, id uuid.UUID) error {
+func (r *EntityRepository) deleteByGroup(ctx context.Context, gid, id uuid.UUID) error {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.DeleteByGroup",
 		trace.WithAttributes(
 			attribute.String("group.id", gid.String()),
@@ -1710,7 +1777,7 @@ func (r *EntityRepository) WipeInventory(ctx context.Context, gid uuid.UUID, wip
 	return deleted, nil
 }
 
-func (r *EntityRepository) UpdateByGroup(ctx context.Context, gid uuid.UUID, data EntityUpdate) (EntityOut, error) {
+func (r *EntityRepository) updateByGroup(ctx context.Context, gid uuid.UUID, data EntityUpdate) (EntityOut, error) {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.UpdateByGroup",
 		trace.WithAttributes(
 			attribute.String("group.id", gid.String()),
@@ -1746,6 +1813,22 @@ func (r *EntityRepository) UpdateByGroup(ctx context.Context, gid uuid.UUID, dat
 	if err := assertEntityInGroup(ctx, r.db.Entity, gid, data.ID); err != nil {
 		recordSpanError(span, err)
 		return EntityOut{}, err
+	}
+
+	// Validate everything the client sent that is not a plain reference before
+	// the first write, so a rejected request leaves the entity untouched.
+	if err := r.validateExpiry(ctx, gid, data.ID, data.EntityTypeID, data.ExpiryKind, data.ExpiresAt); err != nil {
+		recordSpanError(span, err)
+		return EntityOut{}, err
+	}
+	fieldValues := make([]fieldtypes.Value, len(data.Fields))
+	for i, f := range data.Fields {
+		v, err := normalizeField(f)
+		if err != nil {
+			recordSpanError(span, err)
+			return EntityOut{}, err
+		}
+		fieldValues[i] = v
 	}
 
 	// See EntityRepository.Create for the rationale on these cross-group
@@ -1810,6 +1893,12 @@ func (r *EntityRepository) UpdateByGroup(ctx context.Context, gid uuid.UUID, dat
 	} else {
 		q.SetWarrantyExpires(t)
 	}
+	if t := data.ExpiresAt.Time(); t.IsZero() {
+		q.ClearExpiresAt()
+	} else {
+		q.SetExpiresAt(t)
+	}
+	q.SetExpiryKind(entity.ExpiryKind(expiryKindOrDefault(data.ExpiryKind)))
 
 	if data.EntityTypeID != uuid.Nil {
 		q.SetEntityTypeID(data.EntityTypeID)
@@ -1904,15 +1993,12 @@ func (r *EntityRepository) UpdateByGroup(ctx context.Context, gid uuid.UUID, dat
 	createdFields := 0
 	updatedFields := 0
 	// Update Existing Fields
-	for _, f := range data.Fields {
+	for i, f := range data.Fields {
+		val := fieldValues[i]
 		if f.ID == uuid.Nil {
-			_, err = r.db.EntityField.Create().
+			_, err = applyFieldCreate(r.db.EntityField.Create().
 				SetEntityID(data.ID).
-				SetType(entityfield.Type(f.Type)).
-				SetName(f.Name).
-				SetTextValue(f.TextValue).
-				SetNumberValue(f.NumberValue).
-				SetBooleanValue(f.BooleanValue).
+				SetName(f.Name), val).
 				Save(fieldsCtx)
 			if err != nil {
 				recordSpanError(fieldsSpan, err)
@@ -1923,16 +2009,12 @@ func (r *EntityRepository) UpdateByGroup(ctx context.Context, gid uuid.UUID, dat
 			createdFields++
 		}
 
-		opt := r.db.EntityField.Update().
+		opt := applyFieldUpdate(r.db.EntityField.Update().
 			Where(
 				entityfield.ID(f.ID),
 				entityfield.HasEntityWith(entity.ID(data.ID), entity.HasGroupWith(group.ID(gid))),
 			).
-			SetType(entityfield.Type(f.Type)).
-			SetName(f.Name).
-			SetTextValue(f.TextValue).
-			SetNumberValue(f.NumberValue).
-			SetBooleanValue(f.BooleanValue)
+			SetName(f.Name), val)
 
 		_, err = opt.Save(fieldsCtx)
 		if err != nil {
@@ -2054,7 +2136,7 @@ func patchSyncTags(ctx context.Context, tx *ent.Tx, gid, id uuid.UUID, want []uu
 	return nil
 }
 
-func (r *EntityRepository) Patch(ctx context.Context, gid, id uuid.UUID, data EntityPatch) error {
+func (r *EntityRepository) patch(ctx context.Context, gid, id uuid.UUID, data EntityPatch) error {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.Patch",
 		trace.WithAttributes(
 			attribute.String("group.id", gid.String()),
@@ -2117,6 +2199,27 @@ func (r *EntityRepository) Patch(ctx context.Context, gid, id uuid.UUID, data En
 		}
 
 		q.SetQuantity(*data.Quantity)
+	}
+
+	if data.ExpiryKind != nil {
+		if !ValidExpiryKind(*data.ExpiryKind) {
+			err := expiryError("expiryKind must be one of expires, use_by, best_before")
+			recordSpanError(span, err)
+			return err
+		}
+		q.SetExpiryKind(entity.ExpiryKind(expiryKindOrDefault(*data.ExpiryKind)))
+	}
+	if data.ExpiresAt != nil {
+		if t := data.ExpiresAt.Time(); t.IsZero() {
+			// Clearing is refused where the type demands a date.
+			if err := r.validateExpiry(ctx, gid, id, data.EntityTypeID, "", types.Date{}); err != nil {
+				recordSpanError(span, err)
+				return err
+			}
+			q.ClearExpiresAt()
+		} else {
+			q.SetExpiresAt(t)
+		}
 	}
 
 	switch {
@@ -2447,7 +2550,7 @@ func (r *EntityRepository) SetPrimaryPhotos(ctx context.Context, gid uuid.UUID) 
 }
 
 // Duplicate creates a copy of an entity with configurable options for what data to copy.
-func (r *EntityRepository) Duplicate(ctx context.Context, gid, id uuid.UUID, options DuplicateOptions) (EntityOut, error) {
+func (r *EntityRepository) duplicate(ctx context.Context, gid, id uuid.UUID, options DuplicateOptions) (EntityOut, error) {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.Duplicate",
 		trace.WithAttributes(
 			attribute.String("group.id", gid.String()),
@@ -2528,6 +2631,10 @@ func (r *EntityRepository) Duplicate(ctx context.Context, gid, id uuid.UUID, opt
 	if t := originalEntity.SoldDate.Time(); !t.IsZero() {
 		entityBuilder.SetSoldDate(t)
 	}
+	if t := originalEntity.ExpiresAt.Time(); !t.IsZero() {
+		entityBuilder.SetExpiresAt(t)
+	}
+	entityBuilder.SetExpiryKind(entity.ExpiryKind(expiryKindOrDefault(originalEntity.ExpiryKind)))
 	if t := originalEntity.WarrantyExpires.Time(); !t.IsZero() {
 		entityBuilder.SetWarrantyExpires(t)
 	}
@@ -2574,13 +2681,11 @@ func (r *EntityRepository) Duplicate(ctx context.Context, gid, id uuid.UUID, opt
 			trace.WithAttributes(attribute.Int("fields.count", len(originalEntity.Fields))))
 		copied := 0
 		for _, field := range originalEntity.Fields {
-			_, err = tx.EntityField.Create().
+			// The source field was validated when it was written, so it is copied
+			// as stored rather than re-parsed.
+			_, err = applyFieldCreate(tx.EntityField.Create().
 				SetEntityID(newEntityID).
-				SetType(entityfield.Type(field.Type)).
-				SetName(field.Name).
-				SetTextValue(field.TextValue).
-				SetNumberValue(field.NumberValue).
-				SetBooleanValue(field.BooleanValue).
+				SetName(field.Name), storedValue(field)).
 				Save(fieldsCtx)
 			if err != nil {
 				recordSpanError(fieldsSpan, err)
@@ -2793,7 +2898,7 @@ func (r *EntityRepository) GetContainerByGroup(ctx context.Context, gid, id uuid
 }
 
 // CreateContainer creates a container entity (with a location-type entity_type).
-func (r *EntityRepository) CreateContainer(ctx context.Context, gid uuid.UUID, data EntityCreate) (EntityOut, error) {
+func (r *EntityRepository) createContainer(ctx context.Context, gid uuid.UUID, data EntityCreate) (EntityOut, error) {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.CreateContainer",
 		trace.WithAttributes(
 			attribute.String("group.id", gid.String()),
@@ -2932,7 +3037,7 @@ func (r *EntityRepository) UpdateContainer(ctx context.Context, gid, id uuid.UUI
 }
 
 // DeleteContainerByGroup deletes a container entity by group.
-func (r *EntityRepository) DeleteContainerByGroup(ctx context.Context, gid, id uuid.UUID) error {
+func (r *EntityRepository) deleteContainerByGroup(ctx context.Context, gid, id uuid.UUID) error {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.DeleteContainerByGroup",
 		trace.WithAttributes(
 			attribute.String("group.id", gid.String()),

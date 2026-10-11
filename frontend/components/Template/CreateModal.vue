@@ -62,6 +62,13 @@
       </div>
 
       <Separator class="my-2" />
+      <TemplateExpiryDefaults
+        v-model:include="form.includeExpiryFields"
+        v-model:offset-days="form.defaultExpiryOffsetDays"
+        v-model:kind="form.defaultExpiryKind"
+      />
+
+      <Separator class="my-2" />
       <div class="flex items-center justify-between">
         <h3 class="text-sm font-medium">{{ $t("components.template.form.custom_fields") }}</h3>
         <Button type="button" size="sm" variant="outline" @click="addField">
@@ -69,18 +76,14 @@
           {{ $t("global.add") }}
         </Button>
       </div>
-      <div v-if="form.fields.length > 0" class="flex flex-col gap-2">
+      <div v-if="form.fields.length > 0" class="flex flex-col gap-3">
         <div v-for="(field, idx) in form.fields" :key="idx" class="flex items-end gap-2">
-          <FormTextField
-            v-model="field.name"
-            :label="$t('components.template.form.field_name')"
-            :max-length="255"
-            class="flex-1"
-          />
-          <FormTextField
-            v-model="field.textValue"
-            :label="$t('components.template.form.default_value')"
-            class="flex-1"
+          <FormCustomFieldRow
+            :model-value="field"
+            :currencies="fieldCurrencies"
+            :default-currency="fieldDefaultCurrency"
+            :default-timezone="fieldDefaultTimezone"
+            :value-label="$t('components.template.form.default_value')"
           />
           <Button type="button" size="icon" variant="ghost" @click="form.fields.splice(idx, 1)">
             <MdiDelete class="size-4" />
@@ -97,6 +100,9 @@
 </template>
 
 <script setup lang="ts">
+  import TemplateExpiryDefaults from "~/components/Template/ExpiryDefaults.vue";
+  import FormCustomFieldRow from "~/components/Form/CustomFieldRow.vue";
+  import { blankField, useFieldDefaults, type EditableField } from "~/composables/use-custom-fields";
   import { useI18n } from "vue-i18n";
   import { toast } from "@/components/ui/sonner";
   import MdiPlus from "~icons/mdi/plus";
@@ -140,13 +146,25 @@
     includeWarrantyFields: false,
     includePurchaseFields: false,
     includeSoldFields: false,
-    fields: [] as Array<{ id: string; name: string; type: "text"; textValue: string }>,
+    includeExpiryFields: false,
+    defaultExpiryOffsetDays: null as number | null,
+    defaultExpiryKind: "expires",
+    fields: [] as EditableField[],
   });
+
+  const {
+    currencies: fieldCurrencies,
+    defaultCurrency: fieldDefaultCurrency,
+    defaultTimezone: fieldDefaultTimezone,
+  } = useFieldDefaults();
 
   const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 
   function addField() {
-    form.fields.push({ id: NIL_UUID, name: "", type: "text", textValue: "" });
+    form.fields.push({
+      ...blankField({ currency: fieldDefaultCurrency.value, timezone: fieldDefaultTimezone.value }),
+      id: NIL_UUID,
+    });
   }
 
   function reset() {
@@ -168,6 +186,9 @@
       includeWarrantyFields: false,
       includePurchaseFields: false,
       includeSoldFields: false,
+      includeExpiryFields: false,
+      defaultExpiryOffsetDays: null,
+      defaultExpiryKind: "expires",
       fields: [],
     });
     loading.value = false;
@@ -199,6 +220,9 @@
       includeWarrantyFields: form.includeWarrantyFields,
       includePurchaseFields: form.includePurchaseFields,
       includeSoldFields: form.includeSoldFields,
+      includeExpiryFields: form.includeExpiryFields,
+      defaultExpiryOffsetDays: form.includeExpiryFields ? form.defaultExpiryOffsetDays : null,
+      defaultExpiryKind: form.defaultExpiryKind,
       fields: form.fields,
     };
 

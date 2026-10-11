@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/samber/lo"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/fieldtypes"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services/reporting"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/repo"
 	"go.opentelemetry.io/otel"
@@ -414,12 +416,12 @@ func (svc *EntityService) CsvImport(ctx context.Context, gid uuid.UUID, data io.
 			effAID = entity.AssetID
 		}
 
+		// A CSV carries every custom field as text. Keep the type of a field the
+		// item already has, so re-importing an export does not turn dates and
+		// amounts back into plain text.
+		existingFields := lo.KeyBy(entity.Fields, func(f repo.EntityFieldData) string { return f.Name })
 		fields := lo.Map(row.Fields, func(f reporting.ExportItemFields, _ int) repo.EntityFieldData {
-			return repo.EntityFieldData{
-				Name:      f.Name,
-				Type:      "text",
-				TextValue: f.Value,
-			}
+			return importedField(f.Name, f.Value, existingFields[f.Name])
 		})
 
 		updateEntity := repo.EntityUpdate{
@@ -444,6 +446,8 @@ func (svc *EntityService) CsvImport(ctx context.Context, gid uuid.UUID, data io.
 
 			LifetimeWarranty: row.LifetimeWarranty,
 			WarrantyExpires:  row.WarrantyExpires,
+			ExpiresAt:        row.ExpiresAt,
+			ExpiryKind:       row.ExpiryKind,
 			WarrantyDetails:  row.WarrantyDetails,
 
 			SoldTo:    row.SoldTo,
@@ -630,4 +634,46 @@ func (svc *EntityService) ExportBillOfMaterialsCSV(ctx context.Context, gid uuid
 	}
 	encodeSpan.SetAttributes(attribute.Int("bytes.size", len(out)))
 	return out, nil
+}
+
+// importedField builds a custom field from a CSV cell. When the item already
+// has a field of that name with a richer type, the cell is read as that type;
+// a value that does not parse falls back to plain text rather than failing the
+// whole import.
+func importedField(name, value string, existing repo.EntityFieldData) repo.EntityFieldData {
+	text := repo.EntityFieldData{Name: name, Type: "text", TextValue: value}
+	if existing.Type == "" || existing.Type == "text" {
+		return text
+	}
+
+	typed := repo.EntityFieldData{
+		Name:         name,
+		Type:         existing.Type,
+		TextValue:    value,
+		CurrencyCode: existing.CurrencyCode,
+		Timezone:     existing.Timezone,
+		Choices:      existing.Choices,
+	}
+	switch fieldtypes.Type(existing.Type) {
+	case fieldtypes.Number:
+		n, err := strconv.Atoi(strings.TrimSpace(value))
+		if err != nil {
+			return text
+		}
+		typed.NumberValue = n
+	case fieldtypes.Boolean:
+		b, err := strconv.ParseBool(strings.TrimSpace(value))
+		if err != nil {
+			return text
+		}
+		typed.BooleanValue = b
+	default:
+		if _, err := fieldtypes.Normalize(fieldtypes.Input{
+			Type: typed.Type, Name: name, TextValue: value,
+			CurrencyCode: typed.CurrencyCode, Timezone: typed.Timezone, Choices: typed.Choices,
+		}); err != nil {
+			return text
+		}
+	}
+	return typed
 }

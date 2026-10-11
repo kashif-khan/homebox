@@ -40,7 +40,9 @@
             "members": "Members",
             "notifiers": "Notifiers",
             "settings": "Settings",
-            "tools": "Tools"
+            "tools": "Tools",
+            "alerts": "Alerts",
+            "webhooks": "Webhooks"
         },
         "uses": "Uses",
         "ai_access": {
@@ -58,7 +60,9 @@
                 "full": "Assistants may do everything you can do in this collection, including deleting. Deletions still need the user's confirmation in the assistant."
             },
             "server_read_only": "The server administrator has limited AI assistants to read-only access, whatever is chosen here."
-        }
+        },
+        "notify_hour": "Send alerts from",
+        "notify_hour_hint": "The hour of day, in the collection's time zone, from which that day's alerts go out."
     },
     "components": {
         "app": {
@@ -179,7 +183,8 @@
                 "tooltip": {
                     "delete": "Delete",
                     "edit": "Edit"
-                }
+                },
+                "expiry_required": "Expiry date required"
             },
             "confirm": {
                 "convert_item_to_location": "Converting an item type to a location type will result in a loss of fields for entities using this type. Are you sure you want to continue?",
@@ -211,7 +216,8 @@
                 "is_container_location_type_label": "Is a container / location type",
                 "name_label": "Name",
                 "title": "Update Entity Type"
-            }
+            },
+            "expiry_required_label": "Items of this type must have an expiry date"
         },
         "form": {
             "min_length": "min {min}",
@@ -422,7 +428,12 @@
                 "model_number": "Model Number",
                 "no_custom_fields": "No custom fields.",
                 "template_description": "Template Description",
-                "template_name": "Template Name"
+                "template_name": "Template Name",
+                "expiry_include": "Set an expiry date on new items",
+                "expiry_offset_days": "Expires after (days)",
+                "expiry_offset_hint": "Counted from the day the item is added. Leave empty to set the date by hand.",
+                "expiry_by_hand": "Set by hand on each item",
+                "expiry_after": "Expires {n} days after the item is added"
             },
             "hide_defaults": "Hide defaults",
             "save_as_template": "Save as Template",
@@ -522,7 +533,11 @@
         "total_items": "Total Items",
         "total_locations": "Total Locations",
         "total_tags": "Total Tags",
-        "total_value": "Total Value"
+        "total_value": "Total Value",
+        "expiry": "Expiry",
+        "expired": "Expired",
+        "expiring_soon": "Expiring soon",
+        "and_more": "and {n} more"
     },
     "index": {
         "back_to_login": "Back to login",
@@ -656,7 +671,7 @@
         "serial_number": "Serial Number",
         "show_advanced_view_options": "Show Advanced View Options",
         "show_empty": "Show Empty",
-        "sold_at": "Sold At",
+        "sold_at": "Sold On",
         "sold_details": "Sold Details",
         "sold_price": "Sold Price",
         "sold_to": "Sold To",
@@ -700,7 +715,27 @@
         "updated_at": "Updated At",
         "warranty": "Warranty",
         "warranty_details": "Warranty Details",
-        "warranty_expires": "Warranty Expires"
+        "warranty_expires": "Warranty Expires",
+        "expires_at": "Expires",
+        "expiry_kind": "Expiry type",
+        "expiry_kinds": {
+            "expires": "Expires",
+            "use_by": "Use by",
+            "best_before": "Best before"
+        },
+        "expiry_status": {
+            "expired": "Expired",
+            "today": "Expires today",
+            "in_days": "Expires in {n} days",
+            "tomorrow": "Expires tomorrow",
+            "ago_days": "Expired {n} days ago",
+            "ago_one": "Expired yesterday"
+        },
+        "expiry_filter": {
+            "any": "Any",
+            "expired": "Already expired",
+            "in_days": "Expiring within {n} days"
+        }
     },
     "languages": {
         "bs-BA": "Bosnian (Bosnia and Herzegovina)",
@@ -1237,6 +1272,135 @@
             "deny_failed": "Could not decline the request.",
             "missing_request": "This page needs to be opened from an AI assistant's connection flow.",
             "expired": "This request has expired or was already handled. Start the connection again from the assistant."
+        }
+    },
+    "regional": {
+        "country": "Country",
+        "currency": "Currency",
+        "timezone": "Time zone",
+        "not_set": "Not set",
+        "section_title": "Regional settings",
+        "detected_hint": "Pre-filled from your browser. Change anything that is wrong.",
+        "timezone_hint": "Alerts are scheduled in this time zone. Example: Europe/London.",
+        "profile_sub": "Used to pre-fill new collections and to schedule alerts.",
+        "toast": {
+            "saved": "Regional settings saved",
+            "failed": "Could not save regional settings"
+        }
+    },
+    "custom_fields": {
+        "type": "Type",
+        "pick_choice": "Pick one",
+        "choices": "Choices",
+        "choices_placeholder": "Choices, separated by commas",
+        "types": {
+            "text": "Text",
+            "number": "Whole number",
+            "decimal": "Decimal",
+            "currency": "Currency",
+            "boolean": "Yes / no",
+            "date": "Date",
+            "time": "Time",
+            "datetime": "Date and time",
+            "url": "Link",
+            "select": "Choice list"
+        }
+    },
+    "alerts": {
+        "title": "Alert rules",
+        "subtitle": "Choose when to be told about expiry dates, warranties and maintenance. Alerts go to your notifiers.",
+        "none": "No alert rules yet.",
+        "new_rule": "New alert rule",
+        "edit_rule": "Edit alert rule",
+        "trigger": "What to watch",
+        "triggers": {
+            "expires_at": "Item expires",
+            "warranty_expires": "Warranty ends",
+            "maintenance_due": "Maintenance due"
+        },
+        "when": "When to send",
+        "when_hint": "Each choice is one alert. Days before, on the day, or days after the date. A missed alert is sent late rather than dropped.",
+        "custom_offset": "Other number of days (negative for after)",
+        "invalid_offset": "Enter a whole number of days between -3650 and 3650.",
+        "need_offset": "Choose at least one time to send.",
+        "offset": {
+            "on_the_day": "On the day",
+            "one_day_before": "1 day before",
+            "one_day_after": "1 day after",
+            "days_before": "{n} days before",
+            "days_after": "{n} days after"
+        },
+        "only_type": "Only items of type",
+        "only_tag": "Only items tagged",
+        "any": "Any",
+        "send_to": "Send to",
+        "send_to_hint": "Leave all unticked to use every active notifier.",
+        "no_notifiers": "Add a notifier first, on the Notifiers tab.",
+        "all_notifiers": "all active notifiers",
+        "sent_to": "Sent to {who}",
+        "turn_on": "Turn on",
+        "turn_off": "Turn off",
+        "delete_confirm": "Delete the rule \"{name}\"?",
+        "toast": {
+            "saved": "Alert rule saved",
+            "save_failed": "Could not save the alert rule",
+            "delete_failed": "Could not delete the alert rule"
+        }
+    },
+    "webhooks": {
+        "title": "Webhooks",
+        "subtitle": "Tell other systems (n8n, Home Assistant, Node-RED) when something happens. Every delivery is signed so you can trust it.",
+        "disabled": "Webhooks are off on this server. The administrator can turn them on with",
+        "none": "No webhooks yet.",
+        "new": "New webhook",
+        "edit": "Edit webhook",
+        "url": "Destination URL",
+        "url_keep": "Leave blank to keep the current URL",
+        "url_hint": "The URL often contains a secret token, so it is never shown again after saving.",
+        "events": "Events",
+        "groups": {
+            "item": "Items and attachments",
+            "dated": "Dates (from your alert rules)",
+            "backup": "Backups"
+        },
+        "dated_hint": "Date events follow your alert rules: a rule that fires 30 days and 1 day before an expiry sends an event each time. They are only sent for rules that exist, so create the rules first.",
+        "only_type": "Only items of type",
+        "only_tag": "Only items tagged",
+        "need_event": "Choose at least one event.",
+        "send_test": "Send test",
+        "log": "Deliveries",
+        "rotate": "New secret",
+        "rotate_confirm": "Replace the signing secret of \"{name}\"? The old one stops working immediately.",
+        "delete_confirm": "Delete the webhook \"{name}\" and its delivery history?",
+        "secret_title": "Signing secret",
+        "secret_once": "Copy this now. It is shown only once and signs every delivery.",
+        "verify_hint": "Each delivery has X-Homebox-Timestamp and X-Homebox-Signature headers. The signature is sha256= followed by the HMAC-SHA256, keyed with this secret, of the timestamp, a dot, and the raw request body.",
+        "copy": "Copy",
+        "secret_copied": "Secret copied",
+        "copy_failed": "Could not copy",
+        "done": "Done",
+        "log_title": "Deliveries for {name}",
+        "log_empty": "Nothing has been sent to this webhook yet.",
+        "status": {
+            "pending": "Waiting",
+            "delivered": "Delivered",
+            "failed": "Failed"
+        },
+        "attempts": "{n} attempts",
+        "late": "Late by {by}",
+        "late_hint": "Sent this long after it was meant to be, for example because the server was down or the receiver was unreachable. The payload says so too.",
+        "redeliver": "Send again",
+        "prev": "Previous",
+        "next": "Next",
+        "toast": {
+            "saved": "Webhook saved",
+            "save_failed": "Could not save the webhook",
+            "delete_failed": "Could not delete the webhook",
+            "test_ok": "Test delivered (HTTP {code})",
+            "test_rejected": "Test failed: {why}",
+            "test_failed": "Could not send the test",
+            "redeliver_failed": "Could not queue the delivery",
+            "redelivering": "Queued for delivery"
         }
     }
 }

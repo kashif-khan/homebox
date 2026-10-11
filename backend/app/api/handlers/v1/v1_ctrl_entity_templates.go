@@ -1,7 +1,9 @@
 package v1
 
 import (
+	"github.com/sysadminsmedia/homebox/backend/internal/core/regional"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/hay-kot/httpkit/errchain"
@@ -141,14 +143,15 @@ func (ctrl *V1Controller) HandleEntityTemplatesCreateItem() errchain.HandlerFunc
 
 		// Build custom fields from template
 		fields := lo.Map(template.Fields, func(f repo.TemplateField, _ int) repo.EntityFieldData {
-			return repo.EntityFieldData{
-				Type:         f.Type,
-				Name:         f.Name,
-				TextValue:    f.TextValue,
-				NumberValue:  f.NumberValue,
-				BooleanValue: f.BooleanValue,
-			}
+			return f.ToEntityField()
 		})
+
+		// Expiry defaults count from today in the collection's time zone.
+		var tz string
+		if g, gerr := ctrl.repo.Groups.GroupByID(r.Context(), auth.GID); gerr == nil {
+			tz = g.Timezone
+		}
+		expiresAt, expiryKind := repo.TemplateExpiry(template, time.Now(), regional.Location(tz))
 
 		// Create entity with all template data in a single transaction
 		return ctrl.repo.Entities.CreateFromTemplate(r.Context(), auth.GID, repo.EntityCreateFromTemplate{
@@ -165,6 +168,8 @@ func (ctrl *V1Controller) HandleEntityTemplatesCreateItem() errchain.HandlerFunc
 			LifetimeWarranty: template.DefaultLifetimeWarranty,
 			WarrantyDetails:  template.DefaultWarrantyDetails,
 			Fields:           fields,
+			ExpiresAt:        expiresAt,
+			ExpiryKind:       expiryKind,
 		})
 	}
 

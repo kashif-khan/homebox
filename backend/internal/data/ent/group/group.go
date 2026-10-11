@@ -23,6 +23,12 @@ const (
 	FieldName = "name"
 	// FieldCurrency holds the string denoting the currency field in the database.
 	FieldCurrency = "currency"
+	// FieldTimezone holds the string denoting the timezone field in the database.
+	FieldTimezone = "timezone"
+	// FieldNotifyHour holds the string denoting the notify_hour field in the database.
+	FieldNotifyHour = "notify_hour"
+	// FieldAlertRulesSeeded holds the string denoting the alert_rules_seeded field in the database.
+	FieldAlertRulesSeeded = "alert_rules_seeded"
 	// FieldMcpAccess holds the string denoting the mcp_access field in the database.
 	FieldMcpAccess = "mcp_access"
 	// EdgeUsers holds the string denoting the users edge name in mutations.
@@ -45,6 +51,10 @@ const (
 	EdgeBackupDestinations = "backup_destinations"
 	// EdgeOauthGrants holds the string denoting the oauth_grants edge name in mutations.
 	EdgeOauthGrants = "oauth_grants"
+	// EdgeNotificationRules holds the string denoting the notification_rules edge name in mutations.
+	EdgeNotificationRules = "notification_rules"
+	// EdgeWebhookEndpoints holds the string denoting the webhook_endpoints edge name in mutations.
+	EdgeWebhookEndpoints = "webhook_endpoints"
 	// EdgeUserGroups holds the string denoting the user_groups edge name in mutations.
 	EdgeUserGroups = "user_groups"
 	// Table holds the table name of the group in the database.
@@ -117,6 +127,20 @@ const (
 	OauthGrantsInverseTable = "oauth_grants"
 	// OauthGrantsColumn is the table column denoting the oauth_grants relation/edge.
 	OauthGrantsColumn = "group_id"
+	// NotificationRulesTable is the table that holds the notification_rules relation/edge.
+	NotificationRulesTable = "notification_rules"
+	// NotificationRulesInverseTable is the table name for the NotificationRule entity.
+	// It exists in this package in order to avoid circular dependency with the "notificationrule" package.
+	NotificationRulesInverseTable = "notification_rules"
+	// NotificationRulesColumn is the table column denoting the notification_rules relation/edge.
+	NotificationRulesColumn = "group_id"
+	// WebhookEndpointsTable is the table that holds the webhook_endpoints relation/edge.
+	WebhookEndpointsTable = "webhook_endpoints"
+	// WebhookEndpointsInverseTable is the table name for the WebhookEndpoint entity.
+	// It exists in this package in order to avoid circular dependency with the "webhookendpoint" package.
+	WebhookEndpointsInverseTable = "webhook_endpoints"
+	// WebhookEndpointsColumn is the table column denoting the webhook_endpoints relation/edge.
+	WebhookEndpointsColumn = "group_id"
 	// UserGroupsTable is the table that holds the user_groups relation/edge.
 	UserGroupsTable = "user_groups"
 	// UserGroupsInverseTable is the table name for the UserGroup entity.
@@ -133,6 +157,9 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldName,
 	FieldCurrency,
+	FieldTimezone,
+	FieldNotifyHour,
+	FieldAlertRulesSeeded,
 	FieldMcpAccess,
 }
 
@@ -163,6 +190,14 @@ var (
 	NameValidator func(string) error
 	// DefaultCurrency holds the default value on creation for the "currency" field.
 	DefaultCurrency string
+	// DefaultTimezone holds the default value on creation for the "timezone" field.
+	DefaultTimezone string
+	// TimezoneValidator is a validator for the "timezone" field. It is called by the builders before save.
+	TimezoneValidator func(string) error
+	// DefaultNotifyHour holds the default value on creation for the "notify_hour" field.
+	DefaultNotifyHour int
+	// DefaultAlertRulesSeeded holds the default value on creation for the "alert_rules_seeded" field.
+	DefaultAlertRulesSeeded bool
 	// DefaultMcpAccess holds the default value on creation for the "mcp_access" field.
 	DefaultMcpAccess string
 	// DefaultID holds the default value on creation for the "id" field.
@@ -195,6 +230,21 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByCurrency orders the results by the currency field.
 func ByCurrency(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCurrency, opts...).ToFunc()
+}
+
+// ByTimezone orders the results by the timezone field.
+func ByTimezone(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTimezone, opts...).ToFunc()
+}
+
+// ByNotifyHour orders the results by the notify_hour field.
+func ByNotifyHour(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNotifyHour, opts...).ToFunc()
+}
+
+// ByAlertRulesSeeded orders the results by the alert_rules_seeded field.
+func ByAlertRulesSeeded(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAlertRulesSeeded, opts...).ToFunc()
 }
 
 // ByMcpAccess orders the results by the mcp_access field.
@@ -342,6 +392,34 @@ func ByOauthGrants(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByNotificationRulesCount orders the results by notification_rules count.
+func ByNotificationRulesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newNotificationRulesStep(), opts...)
+	}
+}
+
+// ByNotificationRules orders the results by notification_rules terms.
+func ByNotificationRules(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newNotificationRulesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByWebhookEndpointsCount orders the results by webhook_endpoints count.
+func ByWebhookEndpointsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newWebhookEndpointsStep(), opts...)
+	}
+}
+
+// ByWebhookEndpoints orders the results by webhook_endpoints terms.
+func ByWebhookEndpoints(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newWebhookEndpointsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByUserGroupsCount orders the results by user_groups count.
 func ByUserGroupsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -423,6 +501,20 @@ func newOauthGrantsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(OauthGrantsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, OauthGrantsTable, OauthGrantsColumn),
+	)
+}
+func newNotificationRulesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(NotificationRulesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, NotificationRulesTable, NotificationRulesColumn),
+	)
+}
+func newWebhookEndpointsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(WebhookEndpointsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, WebhookEndpointsTable, WebhookEndpointsColumn),
 	)
 }
 func newUserGroupsStep() *sqlgraph.Step {

@@ -53,6 +53,12 @@ type EntityTemplate struct {
 	IncludePurchaseFields bool `json:"include_purchase_fields,omitempty"`
 	// Whether to include sold fields in items created from this template
 	IncludeSoldFields bool `json:"include_sold_fields,omitempty"`
+	// Whether to include the expiry date in items created from this template
+	IncludeExpiryFields bool `json:"include_expiry_fields,omitempty"`
+	// Items created from this template expire this many days after they are added
+	DefaultExpiryOffsetDays *int `json:"default_expiry_offset_days,omitempty"`
+	// DefaultExpiryKind holds the value of the "default_expiry_kind" field.
+	DefaultExpiryKind entitytemplate.DefaultExpiryKind `json:"default_expiry_kind,omitempty"`
 	// Default tag IDs for items created from this template
 	DefaultTagIds []uuid.UUID `json:"default_tag_ids,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -114,11 +120,13 @@ func (*EntityTemplate) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case entitytemplate.FieldDefaultTagIds:
 			values[i] = new([]byte)
-		case entitytemplate.FieldDefaultInsured, entitytemplate.FieldDefaultLifetimeWarranty, entitytemplate.FieldIncludeWarrantyFields, entitytemplate.FieldIncludePurchaseFields, entitytemplate.FieldIncludeSoldFields:
+		case entitytemplate.FieldDefaultInsured, entitytemplate.FieldDefaultLifetimeWarranty, entitytemplate.FieldIncludeWarrantyFields, entitytemplate.FieldIncludePurchaseFields, entitytemplate.FieldIncludeSoldFields, entitytemplate.FieldIncludeExpiryFields:
 			values[i] = new(sql.NullBool)
 		case entitytemplate.FieldDefaultQuantity:
 			values[i] = new(sql.NullFloat64)
-		case entitytemplate.FieldName, entitytemplate.FieldDescription, entitytemplate.FieldNotes, entitytemplate.FieldDefaultName, entitytemplate.FieldDefaultDescription, entitytemplate.FieldDefaultManufacturer, entitytemplate.FieldDefaultModelNumber, entitytemplate.FieldDefaultWarrantyDetails:
+		case entitytemplate.FieldDefaultExpiryOffsetDays:
+			values[i] = new(sql.NullInt64)
+		case entitytemplate.FieldName, entitytemplate.FieldDescription, entitytemplate.FieldNotes, entitytemplate.FieldDefaultName, entitytemplate.FieldDefaultDescription, entitytemplate.FieldDefaultManufacturer, entitytemplate.FieldDefaultModelNumber, entitytemplate.FieldDefaultWarrantyDetails, entitytemplate.FieldDefaultExpiryKind:
 			values[i] = new(sql.NullString)
 		case entitytemplate.FieldCreatedAt, entitytemplate.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -245,6 +253,25 @@ func (_m *EntityTemplate) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.IncludeSoldFields = value.Bool
 			}
+		case entitytemplate.FieldIncludeExpiryFields:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field include_expiry_fields", values[i])
+			} else if value.Valid {
+				_m.IncludeExpiryFields = value.Bool
+			}
+		case entitytemplate.FieldDefaultExpiryOffsetDays:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field default_expiry_offset_days", values[i])
+			} else if value.Valid {
+				_m.DefaultExpiryOffsetDays = new(int)
+				*_m.DefaultExpiryOffsetDays = int(value.Int64)
+			}
+		case entitytemplate.FieldDefaultExpiryKind:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field default_expiry_kind", values[i])
+			} else if value.Valid {
+				_m.DefaultExpiryKind = entitytemplate.DefaultExpiryKind(value.String)
+			}
 		case entitytemplate.FieldDefaultTagIds:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field default_tag_ids", values[i])
@@ -365,6 +392,17 @@ func (_m *EntityTemplate) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("include_sold_fields=")
 	builder.WriteString(fmt.Sprintf("%v", _m.IncludeSoldFields))
+	builder.WriteString(", ")
+	builder.WriteString("include_expiry_fields=")
+	builder.WriteString(fmt.Sprintf("%v", _m.IncludeExpiryFields))
+	builder.WriteString(", ")
+	if v := _m.DefaultExpiryOffsetDays; v != nil {
+		builder.WriteString("default_expiry_offset_days=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("default_expiry_kind=")
+	builder.WriteString(fmt.Sprintf("%v", _m.DefaultExpiryKind))
 	builder.WriteString(", ")
 	builder.WriteString("default_tag_ids=")
 	builder.WriteString(fmt.Sprintf("%v", _m.DefaultTagIds))

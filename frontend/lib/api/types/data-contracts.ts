@@ -11,6 +11,13 @@
  * ---------------------------------------------------------------
  */
 
+export enum WebhookdeliveryStatus {
+  DefaultStatus = "pending",
+  StatusPending = "pending",
+  StatusDelivered = "delivered",
+  StatusFailed = "failed",
+}
+
 export enum UsergroupRole {
   DefaultRole = "user",
   RoleUser = "user",
@@ -22,6 +29,12 @@ export enum TemplatefieldType {
   TypeNumber = "number",
   TypeBoolean = "boolean",
   TypeTime = "time",
+  TypeDecimal = "decimal",
+  TypeCurrency = "currency",
+  TypeDate = "date",
+  TypeDatetime = "datetime",
+  TypeURL = "url",
+  TypeSelect = "select",
 }
 
 export enum MaintenanceFilterStatus {
@@ -39,6 +52,12 @@ export enum OauthtokenKind {
   KindCode = "code",
   KindAccess = "access",
   KindRefresh = "refresh",
+}
+
+export enum NotificationruleTrigger {
+  TriggerExpiresAt = "expires_at",
+  TriggerWarrantyExpires = "warranty_expires",
+  TriggerMaintenanceDue = "maintenance_due",
 }
 
 export enum ExportStatus {
@@ -61,11 +80,31 @@ export enum ExportKind {
   KindImport = "import",
 }
 
+export enum EntitytemplateDefaultExpiryKind {
+  DefaultDefaultExpiryKind = "expires",
+  DefaultExpiryKindExpires = "expires",
+  DefaultExpiryKindUseBy = "use_by",
+  DefaultExpiryKindBestBefore = "best_before",
+}
+
 export enum EntityfieldType {
   TypeText = "text",
   TypeNumber = "number",
   TypeBoolean = "boolean",
   TypeTime = "time",
+  TypeDecimal = "decimal",
+  TypeCurrency = "currency",
+  TypeDate = "date",
+  TypeDatetime = "datetime",
+  TypeURL = "url",
+  TypeSelect = "select",
+}
+
+export enum EntityExpiryKind {
+  DefaultExpiryKind = "expires",
+  ExpiryKindExpires = "expires",
+  ExpiryKindUseBy = "use_by",
+  ExpiryKindBestBefore = "best_before",
 }
 
 export enum BackupdestinationType {
@@ -339,6 +378,10 @@ export interface EntEntity {
    * The values are being populated by the EntityQuery when eager-loading is set.
    */
   edges: EntEntityEdges;
+  /** ExpiresAt holds the value of the "expires_at" field. */
+  expires_at: string;
+  /** ExpiryKind holds the value of the "expiry_kind" field. */
+  expiry_kind: EntityExpiryKind;
   /** ID of the ent. */
   id: string;
   /** ImportRef holds the value of the "import_ref" field. */
@@ -409,8 +452,14 @@ export interface EntEntityEdges {
 export interface EntEntityField {
   /** BooleanValue holds the value of the "boolean_value" field. */
   boolean_value: boolean;
+  /** Choices holds the value of the "choices" field. */
+  choices: string[];
   /** CreatedAt holds the value of the "created_at" field. */
   created_at: string;
+  /** CurrencyCode holds the value of the "currency_code" field. */
+  currency_code: string;
+  /** DecimalValue holds the value of the "decimal_value" field. */
+  decimal_value: number;
   /** Description holds the value of the "description" field. */
   description: string;
   /**
@@ -428,6 +477,8 @@ export interface EntEntityField {
   text_value: string;
   /** TimeValue holds the value of the "time_value" field. */
   time_value: string;
+  /** Timezone holds the value of the "timezone" field. */
+  timezone: string;
   /** Type holds the value of the "type" field. */
   type: EntityfieldType;
   /** UpdatedAt holds the value of the "updated_at" field. */
@@ -444,6 +495,10 @@ export interface EntEntityTemplate {
   created_at: string;
   /** Default description for items created from this template */
   default_description: string;
+  /** DefaultExpiryKind holds the value of the "default_expiry_kind" field. */
+  default_expiry_kind: EntitytemplateDefaultExpiryKind;
+  /** Items created from this template expire this many days after they are added */
+  default_expiry_offset_days: number;
   /** DefaultInsured holds the value of the "default_insured" field. */
   default_insured: boolean;
   /** DefaultLifetimeWarranty holds the value of the "default_lifetime_warranty" field. */
@@ -469,6 +524,8 @@ export interface EntEntityTemplate {
   edges: EntEntityTemplateEdges;
   /** ID of the ent. */
   id: string;
+  /** Whether to include the expiry date in items created from this template */
+  include_expiry_fields: boolean;
   /** Whether to include purchase fields in items created from this template */
   include_purchase_fields: boolean;
   /** Whether to include sold fields in items created from this template */
@@ -502,6 +559,8 @@ export interface EntEntityType {
    * The values are being populated by the EntityTypeQuery when eager-loading is set.
    */
   edges: EntEntityTypeEdges;
+  /** ExpiryRequired holds the value of the "expiry_required" field. */
+  expiry_required: boolean;
   /** Icon holds the value of the "icon" field. */
   icon: string;
   /** ID of the ent. */
@@ -561,6 +620,8 @@ export interface EntExportEdges {
 }
 
 export interface EntGroup {
+  /** AlertRulesSeeded holds the value of the "alert_rules_seeded" field. */
+  alert_rules_seeded: boolean;
   /** CreatedAt holds the value of the "created_at" field. */
   created_at: string;
   /** Currency holds the value of the "currency" field. */
@@ -576,6 +637,10 @@ export interface EntGroup {
   mcp_access: string;
   /** Name holds the value of the "name" field. */
   name: string;
+  /** NotifyHour holds the value of the "notify_hour" field. */
+  notify_hour: number;
+  /** Timezone holds the value of the "timezone" field. */
+  timezone: string;
   /** UpdatedAt holds the value of the "updated_at" field. */
   updated_at: string;
 }
@@ -593,6 +658,8 @@ export interface EntGroupEdges {
   exports: EntExport[];
   /** InvitationTokens holds the value of the invitation_tokens edge. */
   invitation_tokens: EntGroupInvitationToken[];
+  /** NotificationRules holds the value of the notification_rules edge. */
+  notification_rules: EntNotificationRule[];
   /** Notifiers holds the value of the notifiers edge. */
   notifiers: EntNotifier[];
   /** OauthGrants holds the value of the oauth_grants edge. */
@@ -603,6 +670,8 @@ export interface EntGroupEdges {
   user_groups: EntUserGroup[];
   /** Users holds the value of the users edge. */
   users: EntUser[];
+  /** WebhookEndpoints holds the value of the webhook_endpoints edge. */
+  webhook_endpoints: EntWebhookEndpoint[];
 }
 
 export interface EntGroupInvitationToken {
@@ -659,6 +728,74 @@ export interface EntMaintenanceEntry {
 export interface EntMaintenanceEntryEdges {
   /** Entity holds the value of the entity edge. */
   entity: EntEntity;
+}
+
+export interface EntNotificationLog {
+  /** AnchorDate holds the value of the "anchor_date" field. */
+  anchor_date: Date | string;
+  /** CreatedAt holds the value of the "created_at" field. */
+  created_at: string;
+  /** DueOn holds the value of the "due_on" field. */
+  due_on: string;
+  /**
+   * Edges holds the relations/edges for other nodes in the graph.
+   * The values are being populated by the NotificationLogQuery when eager-loading is set.
+   */
+  edges: EntNotificationLogEdges;
+  /** ID of the ent. */
+  id: string;
+  /** NotifierID holds the value of the "notifier_id" field. */
+  notifier_id: string;
+  /** OffsetDays holds the value of the "offset_days" field. */
+  offset_days: number;
+  /** SentAt holds the value of the "sent_at" field. */
+  sent_at: string;
+  /** SubjectID holds the value of the "subject_id" field. */
+  subject_id: string;
+  /** UpdatedAt holds the value of the "updated_at" field. */
+  updated_at: string;
+}
+
+export interface EntNotificationLogEdges {
+  /** Rule holds the value of the rule edge. */
+  rule: EntNotificationRule;
+}
+
+export interface EntNotificationRule {
+  /** CreatedAt holds the value of the "created_at" field. */
+  created_at: string;
+  /**
+   * Edges holds the relations/edges for other nodes in the graph.
+   * The values are being populated by the NotificationRuleQuery when eager-loading is set.
+   */
+  edges: EntNotificationRuleEdges;
+  /** EntityTypeID holds the value of the "entity_type_id" field. */
+  entity_type_id: string;
+  /** GroupID holds the value of the "group_id" field. */
+  group_id: string;
+  /** ID of the ent. */
+  id: string;
+  /** IsActive holds the value of the "is_active" field. */
+  is_active: boolean;
+  /** Name holds the value of the "name" field. */
+  name: string;
+  /** NotifierIds holds the value of the "notifier_ids" field. */
+  notifier_ids: string[];
+  /** OffsetsDays holds the value of the "offsets_days" field. */
+  offsets_days: number[];
+  /** TagID holds the value of the "tag_id" field. */
+  tag_id: string;
+  /** Trigger holds the value of the "trigger" field. */
+  trigger: NotificationruleTrigger;
+  /** UpdatedAt holds the value of the "updated_at" field. */
+  updated_at: string;
+}
+
+export interface EntNotificationRuleEdges {
+  /** Group holds the value of the group edge. */
+  group: EntGroup;
+  /** Logs holds the value of the logs edge. */
+  logs: EntNotificationLog[];
 }
 
 export interface EntNotifier {
@@ -873,8 +1010,14 @@ export interface EntTagEdges {
 export interface EntTemplateField {
   /** BooleanValue holds the value of the "boolean_value" field. */
   boolean_value: boolean;
+  /** Choices holds the value of the "choices" field. */
+  choices: string[];
   /** CreatedAt holds the value of the "created_at" field. */
   created_at: string;
+  /** CurrencyCode holds the value of the "currency_code" field. */
+  currency_code: string;
+  /** DecimalValue holds the value of the "decimal_value" field. */
+  decimal_value: number;
   /** Description holds the value of the "description" field. */
   description: string;
   /**
@@ -892,6 +1035,8 @@ export interface EntTemplateField {
   text_value: string;
   /** TimeValue holds the value of the "time_value" field. */
   time_value: string;
+  /** Timezone holds the value of the "timezone" field. */
+  timezone: string;
   /** Type holds the value of the "type" field. */
   type: TemplatefieldType;
   /** UpdatedAt holds the value of the "updated_at" field. */
@@ -906,6 +1051,8 @@ export interface EntTemplateFieldEdges {
 export interface EntUser {
   /** ActivatedOn holds the value of the "activated_on" field. */
   activated_on: string;
+  /** Country holds the value of the "country" field. */
+  country: string;
   /** CreatedAt holds the value of the "created_at" field. */
   created_at: string;
   /** DefaultGroupID holds the value of the "default_group_id" field. */
@@ -921,6 +1068,8 @@ export interface EntUser {
   id: string;
   /** IsSuperuser holds the value of the "is_superuser" field. */
   is_superuser: boolean;
+  /** Locale holds the value of the "locale" field. */
+  locale: string;
   /** Name holds the value of the "name" field. */
   name: string;
   /** OidcIssuer holds the value of the "oidc_issuer" field. */
@@ -931,6 +1080,8 @@ export interface EntUser {
   settings: Record<string, any>;
   /** Superuser holds the value of the "superuser" field. */
   superuser: boolean;
+  /** Timezone holds the value of the "timezone" field. */
+  timezone: string;
   /** UpdatedAt holds the value of the "updated_at" field. */
   updated_at: string;
 }
@@ -971,6 +1122,86 @@ export interface EntUserGroupEdges {
   group: EntGroup;
   /** User holds the value of the user edge. */
   user: EntUser;
+}
+
+export interface EntWebhookDelivery {
+  /** Attempts holds the value of the "attempts" field. */
+  attempts: number;
+  /** CreatedAt holds the value of the "created_at" field. */
+  created_at: string;
+  /** Data holds the value of the "data" field. */
+  data: Record<string, any>;
+  /** DedupeKey holds the value of the "dedupe_key" field. */
+  dedupe_key: string;
+  /** DeliveredAt holds the value of the "delivered_at" field. */
+  delivered_at: string;
+  /**
+   * Edges holds the relations/edges for other nodes in the graph.
+   * The values are being populated by the WebhookDeliveryQuery when eager-loading is set.
+   */
+  edges: EntWebhookDeliveryEdges;
+  /** EventID holds the value of the "event_id" field. */
+  event_id: string;
+  /** EventType holds the value of the "event_type" field. */
+  event_type: string;
+  /** ID of the ent. */
+  id: string;
+  /** LastDurationMs holds the value of the "last_duration_ms" field. */
+  last_duration_ms: number;
+  /** LastError holds the value of the "last_error" field. */
+  last_error: string;
+  /** LastStatusCode holds the value of the "last_status_code" field. */
+  last_status_code: number;
+  /** NextAttemptAt holds the value of the "next_attempt_at" field. */
+  next_attempt_at: string;
+  /** OccurredAt holds the value of the "occurred_at" field. */
+  occurred_at: string;
+  /** ResponseSnippet holds the value of the "response_snippet" field. */
+  response_snippet: string;
+  /** ScheduledFor holds the value of the "scheduled_for" field. */
+  scheduled_for: string;
+  /** Status holds the value of the "status" field. */
+  status: WebhookdeliveryStatus;
+  /** UpdatedAt holds the value of the "updated_at" field. */
+  updated_at: string;
+}
+
+export interface EntWebhookDeliveryEdges {
+  /** Endpoint holds the value of the endpoint edge. */
+  endpoint: EntWebhookEndpoint;
+}
+
+export interface EntWebhookEndpoint {
+  /** CreatedAt holds the value of the "created_at" field. */
+  created_at: string;
+  /**
+   * Edges holds the relations/edges for other nodes in the graph.
+   * The values are being populated by the WebhookEndpointQuery when eager-loading is set.
+   */
+  edges: EntWebhookEndpointEdges;
+  /** EntityTypeID holds the value of the "entity_type_id" field. */
+  entity_type_id: string;
+  /** Events holds the value of the "events" field. */
+  events: string[];
+  /** GroupID holds the value of the "group_id" field. */
+  group_id: string;
+  /** ID of the ent. */
+  id: string;
+  /** IsActive holds the value of the "is_active" field. */
+  is_active: boolean;
+  /** Name holds the value of the "name" field. */
+  name: string;
+  /** TagID holds the value of the "tag_id" field. */
+  tag_id: string;
+  /** UpdatedAt holds the value of the "updated_at" field. */
+  updated_at: string;
+}
+
+export interface EntWebhookEndpointEdges {
+  /** Deliveries holds the value of the deliveries edge. */
+  deliveries: EntWebhookDelivery[];
+  /** Group holds the value of the group edge. */
+  group: EntGroup;
 }
 
 export interface OauthserverConsentCollection {
@@ -1339,10 +1570,25 @@ export interface EntityCreate {
 
 export interface EntityFieldData {
   booleanValue: boolean;
+  /** Choices lists the allowed values of a select field. */
+  choices: string[];
+  /**
+   * CurrencyCode is the ISO 4217 code of a currency field; NumberValue holds
+   * its amount in minor units.
+   */
+  currencyCode: string;
+  /**
+   * DecimalValue, TimeValue (a UTC instant) and the other typed values are
+   * derived from TextValue by the server.
+   */
+  decimalValue?: number | null;
   id: string;
   name: string;
   numberValue: number;
   textValue: string;
+  timeValue?: string | null;
+  /** Timezone is the IANA zone a datetime field was entered in. */
+  timezone: string;
   type: string;
 }
 
@@ -1364,6 +1610,12 @@ export interface EntityOut {
   createdAt: Date | string;
   description: string;
   entityType?: EntityTypeSummary | null;
+  /**
+   * ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind
+   * says whether that is a use-by, best-before or plain expiry date.
+   */
+  expiresAt: Date | string;
+  expiryKind: string;
   fields: EntityFieldData[];
   id: string;
   imageId?: string | null;
@@ -1412,6 +1664,12 @@ export interface EntityOut {
 
 export interface EntityPatch {
   entityTypeId?: string | null;
+  /**
+   * ExpiresAt sets the expiry date; an empty date clears it. ExpiryKind is
+   * expires, use_by or best_before. Both are left alone when nil.
+   */
+  expiresAt?: string | null;
+  expiryKind?: string | null;
   id: string;
   locationId?: string | null;
   parentId?: string | null;
@@ -1432,6 +1690,12 @@ export interface EntitySummary {
   createdAt: Date | string;
   description: string;
   entityType?: EntityTypeSummary | null;
+  /**
+   * ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind
+   * says whether that is a use-by, best-before or plain expiry date.
+   */
+  expiresAt: Date | string;
+  expiryKind: string;
   id: string;
   imageId?: string | null;
   insured: boolean;
@@ -1452,6 +1716,8 @@ export interface EntitySummary {
 export interface EntityTemplateCreate {
   /** @maxLength 1000 */
   defaultDescription?: string | null;
+  defaultExpiryKind: string;
+  defaultExpiryOffsetDays?: number | null;
   defaultInsured: boolean;
   defaultLifetimeWarranty: boolean;
   /** Default location and tags */
@@ -1471,6 +1737,11 @@ export interface EntityTemplateCreate {
   description: string;
   /** Custom fields */
   fields: TemplateField[];
+  /**
+   * Expiry: items made from the template expire DefaultExpiryOffsetDays days
+   * after they are added, when it is set.
+   */
+  includeExpiryFields: boolean;
   includePurchaseFields: boolean;
   includeSoldFields: boolean;
   /** Metadata flags */
@@ -1487,6 +1758,8 @@ export interface EntityTemplateCreate {
 export interface EntityTemplateOut {
   createdAt: Date | string;
   defaultDescription: string;
+  defaultExpiryKind: string;
+  defaultExpiryOffsetDays?: number | null;
   defaultInsured: boolean;
   defaultLifetimeWarranty: boolean;
   /** Default location and tags */
@@ -1502,6 +1775,11 @@ export interface EntityTemplateOut {
   /** Custom fields */
   fields: TemplateField[];
   id: string;
+  /**
+   * Expiry: items made from the template expire DefaultExpiryOffsetDays days
+   * after they are added, when it is set.
+   */
+  includeExpiryFields: boolean;
   includePurchaseFields: boolean;
   includeSoldFields: boolean;
   /** Metadata flags */
@@ -1522,6 +1800,8 @@ export interface EntityTemplateSummary {
 export interface EntityTemplateUpdate {
   /** @maxLength 1000 */
   defaultDescription?: string | null;
+  defaultExpiryKind: string;
+  defaultExpiryOffsetDays?: number | null;
   defaultInsured: boolean;
   defaultLifetimeWarranty: boolean;
   /** Default location and tags */
@@ -1542,6 +1822,11 @@ export interface EntityTemplateUpdate {
   /** Custom fields */
   fields: TemplateField[];
   id: string;
+  /**
+   * Expiry: items made from the template expire DefaultExpiryOffsetDays days
+   * after they are added, when it is set.
+   */
+  includeExpiryFields: boolean;
   includePurchaseFields: boolean;
   includeSoldFields: boolean;
   /** Metadata flags */
@@ -1557,6 +1842,8 @@ export interface EntityTemplateUpdate {
 
 export interface EntityTypeCreate {
   defaultTemplateId: string;
+  /** ExpiryRequired makes an expiry date mandatory on items of this type. */
+  expiryRequired: boolean;
   icon: string;
   isLocation: boolean;
   name: string;
@@ -1567,6 +1854,7 @@ export interface EntityTypeSummary {
   defaultTemplate: EntityTemplateSummary;
   defaultTemplateId: string;
   description: string;
+  expiryRequired: boolean;
   icon: string;
   id: string;
   isLocation: boolean;
@@ -1576,6 +1864,8 @@ export interface EntityTypeSummary {
 
 export interface EntityTypeUpdate {
   defaultTemplateId: string;
+  /** ExpiryRequired makes an expiry date mandatory on items of this type. */
+  expiryRequired: boolean;
   icon: string;
   id: string;
   isLocation: boolean;
@@ -1588,6 +1878,12 @@ export interface EntityUpdate {
   /** @maxLength 1000 */
   description: string;
   entityTypeId: string;
+  /**
+   * ExpiresAt is the consumable expiry date; leave it empty to clear it.
+   * ExpiryKind is expires, use_by or best_before; empty means expires.
+   */
+  expiresAt: Date | string;
+  expiryKind: string;
   fields: EntityFieldData[];
   id: string;
   insured: boolean;
@@ -1629,6 +1925,45 @@ export interface EntityUpdate {
   warrantyExpires: Date | string;
 }
 
+export interface ExpiringResult {
+  expired: ExpiryEntry[];
+  expiredTotal: number;
+  soon: ExpiryEntry[];
+  soonTotal: number;
+}
+
+export interface ExpiryEntry {
+  archived: boolean;
+  /** @example "0" */
+  assetId: string;
+  createdAt: Date | string;
+  /** DaysLeft is negative once the date has passed. */
+  daysLeft: number;
+  description: string;
+  entityType?: EntityTypeSummary | null;
+  /**
+   * ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind
+   * says whether that is a use-by, best-before or plain expiry date.
+   */
+  expiresAt: Date | string;
+  expiryKind: string;
+  id: string;
+  imageId?: string | null;
+  insured: boolean;
+  /** Container-specific (populated when querying locations) */
+  itemCount: number;
+  name: string;
+  /** Edges */
+  parent?: EntitySummary | null;
+  purchasePrice: number;
+  quantity: number;
+  /** Sale details */
+  soldDate: Date | string;
+  tags: TagSummary[];
+  thumbnailId?: string | null;
+  updatedAt: Date | string;
+}
+
 export interface ExportOut {
   artifactPath: string;
   createdAt: Date | string;
@@ -1667,6 +2002,10 @@ export interface Group {
    */
   mcpAccess: string;
   name: string;
+  /** NotifyHour is the local hour (0-23) from which a day's alerts go out. */
+  notifyHour: number;
+  /** Timezone is the IANA zone the collection's alerts are scheduled in. */
+  timezone: string;
   updatedAt: Date | string;
 }
 
@@ -1691,6 +2030,10 @@ export interface GroupUpdate {
   /** MCPAccess is left unchanged when nil. */
   mcpAccess?: string | null;
   name: string;
+  /** NotifyHour is left unchanged when nil. */
+  notifyHour?: number | null;
+  /** Timezone is left unchanged when nil. */
+  timezone?: string | null;
 }
 
 export interface ItemAttachment {
@@ -1749,6 +2092,36 @@ export interface MaintenanceEntryWithDetails {
   itemName: string;
   name: string;
   scheduledDate: Date | string;
+}
+
+export interface NotificationRuleIn {
+  /** EntityTypeID and TagID narrow the rule to matching items. */
+  entityTypeId?: string | null;
+  isActive: boolean;
+  name: string;
+  /** NotifierIDs picks the notifiers; empty means every active one. */
+  notifierIds: string[];
+  /**
+   * OffsetsDays: positive fires that many days before the date, zero on
+   * the day, negative that many days after. For example [30, 7, 1, 0, -7].
+   */
+  offsetsDays: number[];
+  tagId?: string | null;
+  /** Trigger is expires_at, warranty_expires or maintenance_due. */
+  trigger: string;
+}
+
+export interface NotificationRuleOut {
+  createdAt: Date | string;
+  entityTypeId?: string | null;
+  id: string;
+  isActive: boolean;
+  name: string;
+  notifierIds: string[];
+  offsetsDays: number[];
+  tagId?: string | null;
+  trigger: string;
+  updatedAt: Date | string;
 }
 
 export interface NotifierCreate {
@@ -1856,11 +2229,19 @@ export interface TagUpdate {
 
 export interface TemplateField {
   booleanValue: boolean;
+  choices: string[];
+  currencyCode: string;
+  /**
+   * DecimalValue, TimeValue and the rest are derived from TextValue by the
+   * server; see EntityFieldData.
+   */
+  decimalValue?: number | null;
   id: string;
   name: string;
   numberValue: number;
   textValue: string;
-  timeValue: string;
+  timeValue?: string | null;
+  timezone: string;
   type: string;
 }
 
@@ -1888,14 +2269,17 @@ export interface TreeItem {
 }
 
 export interface UserOut {
+  country: string;
   defaultGroupId: string;
   email: string;
   groupIds: string[];
   id: string;
   isSuperuser: boolean;
+  locale: string;
   name: string;
   oidcIssuer: string;
   oidcSubject: string;
+  timezone: string;
 }
 
 export interface UserSummary {
@@ -1905,8 +2289,15 @@ export interface UserSummary {
 }
 
 export interface UserUpdate {
+  /**
+   * Regional preferences. Nil leaves the stored value unchanged; an empty
+   * string clears it.
+   */
+  country?: string | null;
   email: string;
+  locale?: string | null;
   name: string;
+  timezone?: string | null;
 }
 
 export interface ValueOverTime {
@@ -1921,6 +2312,63 @@ export interface ValueOverTimeEntry {
   date: Date | string;
   name: string;
   value: number;
+}
+
+export interface WebhookDeliveryOut {
+  attempts: number;
+  createdAt: Date | string;
+  deliveredAt?: string | null;
+  eventId: string;
+  eventType: string;
+  id: string;
+  lastDurationMs: number;
+  lastError: string;
+  lastStatusCode: number;
+  nextAttemptAt?: string | null;
+  occurredAt: string;
+  response: string;
+  scheduledFor?: string | null;
+  status: string;
+}
+
+export interface WebhookEndpointCreated {
+  createdAt: Date | string;
+  entityTypeId?: string | null;
+  events: string[];
+  id: string;
+  isActive: boolean;
+  name: string;
+  secret: string;
+  tagId?: string | null;
+  updatedAt: Date | string;
+  urlHost: string;
+}
+
+export interface WebhookEndpointIn {
+  /** EntityTypeID and TagID narrow item events to matching items. */
+  entityTypeId?: string | null;
+  /** Events lists the event names to subscribe to. */
+  events: string[];
+  isActive: boolean;
+  name: string;
+  tagId?: string | null;
+  /**
+   * URL receives the events. On update, omit it (or send null) to keep the
+   * stored one; it is never returned by the API.
+   */
+  url?: string | null;
+}
+
+export interface WebhookEndpointOut {
+  createdAt: Date | string;
+  entityTypeId?: string | null;
+  events: string[];
+  id: string;
+  isActive: boolean;
+  name: string;
+  tagId?: string | null;
+  updatedAt: Date | string;
+  urlHost: string;
 }
 
 export interface Latest {
@@ -1946,10 +2394,26 @@ export interface TestResult {
 }
 
 export interface UserRegistration {
+  /**
+   * Optional regional hints, normally taken from the browser. Invalid
+   * values are ignored. Currency and Timezone only apply when the
+   * registration creates a new collection.
+   */
+  country: string;
+  currency: string;
   email: string;
+  locale: string;
   name: string;
   password: string;
+  timezone: string;
   token: string;
+}
+
+export interface WebhookResult {
+  durationMs: number;
+  error: string;
+  ok: boolean;
+  statusCode: number;
 }
 
 export interface APISummary {
@@ -1965,6 +2429,7 @@ export interface APISummary {
   telemetry: TelemetryStatus;
   title: string;
   versions: string[];
+  webhooks: WebhooksStatus;
 }
 
 export interface ActionAmountResult {
@@ -2119,6 +2584,15 @@ export interface TokenResponse {
   token: string;
 }
 
+export interface WebhookDeliveriesPage {
+  items: WebhookDeliveryOut[];
+  total: number;
+}
+
+export interface WebhooksStatus {
+  enabled: boolean;
+}
+
 export interface WipeInventoryOptions {
   wipeLocations: boolean;
   wipeMaintenance: boolean;
@@ -2139,4 +2613,14 @@ export interface ExternalAttachmentRequest {
 export interface ValidateErrorResponse {
   error: string;
   fields: string;
+}
+
+export interface WebhooksEvent {
+  /**
+   * Dated events come from alert rules: they fire for the rule's offsets
+   * rather than at the moment something is edited.
+   */
+  dated: boolean;
+  description: string;
+  name: string;
 }

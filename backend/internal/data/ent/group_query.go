@@ -20,12 +20,14 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/export"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/group"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/groupinvitationtoken"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notificationrule"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notifier"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/oauthgrant"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/predicate"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/tag"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/user"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/usergroup"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/webhookendpoint"
 )
 
 // GroupQuery is the builder for querying Group entities.
@@ -45,6 +47,8 @@ type GroupQuery struct {
 	withExports            *ExportQuery
 	withBackupDestinations *BackupDestinationQuery
 	withOauthGrants        *OAuthGrantQuery
+	withNotificationRules  *NotificationRuleQuery
+	withWebhookEndpoints   *WebhookEndpointQuery
 	withUserGroups         *UserGroupQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -302,6 +306,50 @@ func (_q *GroupQuery) QueryOauthGrants() *OAuthGrantQuery {
 	return query
 }
 
+// QueryNotificationRules chains the current query on the "notification_rules" edge.
+func (_q *GroupQuery) QueryNotificationRules() *NotificationRuleQuery {
+	query := (&NotificationRuleClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, selector),
+			sqlgraph.To(notificationrule.Table, notificationrule.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, group.NotificationRulesTable, group.NotificationRulesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryWebhookEndpoints chains the current query on the "webhook_endpoints" edge.
+func (_q *GroupQuery) QueryWebhookEndpoints() *WebhookEndpointQuery {
+	query := (&WebhookEndpointClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, selector),
+			sqlgraph.To(webhookendpoint.Table, webhookendpoint.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, group.WebhookEndpointsTable, group.WebhookEndpointsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryUserGroups chains the current query on the "user_groups" edge.
 func (_q *GroupQuery) QueryUserGroups() *UserGroupQuery {
 	query := (&UserGroupClient{config: _q.config}).Query()
@@ -526,6 +574,8 @@ func (_q *GroupQuery) Clone() *GroupQuery {
 		withExports:            _q.withExports.Clone(),
 		withBackupDestinations: _q.withBackupDestinations.Clone(),
 		withOauthGrants:        _q.withOauthGrants.Clone(),
+		withNotificationRules:  _q.withNotificationRules.Clone(),
+		withWebhookEndpoints:   _q.withWebhookEndpoints.Clone(),
 		withUserGroups:         _q.withUserGroups.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -643,6 +693,28 @@ func (_q *GroupQuery) WithOauthGrants(opts ...func(*OAuthGrantQuery)) *GroupQuer
 	return _q
 }
 
+// WithNotificationRules tells the query-builder to eager-load the nodes that are connected to
+// the "notification_rules" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *GroupQuery) WithNotificationRules(opts ...func(*NotificationRuleQuery)) *GroupQuery {
+	query := (&NotificationRuleClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withNotificationRules = query
+	return _q
+}
+
+// WithWebhookEndpoints tells the query-builder to eager-load the nodes that are connected to
+// the "webhook_endpoints" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *GroupQuery) WithWebhookEndpoints(opts ...func(*WebhookEndpointQuery)) *GroupQuery {
+	query := (&WebhookEndpointClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withWebhookEndpoints = query
+	return _q
+}
+
 // WithUserGroups tells the query-builder to eager-load the nodes that are connected to
 // the "user_groups" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *GroupQuery) WithUserGroups(opts ...func(*UserGroupQuery)) *GroupQuery {
@@ -732,7 +804,7 @@ func (_q *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 	var (
 		nodes       = []*Group{}
 		_spec       = _q.querySpec()
-		loadedTypes = [11]bool{
+		loadedTypes = [13]bool{
 			_q.withUsers != nil,
 			_q.withEntityTypes != nil,
 			_q.withEntities != nil,
@@ -743,6 +815,8 @@ func (_q *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 			_q.withExports != nil,
 			_q.withBackupDestinations != nil,
 			_q.withOauthGrants != nil,
+			_q.withNotificationRules != nil,
+			_q.withWebhookEndpoints != nil,
 			_q.withUserGroups != nil,
 		}
 	)
@@ -835,6 +909,20 @@ func (_q *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 		if err := _q.loadOauthGrants(ctx, query, nodes,
 			func(n *Group) { n.Edges.OauthGrants = []*OAuthGrant{} },
 			func(n *Group, e *OAuthGrant) { n.Edges.OauthGrants = append(n.Edges.OauthGrants, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withNotificationRules; query != nil {
+		if err := _q.loadNotificationRules(ctx, query, nodes,
+			func(n *Group) { n.Edges.NotificationRules = []*NotificationRule{} },
+			func(n *Group, e *NotificationRule) { n.Edges.NotificationRules = append(n.Edges.NotificationRules, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withWebhookEndpoints; query != nil {
+		if err := _q.loadWebhookEndpoints(ctx, query, nodes,
+			func(n *Group) { n.Edges.WebhookEndpoints = []*WebhookEndpoint{} },
+			func(n *Group, e *WebhookEndpoint) { n.Edges.WebhookEndpoints = append(n.Edges.WebhookEndpoints, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1170,6 +1258,66 @@ func (_q *GroupQuery) loadOauthGrants(ctx context.Context, query *OAuthGrantQuer
 	}
 	query.Where(predicate.OAuthGrant(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(group.OauthGrantsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.GroupID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "group_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *GroupQuery) loadNotificationRules(ctx context.Context, query *NotificationRuleQuery, nodes []*Group, init func(*Group), assign func(*Group, *NotificationRule)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Group)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(notificationrule.FieldGroupID)
+	}
+	query.Where(predicate.NotificationRule(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(group.NotificationRulesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.GroupID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "group_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *GroupQuery) loadWebhookEndpoints(ctx context.Context, query *WebhookEndpointQuery, nodes []*Group, init func(*Group), assign func(*Group, *WebhookEndpoint)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Group)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(webhookendpoint.FieldGroupID)
+	}
+	query.Where(predicate.WebhookEndpoint(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(group.WebhookEndpointsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

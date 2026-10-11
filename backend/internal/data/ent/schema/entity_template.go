@@ -84,6 +84,16 @@ func (EntityTemplate) Fields() []ent.Field {
 		field.Bool("include_sold_fields").
 			Default(false).
 			Comment("Whether to include sold fields in items created from this template"),
+		field.Bool("include_expiry_fields").
+			Default(false).
+			Comment("Whether to include the expiry date in items created from this template"),
+		field.Int("default_expiry_offset_days").
+			Optional().
+			Nillable().
+			Comment("Items created from this template expire this many days after they are added"),
+		field.Enum("default_expiry_kind").
+			Values("expires", "use_by", "best_before").
+			Default("expires"),
 
 		// ------------------------------------
 		// Default tags (stored as JSON array of UUIDs to allow reuse across templates)

@@ -3,6 +3,7 @@ package services
 
 import (
 	"github.com/sysadminsmedia/homebox/backend/internal/core/currencies"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/fieldtypes"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services/reporting/eventbus"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/repo"
@@ -18,11 +19,13 @@ type AllServices struct {
 	Exports           *ExportService
 	Backups           *BackupService
 	Currencies        *currencies.CurrencyRegistry
+	Webhooks          *WebhookService
 }
 
 type OptionsFunc func(*options)
 
 type options struct {
+	webhooks             config.WebhooksConf
 	autoIncrementAssetID bool
 	currencies           []currencies.Currency
 	notifierConfig       *config.NotifierConf
@@ -72,6 +75,13 @@ func WithExportPlumbing(bus *eventbus.EventBus, db *ent.Client, storage config.S
 func WithBackupConfig(v config.BackupConf) func(*options) {
 	return func(o *options) {
 		o.backup = v
+	}
+}
+
+// WithWebhooks supplies the outbound webhook settings. Without it webhooks are off.
+func WithWebhooks(v config.WebhooksConf) func(*options) {
+	return func(o *options) {
+		o.webhooks = v
 	}
 }
 
@@ -140,8 +150,14 @@ func New(repos *repo.AllRepos, opts ...OptionsFunc) *AllServices {
 	}
 	backupSvc.secrets = box
 
+	currencyRegistry := currencies.NewCurrencyService(options.currencies)
+	fieldtypes.UseCurrencies(options.currencies)
+
+	webhookSvc := NewWebhookService(repos, options.webhooks, options.notifierConfig)
+	backupSvc.events = webhookSvc
+
 	return &AllServices{
-		User:  &UserService{repos: repos, mailer: options.mailer},
+		User:  &UserService{repos: repos, mailer: options.mailer, isCurrency: currencyRegistry.IsSupported},
 		Group: &GroupService{repos},
 		Entities: &EntityService{
 			repo:                 repos,
@@ -154,6 +170,7 @@ func New(repos *repo.AllRepos, opts ...OptionsFunc) *AllServices {
 		},
 		Exports:    exportSvc,
 		Backups:    backupSvc,
-		Currencies: currencies.NewCurrencyService(options.currencies),
+		Currencies: currencyRegistry,
+		Webhooks:   webhookSvc,
 	}
 }

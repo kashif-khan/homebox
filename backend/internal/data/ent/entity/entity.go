@@ -3,6 +3,7 @@
 package entity
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -43,6 +44,10 @@ const (
 	FieldModelNumber = "model_number"
 	// FieldManufacturer holds the string denoting the manufacturer field in the database.
 	FieldManufacturer = "manufacturer"
+	// FieldExpiresAt holds the string denoting the expires_at field in the database.
+	FieldExpiresAt = "expires_at"
+	// FieldExpiryKind holds the string denoting the expiry_kind field in the database.
+	FieldExpiryKind = "expiry_kind"
 	// FieldLifetimeWarranty holds the string denoting the lifetime_warranty field in the database.
 	FieldLifetimeWarranty = "lifetime_warranty"
 	// FieldWarrantyExpires holds the string denoting the warranty_expires field in the database.
@@ -160,6 +165,8 @@ var Columns = []string{
 	FieldSerialNumber,
 	FieldModelNumber,
 	FieldManufacturer,
+	FieldExpiresAt,
+	FieldExpiryKind,
 	FieldLifetimeWarranty,
 	FieldWarrantyExpires,
 	FieldWarrantyDetails,
@@ -247,6 +254,33 @@ var (
 	DefaultID func() uuid.UUID
 )
 
+// ExpiryKind defines the type for the "expiry_kind" enum field.
+type ExpiryKind string
+
+// ExpiryKindExpires is the default value of the ExpiryKind enum.
+const DefaultExpiryKind = ExpiryKindExpires
+
+// ExpiryKind values.
+const (
+	ExpiryKindExpires    ExpiryKind = "expires"
+	ExpiryKindUseBy      ExpiryKind = "use_by"
+	ExpiryKindBestBefore ExpiryKind = "best_before"
+)
+
+func (ek ExpiryKind) String() string {
+	return string(ek)
+}
+
+// ExpiryKindValidator is a validator for the "expiry_kind" field enum values. It is called by the builders before save.
+func ExpiryKindValidator(ek ExpiryKind) error {
+	switch ek {
+	case ExpiryKindExpires, ExpiryKindUseBy, ExpiryKindBestBefore:
+		return nil
+	default:
+		return fmt.Errorf("entity: invalid enum value for expiry_kind field: %q", ek)
+	}
+}
+
 // OrderOption defines the ordering options for the Entity queries.
 type OrderOption func(*sql.Selector)
 
@@ -323,6 +357,16 @@ func ByModelNumber(opts ...sql.OrderTermOption) OrderOption {
 // ByManufacturer orders the results by the manufacturer field.
 func ByManufacturer(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldManufacturer, opts...).ToFunc()
+}
+
+// ByExpiresAt orders the results by the expires_at field.
+func ByExpiresAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExpiresAt, opts...).ToFunc()
+}
+
+// ByExpiryKind orders the results by the expiry_kind field.
+func ByExpiryKind(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExpiryKind, opts...).ToFunc()
 }
 
 // ByLifetimeWarranty orders the results by the lifetime_warranty field.

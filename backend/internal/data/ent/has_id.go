@@ -56,6 +56,14 @@ func (_m *MaintenanceEntry) GetID() uuid.UUID {
 	return _m.ID
 }
 
+func (_m *NotificationLog) GetID() uuid.UUID {
+	return _m.ID
+}
+
+func (_m *NotificationRule) GetID() uuid.UUID {
+	return _m.ID
+}
+
 func (_m *Notifier) GetID() uuid.UUID {
 	return _m.ID
 }
@@ -89,5 +97,13 @@ func (_m *TemplateField) GetID() uuid.UUID {
 }
 
 func (_m *User) GetID() uuid.UUID {
+	return _m.ID
+}
+
+func (_m *WebhookDelivery) GetID() uuid.UUID {
+	return _m.ID
+}
+
+func (_m *WebhookEndpoint) GetID() uuid.UUID {
 	return _m.ID
 }

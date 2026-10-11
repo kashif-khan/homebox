@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/regional"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/scopes"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/repo"
 	"github.com/sysadminsmedia/homebox/backend/internal/sys/validate"
@@ -48,6 +49,20 @@ func (svc *GroupService) UpdateGroup(ctx Context, data repo.GroupUpdate) (repo.G
 
 	if data.Currency == "" {
 		return repo.Group{}, errors.New("currency cannot be empty")
+	}
+
+	if data.Timezone != nil {
+		tz := regional.Timezone(*data.Timezone)
+		if tz == "" {
+			return repo.Group{}, validate.NewRequestError(
+				errors.New("timezone must be an IANA zone name such as Europe/London"), http.StatusUnprocessableEntity)
+		}
+		data.Timezone = &tz
+	}
+
+	if data.NotifyHour != nil && (*data.NotifyHour < 0 || *data.NotifyHour > 23) {
+		return repo.Group{}, validate.NewRequestError(
+			errors.New("notifyHour must be between 0 and 23"), http.StatusUnprocessableEntity)
 	}
 
 	if data.MCPAccess != nil && !scopes.ValidAccess(*data.MCPAccess) {

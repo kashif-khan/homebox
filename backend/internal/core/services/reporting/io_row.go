@@ -16,6 +16,8 @@ type ExportItemFields struct {
 type ExportCSVRow struct {
 	PurchaseDate     types.Date         `csv:"HB.purchase_date|HB.purchase_time"`
 	WarrantyExpires  types.Date         `csv:"HB.warranty_expires"`
+	ExpiresAt        types.Date         `csv:"HB.expires_at"`
+	ExpiryKind       string             `csv:"HB.expiry_kind"`
 	SoldDate         types.Date         `csv:"HB.sold_date|HB.sold_time"`
 	ImportRef        string             `csv:"HB.import_ref"`
 	ParentImportRef  string             `csv:"HB.parent_import_ref"`

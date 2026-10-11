@@ -43,6 +43,8 @@ type UpdateItemIn struct {
 	PurchasePrice   *float64  `json:"purchasePrice,omitempty"`
 	PurchaseDate    *string   `json:"purchaseDate,omitempty"     jsonschema:"YYYY-MM-DD, or empty to clear"`
 	WarrantyExpires *string   `json:"warrantyExpires,omitempty"  jsonschema:"YYYY-MM-DD, or empty to clear"`
+	ExpiresAt       *string   `json:"expiresAt,omitempty"        jsonschema:"expiry date YYYY-MM-DD for food or medicine, or empty to clear"`
+	ExpiryKind      *string   `json:"expiryKind,omitempty"       jsonschema:"expires, use_by or best_before"`
 	WarrantyDetails *string   `json:"warrantyDetails,omitempty"`
 	Lifetime        *bool     `json:"lifetimeWarranty,omitempty"`
 	Insured         *bool     `json:"insured,omitempty"`
@@ -222,6 +224,8 @@ func updateFromOut(e repo.EntityOut) repo.EntityUpdate {
 		Manufacturer:             e.Manufacturer,
 		LifetimeWarranty:         e.LifetimeWarranty,
 		WarrantyExpires:          e.WarrantyExpires,
+		ExpiresAt:                e.ExpiresAt,
+		ExpiryKind:               e.ExpiryKind,
 		WarrantyDetails:          e.WarrantyDetails,
 		PurchaseDate:             e.PurchaseDate,
 		PurchaseFrom:             e.PurchaseFrom,
@@ -351,6 +355,7 @@ func toolUpdateItem(c *call, in UpdateItemIn) (ItemDetail, error) {
 	}{
 		{"purchaseDate", in.PurchaseDate, &upd.PurchaseDate},
 		{"warrantyExpires", in.WarrantyExpires, &upd.WarrantyExpires},
+		{"expiresAt", in.ExpiresAt, &upd.ExpiresAt},
 	} {
 		if d.src == nil {
 			continue
@@ -360,6 +365,12 @@ func toolUpdateItem(c *call, in UpdateItemIn) (ItemDetail, error) {
 			return ItemDetail{}, err
 		}
 		*d.dst = v
+	}
+	if in.ExpiryKind != nil {
+		if !repo.ValidExpiryKind(*in.ExpiryKind) {
+			return ItemDetail{}, invalid("expiryKind must be one of expires, use_by, best_before")
+		}
+		upd.ExpiryKind = *in.ExpiryKind
 	}
 	if in.TagIDs != nil {
 		if upd.TagIDs, err = parseIDs("tagIds", *in.TagIDs); err != nil {

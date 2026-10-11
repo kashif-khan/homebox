@@ -275,6 +275,8 @@ func (s *IOSheet) ReadItems(ctx context.Context, entities []repo.EntityOut, gid 
 
 			LifetimeWarranty: item.LifetimeWarranty,
 			WarrantyExpires:  item.WarrantyExpires,
+			ExpiresAt:        item.ExpiresAt,
+			ExpiryKind:       item.ExpiryKind,
 			WarrantyDetails:  item.WarrantyDetails,
 
 			SoldTo:    item.SoldTo,

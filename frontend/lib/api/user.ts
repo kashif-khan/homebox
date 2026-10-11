@@ -9,6 +9,8 @@ import { StatsAPI } from "./classes/stats";
 import { AssetsApi } from "./classes/assets";
 import { ReportsAPI } from "./classes/reports";
 import { NotifiersAPI } from "./classes/notifiers";
+import { NotificationRulesAPI } from "./classes/notification-rules";
+import { WebhooksAPI } from "./classes/webhooks";
 import { MaintenanceAPI } from "./classes/maintenance";
 import { ProductAPI } from "./classes/product";
 import { TemplatesApi } from "./classes/templates";
@@ -28,6 +30,8 @@ export class UserClient extends BaseAPI {
   assets: AssetsApi;
   reports: ReportsAPI;
   notifiers: NotifiersAPI;
+  notificationRules: NotificationRulesAPI;
+  webhooks: WebhooksAPI;
   products: ProductAPI;
   backups: BackupsAPI;
 
@@ -56,6 +60,8 @@ export class UserClient extends BaseAPI {
     this.assets = new AssetsApi(requests);
     this.reports = new ReportsAPI(requests);
     this.notifiers = new NotifiersAPI(requests);
+    this.notificationRules = new NotificationRulesAPI(requests);
+    this.webhooks = new WebhooksAPI(requests);
     this.products = new ProductAPI(requests);
     this.backups = new BackupsAPI(requests);
 

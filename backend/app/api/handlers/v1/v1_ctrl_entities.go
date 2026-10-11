@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/regional"
 	"math"
 	"math/big"
 	"net/http"
@@ -55,7 +56,9 @@ func startEntityCtrlSpan(ctx context.Context, name string, attrs ...attribute.Ke
 //	@Param		matchAllTags	query		bool		false	"require all selected tags to match (AND) instead of any (OR)"
 //	@Param		parentIds		query		[]string	false	"parent Ids"																	collectionFormat(multi)
 //	@Param		entityTypeIds	query		[]string	false	"entity type IDs; when provided this filter takes precedence over isLocation"	collectionFormat(multi)
-//	@Param		orderBy			query		string		false	"field to order by; valid values: name, createdAt, updatedAt, assetId"
+//	@Param		orderBy			query		string		false	"field to order by; valid values: name, createdAt, updatedAt, assetId, expiresAt (items without an expiry date sort last)"
+//	@Param		expiresBefore	query		string		false	"only items expiring on or before this date (YYYY-MM-DD)"
+//	@Param		expiresAfter	query		string		false	"only items expiring on or after this date (YYYY-MM-DD)"
 //	@Param		orderDirection	query		string		false	"order direction; valid values: asc, desc. Defaults to desc for createdAt and updatedAt, asc otherwise"
 //	@Success	200				{object}	repo.EntityListResult
 //	@Router		/v1/entities [GET]
@@ -101,6 +104,8 @@ func (ctrl *V1Controller) HandleEntitiesGetAll() errchain.HandlerFunc {
 		}
 
 		v.FilterChildren = queryBool(params.Get("filterChildren"))
+		v.ExpiresBefore = queryDate(params.Get("expiresBefore"))
+		v.ExpiresAfter = queryDate(params.Get("expiresAfter"))
 
 		if strings.HasPrefix(v.Search, "#") {
 			aidStr := strings.TrimPrefix(v.Search, "#")
@@ -409,6 +414,44 @@ func (ctrl *V1Controller) HandleEntityDuplicate() errchain.HandlerFunc {
 	}
 
 	return adapters.ActionID("id", fn, http.StatusCreated)
+}
+
+// HandleEntitiesExpiring godoc
+//
+//	@Summary	Expired and Expiring Entities
+//	@Tags		Entities
+//	@Produce	json
+//	@Param		days	query		int	false	"how many days ahead counts as expiring soon (default 30, max 3650)"
+//	@Param		limit	query		int	false	"most entries to return per list (default 50, max 500)"
+//	@Success	200		{object}	repo.ExpiringResult
+//	@Router		/v1/entities/expiring [GET]
+//	@Security	Bearer
+func (ctrl *V1Controller) HandleEntitiesExpiring() errchain.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		spanCtx, span := startEntityCtrlSpan(r.Context(), "controller.V1.HandleEntitiesExpiring")
+		defer span.End()
+
+		params := r.URL.Query()
+		days := min(max(queryIntOr(params.Get("days"), 30), 0), 3650)
+		limit := min(max(queryIntOr(params.Get("limit"), 50), 1), 500)
+
+		auth := services.NewContext(spanCtx)
+		span.SetAttributes(attribute.String("group.id", auth.GID.String()))
+
+		// "Today" is the collection's today, not the server's.
+		var tz string
+		if g, err := ctrl.repo.Groups.GroupByID(spanCtx, auth.GID); err == nil {
+			tz = g.Timezone
+		}
+		today := time.Now().In(regional.Location(tz))
+
+		out, err := ctrl.repo.Entities.Expiring(spanCtx, auth.GID, today, days, limit)
+		if err != nil {
+			recordCtrlSpanError(span, err)
+			return err
+		}
+		return server.JSON(w, http.StatusOK, out)
+	}
 }
 
 // HandleGetAllCustomFieldNames godoc

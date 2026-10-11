@@ -1,6 +1,7 @@
 import { BaseAPI, route } from "./base";
 import type {
   APISummary,
+  CurrenciesCurrency,
   ForgotPasswordRequest,
   LoginForm,
   ResetPasswordRequest,
@@ -18,6 +19,11 @@ export type StatusResult = {
 export class PublicApi extends BaseAPI {
   public status() {
     return this.http.get<APISummary>({ url: route("/status") });
+  }
+
+  /** The currency list is public so the sign-up form can offer it. */
+  public currencies() {
+    return this.http.get<CurrenciesCurrency[]>({ url: route("/currencies") });
   }
 
   public login(username: string, password: string, stayLoggedIn = false) {

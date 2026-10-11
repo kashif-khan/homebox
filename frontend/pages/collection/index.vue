@@ -8,6 +8,8 @@
   import MdiAccountMultiple from "~icons/mdi/account-multiple";
   import MdiEmailPlus from "~icons/mdi/email-plus";
   import MdiBell from "~icons/mdi/bell";
+  import MdiBellRing from "~icons/mdi/bell-ring";
+  import MdiWebhook from "~icons/mdi/webhook";
   import MdiCog from "~icons/mdi/cog";
   import MdiShape from "~icons/mdi/shape";
   import MdiWrench from "~icons/mdi/wrench";
@@ -48,6 +50,18 @@
       label: "collection.tabs.notifiers",
       to: "/collection/notifiers",
       icon: MdiBell,
+    },
+    {
+      id: "alerts",
+      label: "collection.tabs.alerts",
+      to: "/collection/alerts",
+      icon: MdiBellRing,
+    },
+    {
+      id: "webhooks",
+      label: "collection.tabs.webhooks",
+      to: "/collection/webhooks",
+      icon: MdiWebhook,
     },
     {
       id: "settings",

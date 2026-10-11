@@ -1,4 +1,6 @@
 <script setup lang="ts">
+  import { displayFieldValue, isFieldType } from "~/composables/use-custom-fields";
+  import { expiryLabel, hasExpiry, todayString } from "~/lib/expiry";
   import { useI18n } from "vue-i18n";
   import { toast } from "@/components/ui/sonner";
   import type { AnyDetail, Detail, Details } from "~~/components/global/DetailsSection/types";
@@ -46,7 +48,7 @@
   import ItemAttachmentsList from "~/components/Item/AttachmentsList.vue";
   import ItemViewSelectable from "~/components/Item/View/Selectable.vue";
 
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   const { openDialog, closeDialog } = useDialog();
 
@@ -213,6 +215,25 @@
     ];
   });
 
+  // The expiry date with how far away it is, e.g. "1 Mar 2027 · Best before · Expires in 4 days".
+  const expiryDetail = computed<Details>(() => {
+    const at = item.value?.expiresAt;
+    if (!hasExpiry(at)) {
+      return [];
+    }
+    const date = displayFieldValue(
+      { type: "date", textValue: at.slice(0, 10), numberValue: 0, booleanValue: false },
+      locale.value,
+      { yes: "", no: "" }
+    );
+    const kind =
+      item.value?.expiryKind && item.value.expiryKind !== "expires"
+        ? t(`items.expiry_kinds.${item.value.expiryKind}`)
+        : "";
+    const status = expiryLabel(at, todayString(), t);
+    return [{ name: "items.expires_at", text: [date, kind, status].filter(Boolean).join(" · ") }];
+  });
+
   const itemDetails = computed<Details>(() => {
     if (!item.value) {
       return [];
@@ -243,6 +264,7 @@
         name: "items.insured",
         text: item.value?.insured ? "Yes" : "No",
       },
+      ...expiryDetail.value,
       {
         name: "items.archived",
         text: item.value?.archived ? "Yes" : "No",
@@ -254,22 +276,31 @@
       },
       ...assetID.value,
       ...item.value.fields.map(field => {
+        const type = isFieldType(field.type) ? field.type : "text";
+        const shown = displayFieldValue({ ...field, type }, locale.value, {
+          yes: t("global.yes"),
+          no: t("global.no"),
+        });
+
         /**
-         * Support Special URL Syntax
+         * Support Special URL Syntax. Only free text and links are scanned: a
+         * date or an amount is never a link.
          */
-        const url = maybeUrl(field.textValue);
-        if (url.isUrl) {
-          return {
-            type: "link",
-            name: field.name,
-            text: url.text,
-            href: url.url,
-          } as AnyDetail;
+        if (type === "url" || type === "text") {
+          const url = maybeUrl(field.textValue);
+          if (url.isUrl) {
+            return {
+              type: "link",
+              name: field.name,
+              text: url.text,
+              href: url.url,
+            } as AnyDetail;
+          }
         }
 
         return {
           name: field.name,
-          text: field.textValue,
+          text: shown,
         };
       }),
     ];
@@ -599,11 +630,19 @@
       ),
       includePurchaseFields: !!(item.value.purchaseFrom || item.value.purchasePrice || item.value.purchaseDate),
       includeSoldFields: !!(item.value.soldTo || item.value.soldPrice || item.value.soldDate),
+      includeExpiryFields: hasExpiry(item.value.expiresAt),
+      defaultExpiryOffsetDays: null,
+      defaultExpiryKind: item.value.expiryKind || "expires",
       fields: item.value.fields.map(field => ({
         id: NIL_UUID,
         name: field.name,
-        type: "text",
+        type: field.type,
         textValue: field.textValue || "",
+        numberValue: field.numberValue,
+        booleanValue: field.booleanValue,
+        currencyCode: field.currencyCode ?? "",
+        timezone: field.timezone ?? "",
+        choices: field.choices ?? [],
       })),
     };
 

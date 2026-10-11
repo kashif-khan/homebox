@@ -3,6 +3,7 @@ package v1
 import (
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/samber/lo"
@@ -29,4 +30,25 @@ func queryBool(s string) bool {
 		return false
 	}
 	return b
+}
+
+// queryDate reads a YYYY-MM-DD query value; anything else is ignored.
+func queryDate(s string) *time.Time {
+	if s == "" {
+		return nil
+	}
+	t, err := time.Parse(time.DateOnly, s)
+	if err != nil {
+		return nil
+	}
+	return &t
+}
+
+// queryIntOr reads an integer query value, falling back to def.
+func queryIntOr(s string, def int) int {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		return def
+	}
+	return i
 }

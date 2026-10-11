@@ -1,0 +1,72 @@
+---
+title: Expiry Dates and Alerts
+description: Track when food and medicine expire, and get told before and after - and for warranties and maintenance too.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Homebox can track when a consumable expires and tell you about it at the times *you* choose: a month before, a week before,
+the day itself, a week after.
+
+## Expiry dates
+
+Every item has an optional **Expires** date on its edit page, with a type: *Expires*, *Use by* or *Best before*. The item
+page shows how far away it is ("Best before · Expires in 4 days"), the item list has an Expires column (turn it on in the
+column picker) and a search filter, and the home page gets an **Expired / Expiring soon** card when anything needs attention.
+
+You can sort the list by expiry; items without a date always sort last.
+
+### Make it automatic
+
+- **Templates.** In a template, tick *Set an expiry date on new items* and give a number of days. A "Milk" template with
+  `7` days sets the date to a week from the day you add the item.
+- **Entity types.** Tick *Items of this type must have an expiry date* on a type such as "Medicine". Saving an item of that
+  type without a date is then refused.
+- **CSV.** `HB.expires_at` (`YYYY-MM-DD`) and `HB.expiry_kind` columns are imported and exported.
+
+<Aside>
+The date is a calendar day. "Today" for counting days is the collection's today, in the collection's time zone (see
+*Collection → Settings*), not the server's or your browser's.
+</Aside>
+
+## Alert rules
+
+Under *Collection → Alerts* you create rules. A rule says:
+
+- **What to watch:** an item's expiry, a warranty ending, or maintenance coming due.
+- **When:** any number of offsets: `30 days before`, `7 days before`, `1 day before`, `On the day`, `7 days after`.
+- **Which items:** all, or only one entity type and/or tag. Medicine can alert a month ahead while tinned food alerts a week
+  ahead.
+- **Who is told:** chosen notifiers, or every active one if you pick none.
+
+Alerts go out as **one digest per notifier**, grouped into expiry, warranty and maintenance sections, soonest first, with the
+item's location.
+
+### When they go out
+
+Each collection has a **time zone** and a **send hour** (default 08:00). A day's alerts go out from that hour, local time, not
+the server's. Homebox checks every few minutes, so an alert is never more than a few minutes late.
+
+If Homebox was **down** at the time, the alert is **sent late rather than dropped**, as soon as it is back, for up to 7 days
+after it was due. After that it is considered stale and skipped, so a long outage or a brand-new rule never floods you with
+old news. Each alert goes out **once** per notifier and offset: it is remembered, and if you correct an item's date it counts
+as a new alert for the new date.
+
+If a notifier fails (the service is down), nothing is recorded and the next check tries again.
+
+### Existing maintenance reminders
+
+Maintenance reminders keep working. On upgrade, every collection that already had notifiers gets a **Maintenance due** rule
+(on the day, to every active notifier) - the same reminder as before. You can edit or delete it like any other rule; once
+deleted it stays deleted.
+
+## Time zones and your account
+
+When you register, Homebox pre-fills your country, currency and time zone from your browser. They are only suggestions: change
+anything that is wrong on the sign-up form, your profile, or *Collection → Settings*. Nothing is looked up from your IP
+address.
+
+## Webhooks
+
+Date alerts can also call other systems: see [Webhooks](/en/advanced/webhooks), which turn the same rules into
+`expiry.upcoming`, `expiry.expired`, `warranty.upcoming` and similar events.

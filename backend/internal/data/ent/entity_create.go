@@ -215,6 +215,34 @@ func (_c *EntityCreate) SetNillableManufacturer(v *string) *EntityCreate {
 	return _c
 }
 
+// SetExpiresAt sets the "expires_at" field.
+func (_c *EntityCreate) SetExpiresAt(v time.Time) *EntityCreate {
+	_c.mutation.SetExpiresAt(v)
+	return _c
+}
+
+// SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
+func (_c *EntityCreate) SetNillableExpiresAt(v *time.Time) *EntityCreate {
+	if v != nil {
+		_c.SetExpiresAt(*v)
+	}
+	return _c
+}
+
+// SetExpiryKind sets the "expiry_kind" field.
+func (_c *EntityCreate) SetExpiryKind(v entity.ExpiryKind) *EntityCreate {
+	_c.mutation.SetExpiryKind(v)
+	return _c
+}
+
+// SetNillableExpiryKind sets the "expiry_kind" field if the given value is not nil.
+func (_c *EntityCreate) SetNillableExpiryKind(v *entity.ExpiryKind) *EntityCreate {
+	if v != nil {
+		_c.SetExpiryKind(*v)
+	}
+	return _c
+}
+
 // SetLifetimeWarranty sets the "lifetime_warranty" field.
 func (_c *EntityCreate) SetLifetimeWarranty(v bool) *EntityCreate {
 	_c.mutation.SetLifetimeWarranty(v)
@@ -582,6 +610,10 @@ func (_c *EntityCreate) defaults() {
 		v := entity.DefaultSyncChildEntityLocations
 		_c.mutation.SetSyncChildEntityLocations(v)
 	}
+	if _, ok := _c.mutation.ExpiryKind(); !ok {
+		v := entity.DefaultExpiryKind
+		_c.mutation.SetExpiryKind(v)
+	}
 	if _, ok := _c.mutation.LifetimeWarranty(); !ok {
 		v := entity.DefaultLifetimeWarranty
 		_c.mutation.SetLifetimeWarranty(v)
@@ -659,6 +691,14 @@ func (_c *EntityCreate) check() error {
 	if v, ok := _c.mutation.Manufacturer(); ok {
 		if err := entity.ManufacturerValidator(v); err != nil {
 			return &ValidationError{Name: "manufacturer", err: fmt.Errorf(`ent: validator failed for field "Entity.manufacturer": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.ExpiryKind(); !ok {
+		return &ValidationError{Name: "expiry_kind", err: errors.New(`ent: missing required field "Entity.expiry_kind"`)}
+	}
+	if v, ok := _c.mutation.ExpiryKind(); ok {
+		if err := entity.ExpiryKindValidator(v); err != nil {
+			return &ValidationError{Name: "expiry_kind", err: fmt.Errorf(`ent: validator failed for field "Entity.expiry_kind": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.LifetimeWarranty(); !ok {
@@ -776,6 +816,14 @@ func (_c *EntityCreate) createSpec() (*Entity, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Manufacturer(); ok {
 		_spec.SetField(entity.FieldManufacturer, field.TypeString, value)
 		_node.Manufacturer = value
+	}
+	if value, ok := _c.mutation.ExpiresAt(); ok {
+		_spec.SetField(entity.FieldExpiresAt, field.TypeTime, value)
+		_node.ExpiresAt = value
+	}
+	if value, ok := _c.mutation.ExpiryKind(); ok {
+		_spec.SetField(entity.FieldExpiryKind, field.TypeEnum, value)
+		_node.ExpiryKind = value
 	}
 	if value, ok := _c.mutation.LifetimeWarranty(); ok {
 		_spec.SetField(entity.FieldLifetimeWarranty, field.TypeBool, value)

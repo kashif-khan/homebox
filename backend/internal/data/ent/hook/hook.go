@@ -165,6 +165,30 @@ func (f MaintenanceEntryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.V
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MaintenanceEntryMutation", m)
 }
 
+// The NotificationLogFunc type is an adapter to allow the use of ordinary
+// function as NotificationLog mutator.
+type NotificationLogFunc func(context.Context, *ent.NotificationLogMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f NotificationLogFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.NotificationLogMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.NotificationLogMutation", m)
+}
+
+// The NotificationRuleFunc type is an adapter to allow the use of ordinary
+// function as NotificationRule mutator.
+type NotificationRuleFunc func(context.Context, *ent.NotificationRuleMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f NotificationRuleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.NotificationRuleMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.NotificationRuleMutation", m)
+}
+
 // The NotifierFunc type is an adapter to allow the use of ordinary
 // function as Notifier mutator.
 type NotifierFunc func(context.Context, *ent.NotifierMutation) (ent.Value, error)
@@ -283,6 +307,30 @@ func (f UserGroupFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, e
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserGroupMutation", m)
+}
+
+// The WebhookDeliveryFunc type is an adapter to allow the use of ordinary
+// function as WebhookDelivery mutator.
+type WebhookDeliveryFunc func(context.Context, *ent.WebhookDeliveryMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f WebhookDeliveryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.WebhookDeliveryMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.WebhookDeliveryMutation", m)
+}
+
+// The WebhookEndpointFunc type is an adapter to allow the use of ordinary
+// function as WebhookEndpoint mutator.
+type WebhookEndpointFunc func(context.Context, *ent.WebhookEndpointMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f WebhookEndpointFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.WebhookEndpointMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.WebhookEndpointMutation", m)
 }
 
 // Condition is a hook condition function.

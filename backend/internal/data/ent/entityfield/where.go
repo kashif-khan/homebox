@@ -96,6 +96,21 @@ func TimeValue(v time.Time) predicate.EntityField {
 	return predicate.EntityField(sql.FieldEQ(FieldTimeValue, v))
 }
 
+// DecimalValue applies equality check predicate on the "decimal_value" field. It's identical to DecimalValueEQ.
+func DecimalValue(v float64) predicate.EntityField {
+	return predicate.EntityField(sql.FieldEQ(FieldDecimalValue, v))
+}
+
+// CurrencyCode applies equality check predicate on the "currency_code" field. It's identical to CurrencyCodeEQ.
+func CurrencyCode(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldEQ(FieldCurrencyCode, v))
+}
+
+// Timezone applies equality check predicate on the "timezone" field. It's identical to TimezoneEQ.
+func Timezone(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldEQ(FieldTimezone, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.EntityField {
 	return predicate.EntityField(sql.FieldEQ(FieldCreatedAt, v))
@@ -509,6 +524,196 @@ func TimeValueLT(v time.Time) predicate.EntityField {
 // TimeValueLTE applies the LTE predicate on the "time_value" field.
 func TimeValueLTE(v time.Time) predicate.EntityField {
 	return predicate.EntityField(sql.FieldLTE(FieldTimeValue, v))
+}
+
+// DecimalValueEQ applies the EQ predicate on the "decimal_value" field.
+func DecimalValueEQ(v float64) predicate.EntityField {
+	return predicate.EntityField(sql.FieldEQ(FieldDecimalValue, v))
+}
+
+// DecimalValueNEQ applies the NEQ predicate on the "decimal_value" field.
+func DecimalValueNEQ(v float64) predicate.EntityField {
+	return predicate.EntityField(sql.FieldNEQ(FieldDecimalValue, v))
+}
+
+// DecimalValueIn applies the In predicate on the "decimal_value" field.
+func DecimalValueIn(vs ...float64) predicate.EntityField {
+	return predicate.EntityField(sql.FieldIn(FieldDecimalValue, vs...))
+}
+
+// DecimalValueNotIn applies the NotIn predicate on the "decimal_value" field.
+func DecimalValueNotIn(vs ...float64) predicate.EntityField {
+	return predicate.EntityField(sql.FieldNotIn(FieldDecimalValue, vs...))
+}
+
+// DecimalValueGT applies the GT predicate on the "decimal_value" field.
+func DecimalValueGT(v float64) predicate.EntityField {
+	return predicate.EntityField(sql.FieldGT(FieldDecimalValue, v))
+}
+
+// DecimalValueGTE applies the GTE predicate on the "decimal_value" field.
+func DecimalValueGTE(v float64) predicate.EntityField {
+	return predicate.EntityField(sql.FieldGTE(FieldDecimalValue, v))
+}
+
+// DecimalValueLT applies the LT predicate on the "decimal_value" field.
+func DecimalValueLT(v float64) predicate.EntityField {
+	return predicate.EntityField(sql.FieldLT(FieldDecimalValue, v))
+}
+
+// DecimalValueLTE applies the LTE predicate on the "decimal_value" field.
+func DecimalValueLTE(v float64) predicate.EntityField {
+	return predicate.EntityField(sql.FieldLTE(FieldDecimalValue, v))
+}
+
+// DecimalValueIsNil applies the IsNil predicate on the "decimal_value" field.
+func DecimalValueIsNil() predicate.EntityField {
+	return predicate.EntityField(sql.FieldIsNull(FieldDecimalValue))
+}
+
+// DecimalValueNotNil applies the NotNil predicate on the "decimal_value" field.
+func DecimalValueNotNil() predicate.EntityField {
+	return predicate.EntityField(sql.FieldNotNull(FieldDecimalValue))
+}
+
+// CurrencyCodeEQ applies the EQ predicate on the "currency_code" field.
+func CurrencyCodeEQ(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldEQ(FieldCurrencyCode, v))
+}
+
+// CurrencyCodeNEQ applies the NEQ predicate on the "currency_code" field.
+func CurrencyCodeNEQ(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldNEQ(FieldCurrencyCode, v))
+}
+
+// CurrencyCodeIn applies the In predicate on the "currency_code" field.
+func CurrencyCodeIn(vs ...string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldIn(FieldCurrencyCode, vs...))
+}
+
+// CurrencyCodeNotIn applies the NotIn predicate on the "currency_code" field.
+func CurrencyCodeNotIn(vs ...string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldNotIn(FieldCurrencyCode, vs...))
+}
+
+// CurrencyCodeGT applies the GT predicate on the "currency_code" field.
+func CurrencyCodeGT(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldGT(FieldCurrencyCode, v))
+}
+
+// CurrencyCodeGTE applies the GTE predicate on the "currency_code" field.
+func CurrencyCodeGTE(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldGTE(FieldCurrencyCode, v))
+}
+
+// CurrencyCodeLT applies the LT predicate on the "currency_code" field.
+func CurrencyCodeLT(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldLT(FieldCurrencyCode, v))
+}
+
+// CurrencyCodeLTE applies the LTE predicate on the "currency_code" field.
+func CurrencyCodeLTE(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldLTE(FieldCurrencyCode, v))
+}
+
+// CurrencyCodeContains applies the Contains predicate on the "currency_code" field.
+func CurrencyCodeContains(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldContains(FieldCurrencyCode, v))
+}
+
+// CurrencyCodeHasPrefix applies the HasPrefix predicate on the "currency_code" field.
+func CurrencyCodeHasPrefix(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldHasPrefix(FieldCurrencyCode, v))
+}
+
+// CurrencyCodeHasSuffix applies the HasSuffix predicate on the "currency_code" field.
+func CurrencyCodeHasSuffix(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldHasSuffix(FieldCurrencyCode, v))
+}
+
+// CurrencyCodeEqualFold applies the EqualFold predicate on the "currency_code" field.
+func CurrencyCodeEqualFold(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldEqualFold(FieldCurrencyCode, v))
+}
+
+// CurrencyCodeContainsFold applies the ContainsFold predicate on the "currency_code" field.
+func CurrencyCodeContainsFold(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldContainsFold(FieldCurrencyCode, v))
+}
+
+// TimezoneEQ applies the EQ predicate on the "timezone" field.
+func TimezoneEQ(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldEQ(FieldTimezone, v))
+}
+
+// TimezoneNEQ applies the NEQ predicate on the "timezone" field.
+func TimezoneNEQ(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldNEQ(FieldTimezone, v))
+}
+
+// TimezoneIn applies the In predicate on the "timezone" field.
+func TimezoneIn(vs ...string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldIn(FieldTimezone, vs...))
+}
+
+// TimezoneNotIn applies the NotIn predicate on the "timezone" field.
+func TimezoneNotIn(vs ...string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldNotIn(FieldTimezone, vs...))
+}
+
+// TimezoneGT applies the GT predicate on the "timezone" field.
+func TimezoneGT(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldGT(FieldTimezone, v))
+}
+
+// TimezoneGTE applies the GTE predicate on the "timezone" field.
+func TimezoneGTE(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldGTE(FieldTimezone, v))
+}
+
+// TimezoneLT applies the LT predicate on the "timezone" field.
+func TimezoneLT(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldLT(FieldTimezone, v))
+}
+
+// TimezoneLTE applies the LTE predicate on the "timezone" field.
+func TimezoneLTE(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldLTE(FieldTimezone, v))
+}
+
+// TimezoneContains applies the Contains predicate on the "timezone" field.
+func TimezoneContains(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldContains(FieldTimezone, v))
+}
+
+// TimezoneHasPrefix applies the HasPrefix predicate on the "timezone" field.
+func TimezoneHasPrefix(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldHasPrefix(FieldTimezone, v))
+}
+
+// TimezoneHasSuffix applies the HasSuffix predicate on the "timezone" field.
+func TimezoneHasSuffix(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldHasSuffix(FieldTimezone, v))
+}
+
+// TimezoneEqualFold applies the EqualFold predicate on the "timezone" field.
+func TimezoneEqualFold(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldEqualFold(FieldTimezone, v))
+}
+
+// TimezoneContainsFold applies the ContainsFold predicate on the "timezone" field.
+func TimezoneContainsFold(v string) predicate.EntityField {
+	return predicate.EntityField(sql.FieldContainsFold(FieldTimezone, v))
+}
+
+// ChoicesIsNil applies the IsNil predicate on the "choices" field.
+func ChoicesIsNil() predicate.EntityField {
+	return predicate.EntityField(sql.FieldIsNull(FieldChoices))
+}
+
+// ChoicesNotNil applies the NotNil predicate on the "choices" field.
+func ChoicesNotNil() predicate.EntityField {
+	return predicate.EntityField(sql.FieldNotNull(FieldChoices))
 }
 
 // HasEntity applies the HasEdge predicate on the "entity" edge.

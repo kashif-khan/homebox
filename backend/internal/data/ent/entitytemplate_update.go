@@ -284,6 +284,61 @@ func (_u *EntityTemplateUpdate) SetNillableIncludeSoldFields(v *bool) *EntityTem
 	return _u
 }
 
+// SetIncludeExpiryFields sets the "include_expiry_fields" field.
+func (_u *EntityTemplateUpdate) SetIncludeExpiryFields(v bool) *EntityTemplateUpdate {
+	_u.mutation.SetIncludeExpiryFields(v)
+	return _u
+}
+
+// SetNillableIncludeExpiryFields sets the "include_expiry_fields" field if the given value is not nil.
+func (_u *EntityTemplateUpdate) SetNillableIncludeExpiryFields(v *bool) *EntityTemplateUpdate {
+	if v != nil {
+		_u.SetIncludeExpiryFields(*v)
+	}
+	return _u
+}
+
+// SetDefaultExpiryOffsetDays sets the "default_expiry_offset_days" field.
+func (_u *EntityTemplateUpdate) SetDefaultExpiryOffsetDays(v int) *EntityTemplateUpdate {
+	_u.mutation.ResetDefaultExpiryOffsetDays()
+	_u.mutation.SetDefaultExpiryOffsetDays(v)
+	return _u
+}
+
+// SetNillableDefaultExpiryOffsetDays sets the "default_expiry_offset_days" field if the given value is not nil.
+func (_u *EntityTemplateUpdate) SetNillableDefaultExpiryOffsetDays(v *int) *EntityTemplateUpdate {
+	if v != nil {
+		_u.SetDefaultExpiryOffsetDays(*v)
+	}
+	return _u
+}
+
+// AddDefaultExpiryOffsetDays adds value to the "default_expiry_offset_days" field.
+func (_u *EntityTemplateUpdate) AddDefaultExpiryOffsetDays(v int) *EntityTemplateUpdate {
+	_u.mutation.AddDefaultExpiryOffsetDays(v)
+	return _u
+}
+
+// ClearDefaultExpiryOffsetDays clears the value of the "default_expiry_offset_days" field.
+func (_u *EntityTemplateUpdate) ClearDefaultExpiryOffsetDays() *EntityTemplateUpdate {
+	_u.mutation.ClearDefaultExpiryOffsetDays()
+	return _u
+}
+
+// SetDefaultExpiryKind sets the "default_expiry_kind" field.
+func (_u *EntityTemplateUpdate) SetDefaultExpiryKind(v entitytemplate.DefaultExpiryKind) *EntityTemplateUpdate {
+	_u.mutation.SetDefaultExpiryKind(v)
+	return _u
+}
+
+// SetNillableDefaultExpiryKind sets the "default_expiry_kind" field if the given value is not nil.
+func (_u *EntityTemplateUpdate) SetNillableDefaultExpiryKind(v *entitytemplate.DefaultExpiryKind) *EntityTemplateUpdate {
+	if v != nil {
+		_u.SetDefaultExpiryKind(*v)
+	}
+	return _u
+}
+
 // SetDefaultTagIds sets the "default_tag_ids" field.
 func (_u *EntityTemplateUpdate) SetDefaultTagIds(v []uuid.UUID) *EntityTemplateUpdate {
 	_u.mutation.SetDefaultTagIds(v)
@@ -463,6 +518,11 @@ func (_u *EntityTemplateUpdate) check() error {
 			return &ValidationError{Name: "default_warranty_details", err: fmt.Errorf(`ent: validator failed for field "EntityTemplate.default_warranty_details": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.DefaultExpiryKind(); ok {
+		if err := entitytemplate.DefaultExpiryKindValidator(v); err != nil {
+			return &ValidationError{Name: "default_expiry_kind", err: fmt.Errorf(`ent: validator failed for field "EntityTemplate.default_expiry_kind": %w`, err)}
+		}
+	}
 	if _u.mutation.GroupCleared() && len(_u.mutation.GroupIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "EntityTemplate.group"`)
 	}
@@ -549,6 +609,21 @@ func (_u *EntityTemplateUpdate) sqlSave(ctx context.Context) (_node int, err err
 	}
 	if value, ok := _u.mutation.IncludeSoldFields(); ok {
 		_spec.SetField(entitytemplate.FieldIncludeSoldFields, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.IncludeExpiryFields(); ok {
+		_spec.SetField(entitytemplate.FieldIncludeExpiryFields, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.DefaultExpiryOffsetDays(); ok {
+		_spec.SetField(entitytemplate.FieldDefaultExpiryOffsetDays, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedDefaultExpiryOffsetDays(); ok {
+		_spec.AddField(entitytemplate.FieldDefaultExpiryOffsetDays, field.TypeInt, value)
+	}
+	if _u.mutation.DefaultExpiryOffsetDaysCleared() {
+		_spec.ClearField(entitytemplate.FieldDefaultExpiryOffsetDays, field.TypeInt)
+	}
+	if value, ok := _u.mutation.DefaultExpiryKind(); ok {
+		_spec.SetField(entitytemplate.FieldDefaultExpiryKind, field.TypeEnum, value)
 	}
 	if value, ok := _u.mutation.DefaultTagIds(); ok {
 		_spec.SetField(entitytemplate.FieldDefaultTagIds, field.TypeJSON, value)
@@ -935,6 +1010,61 @@ func (_u *EntityTemplateUpdateOne) SetNillableIncludeSoldFields(v *bool) *Entity
 	return _u
 }
 
+// SetIncludeExpiryFields sets the "include_expiry_fields" field.
+func (_u *EntityTemplateUpdateOne) SetIncludeExpiryFields(v bool) *EntityTemplateUpdateOne {
+	_u.mutation.SetIncludeExpiryFields(v)
+	return _u
+}
+
+// SetNillableIncludeExpiryFields sets the "include_expiry_fields" field if the given value is not nil.
+func (_u *EntityTemplateUpdateOne) SetNillableIncludeExpiryFields(v *bool) *EntityTemplateUpdateOne {
+	if v != nil {
+		_u.SetIncludeExpiryFields(*v)
+	}
+	return _u
+}
+
+// SetDefaultExpiryOffsetDays sets the "default_expiry_offset_days" field.
+func (_u *EntityTemplateUpdateOne) SetDefaultExpiryOffsetDays(v int) *EntityTemplateUpdateOne {
+	_u.mutation.ResetDefaultExpiryOffsetDays()
+	_u.mutation.SetDefaultExpiryOffsetDays(v)
+	return _u
+}
+
+// SetNillableDefaultExpiryOffsetDays sets the "default_expiry_offset_days" field if the given value is not nil.
+func (_u *EntityTemplateUpdateOne) SetNillableDefaultExpiryOffsetDays(v *int) *EntityTemplateUpdateOne {
+	if v != nil {
+		_u.SetDefaultExpiryOffsetDays(*v)
+	}
+	return _u
+}
+
+// AddDefaultExpiryOffsetDays adds value to the "default_expiry_offset_days" field.
+func (_u *EntityTemplateUpdateOne) AddDefaultExpiryOffsetDays(v int) *EntityTemplateUpdateOne {
+	_u.mutation.AddDefaultExpiryOffsetDays(v)
+	return _u
+}
+
+// ClearDefaultExpiryOffsetDays clears the value of the "default_expiry_offset_days" field.
+func (_u *EntityTemplateUpdateOne) ClearDefaultExpiryOffsetDays() *EntityTemplateUpdateOne {
+	_u.mutation.ClearDefaultExpiryOffsetDays()
+	return _u
+}
+
+// SetDefaultExpiryKind sets the "default_expiry_kind" field.
+func (_u *EntityTemplateUpdateOne) SetDefaultExpiryKind(v entitytemplate.DefaultExpiryKind) *EntityTemplateUpdateOne {
+	_u.mutation.SetDefaultExpiryKind(v)
+	return _u
+}
+
+// SetNillableDefaultExpiryKind sets the "default_expiry_kind" field if the given value is not nil.
+func (_u *EntityTemplateUpdateOne) SetNillableDefaultExpiryKind(v *entitytemplate.DefaultExpiryKind) *EntityTemplateUpdateOne {
+	if v != nil {
+		_u.SetDefaultExpiryKind(*v)
+	}
+	return _u
+}
+
 // SetDefaultTagIds sets the "default_tag_ids" field.
 func (_u *EntityTemplateUpdateOne) SetDefaultTagIds(v []uuid.UUID) *EntityTemplateUpdateOne {
 	_u.mutation.SetDefaultTagIds(v)
@@ -1127,6 +1257,11 @@ func (_u *EntityTemplateUpdateOne) check() error {
 			return &ValidationError{Name: "default_warranty_details", err: fmt.Errorf(`ent: validator failed for field "EntityTemplate.default_warranty_details": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.DefaultExpiryKind(); ok {
+		if err := entitytemplate.DefaultExpiryKindValidator(v); err != nil {
+			return &ValidationError{Name: "default_expiry_kind", err: fmt.Errorf(`ent: validator failed for field "EntityTemplate.default_expiry_kind": %w`, err)}
+		}
+	}
 	if _u.mutation.GroupCleared() && len(_u.mutation.GroupIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "EntityTemplate.group"`)
 	}
@@ -1230,6 +1365,21 @@ func (_u *EntityTemplateUpdateOne) sqlSave(ctx context.Context) (_node *EntityTe
 	}
 	if value, ok := _u.mutation.IncludeSoldFields(); ok {
 		_spec.SetField(entitytemplate.FieldIncludeSoldFields, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.IncludeExpiryFields(); ok {
+		_spec.SetField(entitytemplate.FieldIncludeExpiryFields, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.DefaultExpiryOffsetDays(); ok {
+		_spec.SetField(entitytemplate.FieldDefaultExpiryOffsetDays, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedDefaultExpiryOffsetDays(); ok {
+		_spec.AddField(entitytemplate.FieldDefaultExpiryOffsetDays, field.TypeInt, value)
+	}
+	if _u.mutation.DefaultExpiryOffsetDaysCleared() {
+		_spec.ClearField(entitytemplate.FieldDefaultExpiryOffsetDays, field.TypeInt)
+	}
+	if value, ok := _u.mutation.DefaultExpiryKind(); ok {
+		_spec.SetField(entitytemplate.FieldDefaultExpiryKind, field.TypeEnum, value)
 	}
 	if value, ok := _u.mutation.DefaultTagIds(); ok {
 		_spec.SetField(entitytemplate.FieldDefaultTagIds, field.TypeJSON, value)

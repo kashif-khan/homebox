@@ -18,6 +18,7 @@
   import SearchFilter from "~/components/Search/Filter.vue";
   import ItemViewSelectable from "~/components/Item/View/Selectable.vue";
   import type { LocationQueryRaw } from "vue-router";
+  import { todayString } from "~/lib/expiry";
 
   const { t } = useI18n();
 
@@ -88,6 +89,7 @@
   const matchAllTags = useOptionalRouteQuery("matchAllTags", false);
   const onlyWithoutPhoto = useOptionalRouteQuery("onlyWithoutPhoto", false);
   const onlyWithPhoto = useOptionalRouteQuery("onlyWithPhoto", false);
+  const expiry = useOptionalRouteQuery("expiry", "");
   const orderBy = useOptionalRouteQuery("orderBy", "name");
   const orderDirection = useOptionalRouteQuery("orderDirection", "asc");
   const qLoc = useOptionalRouteQuery("loc", []);
@@ -254,6 +256,26 @@
     }
   });
 
+  watch(expiry, (newV, oldV) => {
+    if (newV !== oldV) {
+      search();
+    }
+  });
+
+  /** The expiry filter as the API's date bounds, counted from the viewer's today. */
+  function expiryBounds(): { expiresBefore?: string; expiresAfter?: string } {
+    if (!expiry.value || expiry.value === "any") return {};
+    const today = todayString();
+    const shift = (days: number) => {
+      const d = new Date(`${today}T12:00:00Z`);
+      d.setUTCDate(d.getUTCDate() + days);
+      return d.toISOString().slice(0, 10);
+    };
+    if (expiry.value === "expired") return { expiresBefore: shift(-1) };
+    const n = Number(expiry.value);
+    return Number.isFinite(n) ? { expiresAfter: today, expiresBefore: shift(n) } : {};
+  }
+
   watch(orderBy, (newV, oldV) => {
     if (newV !== oldV) {
       search();
@@ -315,6 +337,7 @@
       onlyWithPhoto: onlyWithPhoto.value,
       orderBy: orderBy.value,
       orderDirection: orderDirection.value,
+      expiry: expiry.value === "any" ? "" : expiry.value,
       page: page.value,
       q: query.value,
       loc: locIDs.value,
@@ -359,6 +382,7 @@
       pageSize: pageSize.value,
       orderBy: orderBy.value,
       orderDirection: orderDirection.value,
+      ...expiryBounds(),
       fields,
     });
 
@@ -543,6 +567,22 @@
                   <SelectItem value="quantity"> {{ $t("items.quantity") }} </SelectItem>
                   <SelectItem value="insured"> {{ $t("items.insured") }} </SelectItem>
                   <SelectItem value="archived"> {{ $t("items.archived") }} </SelectItem>
+                  <SelectItem value="expiresAt"> {{ $t("items.expires_at") }} </SelectItem>
+                </SelectContent>
+              </Select>
+            </Label>
+            <Label class="flex cursor-pointer flex-col gap-2">
+              <span class="text-right"> {{ $t("items.expires_at") }} </span>
+              <Select v-model="expiry">
+                <SelectTrigger data-testid="expiry-filter">
+                  <SelectValue :placeholder="$t('items.expiry_filter.any')" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any"> {{ $t("items.expiry_filter.any") }} </SelectItem>
+                  <SelectItem value="expired"> {{ $t("items.expiry_filter.expired") }} </SelectItem>
+                  <SelectItem value="7"> {{ $t("items.expiry_filter.in_days", { n: 7 }) }} </SelectItem>
+                  <SelectItem value="30"> {{ $t("items.expiry_filter.in_days", { n: 30 }) }} </SelectItem>
+                  <SelectItem value="90"> {{ $t("items.expiry_filter.in_days", { n: 90 }) }} </SelectItem>
                 </SelectContent>
               </Select>
             </Label>
