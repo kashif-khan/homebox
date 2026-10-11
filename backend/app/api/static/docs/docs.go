@@ -301,8 +301,20 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "field to order by; valid values: name, createdAt, updatedAt, assetId",
+                        "description": "field to order by; valid values: name, createdAt, updatedAt, assetId, expiresAt (items without an expiry date sort last)",
                         "name": "orderBy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "only items expiring on or before this date (YYYY-MM-DD)",
+                        "name": "expiresBefore",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "only items expiring on or after this date (YYYY-MM-DD)",
+                        "name": "expiresAfter",
                         "in": "query"
                     },
                     {
@@ -350,6 +362,44 @@ const docTemplate = `{
                         "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/repo.EntityOut"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/entities/expiring": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Entities"
+                ],
+                "summary": "Expired and Expiring Entities",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "how many days ahead counts as expiring soon (default 30, max 3650)",
+                        "name": "days",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "most entries to return per list (default 50, max 500)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/repo.ExpiringResult"
                         }
                     }
                 }
@@ -4383,6 +4433,18 @@ const docTemplate = `{
                         }
                     ]
                 },
+                "expires_at": {
+                    "description": "ExpiresAt holds the value of the \"expires_at\" field.",
+                    "type": "string"
+                },
+                "expiry_kind": {
+                    "description": "ExpiryKind holds the value of the \"expiry_kind\" field.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.ExpiryKind"
+                        }
+                    ]
+                },
                 "id": {
                     "description": "ID of the ent.",
                     "type": "string"
@@ -4648,6 +4710,18 @@ const docTemplate = `{
                     "description": "Default description for items created from this template",
                     "type": "string"
                 },
+                "default_expiry_kind": {
+                    "description": "DefaultExpiryKind holds the value of the \"default_expiry_kind\" field.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entitytemplate.DefaultExpiryKind"
+                        }
+                    ]
+                },
+                "default_expiry_offset_days": {
+                    "description": "Items created from this template expire this many days after they are added",
+                    "type": "integer"
+                },
                 "default_insured": {
                     "description": "DefaultInsured holds the value of the \"default_insured\" field.",
                     "type": "boolean"
@@ -4698,6 +4772,10 @@ const docTemplate = `{
                 "id": {
                     "description": "ID of the ent.",
                     "type": "string"
+                },
+                "include_expiry_fields": {
+                    "description": "Whether to include the expiry date in items created from this template",
+                    "type": "boolean"
                 },
                 "include_purchase_fields": {
                     "description": "Whether to include purchase fields in items created from this template",
@@ -4771,6 +4849,10 @@ const docTemplate = `{
                             "$ref": "#/definitions/ent.EntityTypeEdges"
                         }
                     ]
+                },
+                "expiry_required": {
+                    "description": "ExpiryRequired holds the value of the \"expiry_required\" field.",
+                    "type": "boolean"
                 },
                 "icon": {
                     "description": "Icon holds the value of the \"icon\" field.",
@@ -5874,6 +5956,21 @@ const docTemplate = `{
                 }
             }
         },
+        "entity.ExpiryKind": {
+            "type": "string",
+            "enum": [
+                "expires",
+                "expires",
+                "use_by",
+                "best_before"
+            ],
+            "x-enum-varnames": [
+                "DefaultExpiryKind",
+                "ExpiryKindExpires",
+                "ExpiryKindUseBy",
+                "ExpiryKindBestBefore"
+            ]
+        },
         "entityfield.Type": {
             "type": "string",
             "enum": [
@@ -5899,6 +5996,21 @@ const docTemplate = `{
                 "TypeDatetime",
                 "TypeURL",
                 "TypeSelect"
+            ]
+        },
+        "entitytemplate.DefaultExpiryKind": {
+            "type": "string",
+            "enum": [
+                "expires",
+                "expires",
+                "use_by",
+                "best_before"
+            ],
+            "x-enum-varnames": [
+                "DefaultDefaultExpiryKind",
+                "DefaultExpiryKindExpires",
+                "DefaultExpiryKindUseBy",
+                "DefaultExpiryKindBestBefore"
             ]
         },
         "export.Kind": {
@@ -6687,6 +6799,13 @@ const docTemplate = `{
                     "x-nullable": true,
                     "x-omitempty": true
                 },
+                "expiresAt": {
+                    "description": "ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind\nsays whether that is a use-by, best-before or plain expiry date.",
+                    "type": "string"
+                },
+                "expiryKind": {
+                    "type": "string"
+                },
                 "fields": {
                     "type": "array",
                     "items": {
@@ -6816,6 +6935,17 @@ const docTemplate = `{
                     "x-nullable": true,
                     "x-omitempty": true
                 },
+                "expiresAt": {
+                    "description": "ExpiresAt sets the expiry date; an empty date clears it. ExpiryKind is\nexpires, use_by or best_before. Both are left alone when nil.",
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "expiryKind": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
                 "id": {
                     "type": "string"
                 },
@@ -6894,6 +7024,13 @@ const docTemplate = `{
                     "x-nullable": true,
                     "x-omitempty": true
                 },
+                "expiresAt": {
+                    "description": "ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind\nsays whether that is a use-by, best-before or plain expiry date.",
+                    "type": "string"
+                },
+                "expiryKind": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },
@@ -6959,6 +7096,13 @@ const docTemplate = `{
                     "maxLength": 1000,
                     "x-nullable": true
                 },
+                "defaultExpiryKind": {
+                    "type": "string"
+                },
+                "defaultExpiryOffsetDays": {
+                    "type": "integer",
+                    "x-nullable": true
+                },
                 "defaultInsured": {
                     "type": "boolean"
                 },
@@ -7013,6 +7157,10 @@ const docTemplate = `{
                         "$ref": "#/definitions/repo.TemplateField"
                     }
                 },
+                "includeExpiryFields": {
+                    "description": "Expiry: items made from the template expire DefaultExpiryOffsetDays days\nafter they are added, when it is set.",
+                    "type": "boolean"
+                },
                 "includePurchaseFields": {
                     "type": "boolean"
                 },
@@ -7042,6 +7190,13 @@ const docTemplate = `{
                 },
                 "defaultDescription": {
                     "type": "string"
+                },
+                "defaultExpiryKind": {
+                    "type": "string"
+                },
+                "defaultExpiryOffsetDays": {
+                    "type": "integer",
+                    "x-nullable": true
                 },
                 "defaultInsured": {
                     "type": "boolean"
@@ -7091,6 +7246,10 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "includeExpiryFields": {
+                    "description": "Expiry: items made from the template expire DefaultExpiryOffsetDays days\nafter they are added, when it is set.",
+                    "type": "boolean"
                 },
                 "includePurchaseFields": {
                     "type": "boolean"
@@ -7144,6 +7303,13 @@ const docTemplate = `{
                     "maxLength": 1000,
                     "x-nullable": true
                 },
+                "defaultExpiryKind": {
+                    "type": "string"
+                },
+                "defaultExpiryOffsetDays": {
+                    "type": "integer",
+                    "x-nullable": true
+                },
                 "defaultInsured": {
                     "type": "boolean"
                 },
@@ -7201,6 +7367,10 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "includeExpiryFields": {
+                    "description": "Expiry: items made from the template expire DefaultExpiryOffsetDays days\nafter they are added, when it is set.",
+                    "type": "boolean"
+                },
                 "includePurchaseFields": {
                     "type": "boolean"
                 },
@@ -7228,6 +7398,10 @@ const docTemplate = `{
                 "defaultTemplateId": {
                     "type": "string"
                 },
+                "expiryRequired": {
+                    "description": "ExpiryRequired makes an expiry date mandatory on items of this type.",
+                    "type": "boolean"
+                },
                 "icon": {
                     "type": "string"
                 },
@@ -7254,6 +7428,9 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "expiryRequired": {
+                    "type": "boolean"
+                },
                 "icon": {
                     "type": "string"
                 },
@@ -7276,6 +7453,10 @@ const docTemplate = `{
             "properties": {
                 "defaultTemplateId": {
                     "type": "string"
+                },
+                "expiryRequired": {
+                    "description": "ExpiryRequired makes an expiry date mandatory on items of this type.",
+                    "type": "boolean"
                 },
                 "icon": {
                     "type": "string"
@@ -7308,6 +7489,13 @@ const docTemplate = `{
                     "maxLength": 1000
                 },
                 "entityTypeId": {
+                    "type": "string"
+                },
+                "expiresAt": {
+                    "description": "ExpiresAt is the consumable expiry date; leave it empty to clear it.\nExpiryKind is expires, use_by or best_before; empty means expires.",
+                    "type": "string"
+                },
+                "expiryKind": {
                     "type": "string"
                 },
                 "fields": {
@@ -7402,6 +7590,119 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "warrantyExpires": {
+                    "type": "string"
+                }
+            }
+        },
+        "repo.ExpiringResult": {
+            "type": "object",
+            "properties": {
+                "expired": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/repo.ExpiryEntry"
+                    }
+                },
+                "expiredTotal": {
+                    "type": "integer"
+                },
+                "soon": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/repo.ExpiryEntry"
+                    }
+                },
+                "soonTotal": {
+                    "type": "integer"
+                }
+            }
+        },
+        "repo.ExpiryEntry": {
+            "type": "object",
+            "properties": {
+                "archived": {
+                    "type": "boolean"
+                },
+                "assetId": {
+                    "type": "string",
+                    "example": "0"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "daysLeft": {
+                    "description": "DaysLeft is negative once the date has passed.",
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "entityType": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/repo.EntityTypeSummary"
+                        }
+                    ],
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "expiresAt": {
+                    "description": "ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind\nsays whether that is a use-by, best-before or plain expiry date.",
+                    "type": "string"
+                },
+                "expiryKind": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "imageId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "insured": {
+                    "type": "boolean"
+                },
+                "itemCount": {
+                    "description": "Container-specific (populated when querying locations)",
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parent": {
+                    "description": "Edges",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/repo.EntitySummary"
+                        }
+                    ],
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "purchasePrice": {
+                    "type": "number"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "soldDate": {
+                    "description": "Sale details",
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/repo.TagSummary"
+                    }
+                },
+                "thumbnailId": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "updatedAt": {
                     "type": "string"
                 }
             }

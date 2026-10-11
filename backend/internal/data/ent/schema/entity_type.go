@@ -29,6 +29,10 @@ func (EntityType) Fields() []ent.Field {
 		field.String("icon").
 			MaxLen(255).
 			Optional(),
+		// expiry_required makes an expiry date mandatory on entities of this
+		// type, for example medicine or pantry food.
+		field.Bool("expiry_required").
+			Default(false),
 	}
 }
 

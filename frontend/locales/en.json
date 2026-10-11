@@ -179,7 +179,8 @@
                 "tooltip": {
                     "delete": "Delete",
                     "edit": "Edit"
-                }
+                },
+                "expiry_required": "Expiry date required"
             },
             "confirm": {
                 "convert_item_to_location": "Converting an item type to a location type will result in a loss of fields for entities using this type. Are you sure you want to continue?",
@@ -211,7 +212,8 @@
                 "is_container_location_type_label": "Is a container / location type",
                 "name_label": "Name",
                 "title": "Update Entity Type"
-            }
+            },
+            "expiry_required_label": "Items of this type must have an expiry date"
         },
         "form": {
             "min_length": "min {min}",
@@ -422,7 +424,12 @@
                 "model_number": "Model Number",
                 "no_custom_fields": "No custom fields.",
                 "template_description": "Template Description",
-                "template_name": "Template Name"
+                "template_name": "Template Name",
+                "expiry_include": "Set an expiry date on new items",
+                "expiry_offset_days": "Expires after (days)",
+                "expiry_offset_hint": "Counted from the day the item is added. Leave empty to set the date by hand.",
+                "expiry_by_hand": "Set by hand on each item",
+                "expiry_after": "Expires {n} days after the item is added"
             },
             "hide_defaults": "Hide defaults",
             "save_as_template": "Save as Template",
@@ -522,7 +529,11 @@
         "total_items": "Total Items",
         "total_locations": "Total Locations",
         "total_tags": "Total Tags",
-        "total_value": "Total Value"
+        "total_value": "Total Value",
+        "expiry": "Expiry",
+        "expired": "Expired",
+        "expiring_soon": "Expiring soon",
+        "and_more": "and {n} more"
     },
     "index": {
         "back_to_login": "Back to login",
@@ -700,7 +711,27 @@
         "updated_at": "Updated At",
         "warranty": "Warranty",
         "warranty_details": "Warranty Details",
-        "warranty_expires": "Warranty Expires"
+        "warranty_expires": "Warranty Expires",
+        "expires_at": "Expires",
+        "expiry_kind": "Expiry type",
+        "expiry_kinds": {
+            "expires": "Expires",
+            "use_by": "Use by",
+            "best_before": "Best before"
+        },
+        "expiry_status": {
+            "expired": "Expired",
+            "today": "Expires today",
+            "in_days": "Expires in {n} days",
+            "tomorrow": "Expires tomorrow",
+            "ago_days": "Expired {n} days ago",
+            "ago_one": "Expired yesterday"
+        },
+        "expiry_filter": {
+            "any": "Any",
+            "expired": "Already expired",
+            "in_days": "Expiring within {n} days"
+        }
     },
     "languages": {
         "bs-BA": "Bosnian (Bosnia and Herzegovina)",

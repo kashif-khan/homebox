@@ -62,6 +62,13 @@
       </div>
 
       <Separator class="my-2" />
+      <TemplateExpiryDefaults
+        v-model:include="form.includeExpiryFields"
+        v-model:offset-days="form.defaultExpiryOffsetDays"
+        v-model:kind="form.defaultExpiryKind"
+      />
+
+      <Separator class="my-2" />
       <div class="flex items-center justify-between">
         <h3 class="text-sm font-medium">{{ $t("components.template.form.custom_fields") }}</h3>
         <Button type="button" size="sm" variant="outline" @click="addField">
@@ -93,6 +100,7 @@
 </template>
 
 <script setup lang="ts">
+  import TemplateExpiryDefaults from "~/components/Template/ExpiryDefaults.vue";
   import FormCustomFieldRow from "~/components/Form/CustomFieldRow.vue";
   import { blankField, useFieldDefaults, type EditableField } from "~/composables/use-custom-fields";
   import { useI18n } from "vue-i18n";
@@ -138,6 +146,9 @@
     includeWarrantyFields: false,
     includePurchaseFields: false,
     includeSoldFields: false,
+    includeExpiryFields: false,
+    defaultExpiryOffsetDays: null as number | null,
+    defaultExpiryKind: "expires",
     fields: [] as EditableField[],
   });
 
@@ -175,6 +186,9 @@
       includeWarrantyFields: false,
       includePurchaseFields: false,
       includeSoldFields: false,
+      includeExpiryFields: false,
+      defaultExpiryOffsetDays: null,
+      defaultExpiryKind: "expires",
       fields: [],
     });
     loading.value = false;
@@ -206,6 +220,9 @@
       includeWarrantyFields: form.includeWarrantyFields,
       includePurchaseFields: form.includePurchaseFields,
       includeSoldFields: form.includeSoldFields,
+      includeExpiryFields: form.includeExpiryFields,
+      defaultExpiryOffsetDays: form.includeExpiryFields ? form.defaultExpiryOffsetDays : null,
+      defaultExpiryKind: form.defaultExpiryKind,
       fields: form.fields,
     };
 

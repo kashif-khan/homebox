@@ -112,12 +112,19 @@ func Normalize(in Input) (Value, error) {
 		if len([]rune(v.TextValue)) > MaxTextLen {
 			return Value{}, invalid("text is longer than %d characters", MaxTextLen)
 		}
+		// The original three types always stored all three columns whatever the
+		// type said; clients rely on getting them back unchanged.
+		v.NumberValue = in.NumberValue
+		v.BooleanValue = in.BooleanValue
 		return v, nil
 	case Number:
 		v.TextValue = in.TextValue
 		v.NumberValue = in.NumberValue
+		v.BooleanValue = in.BooleanValue
 		return v, nil
 	case Boolean:
+		v.TextValue = in.TextValue
+		v.NumberValue = in.NumberValue
 		v.BooleanValue = in.BooleanValue
 		return v, nil
 	}

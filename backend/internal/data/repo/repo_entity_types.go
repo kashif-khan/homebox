@@ -23,6 +23,8 @@ type (
 		IsLocation        bool       `json:"isLocation"`
 		Icon              string     `json:"icon"`
 		DefaultTemplateID *uuid.UUID `json:"defaultTemplateId,omitempty"`
+		// ExpiryRequired makes an expiry date mandatory on items of this type.
+		ExpiryRequired bool `json:"expiryRequired"`
 	}
 
 	EntityTypeUpdate struct {
@@ -31,6 +33,8 @@ type (
 		IsLocation        bool       `json:"isLocation"`
 		Icon              string     `json:"icon"`
 		DefaultTemplateID *uuid.UUID `json:"defaultTemplateId,omitempty"`
+		// ExpiryRequired makes an expiry date mandatory on items of this type.
+		ExpiryRequired bool `json:"expiryRequired"`
 	}
 
 	EntityTypeSummary struct {
@@ -39,6 +43,7 @@ type (
 		Description       string                 `json:"description"`
 		IsLocation        bool                   `json:"isLocation"`
 		Icon              string                 `json:"icon"`
+		ExpiryRequired    bool                   `json:"expiryRequired"`
 		DefaultTemplateID *uuid.UUID             `json:"defaultTemplateId,omitempty"`
 		DefaultTemplate   *EntityTemplateSummary `json:"defaultTemplate,omitempty"`
 		CreatedAt         time.Time              `json:"createdAt"`
@@ -48,13 +53,14 @@ type (
 
 func mapEntityTypeSummary(et *ent.EntityType) EntityTypeSummary {
 	s := EntityTypeSummary{
-		ID:          et.ID,
-		Name:        et.Name,
-		Description: et.Description,
-		IsLocation:  et.IsLocation,
-		Icon:        et.Icon,
-		CreatedAt:   et.CreatedAt,
-		UpdatedAt:   et.UpdatedAt,
+		ID:             et.ID,
+		Name:           et.Name,
+		Description:    et.Description,
+		IsLocation:     et.IsLocation,
+		Icon:           et.Icon,
+		ExpiryRequired: et.ExpiryRequired,
+		CreatedAt:      et.CreatedAt,
+		UpdatedAt:      et.UpdatedAt,
 	}
 
 	if et.Edges.DefaultTemplate != nil {
@@ -107,6 +113,7 @@ func (r *EntityTypeRepository) Create(ctx context.Context, gid uuid.UUID, data E
 	q := r.db.EntityType.Create().
 		SetName(data.Name).
 		SetIsLocation(data.IsLocation).
+		SetExpiryRequired(data.ExpiryRequired && !data.IsLocation).
 		SetIcon(data.Icon).
 		SetGroupID(gid)
 
@@ -138,6 +145,7 @@ func (r *EntityTypeRepository) Update(ctx context.Context, gid uuid.UUID, data E
 		).
 		SetName(data.Name).
 		SetIsLocation(data.IsLocation).
+		SetExpiryRequired(data.ExpiryRequired && !data.IsLocation).
 		SetIcon(data.Icon)
 
 	if data.DefaultTemplateID != nil && *data.DefaultTemplateID != uuid.Nil {

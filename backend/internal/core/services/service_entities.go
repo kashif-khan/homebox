@@ -446,6 +446,8 @@ func (svc *EntityService) CsvImport(ctx context.Context, gid uuid.UUID, data io.
 
 			LifetimeWarranty: row.LifetimeWarranty,
 			WarrantyExpires:  row.WarrantyExpires,
+			ExpiresAt:        row.ExpiresAt,
+			ExpiryKind:       row.ExpiryKind,
 			WarrantyDetails:  row.WarrantyDetails,
 
 			SoldTo:    row.SoldTo,

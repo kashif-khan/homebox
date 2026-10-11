@@ -9,6 +9,7 @@
   import Subtitle from "~/components/global/Subtitle.vue";
   import StatCard from "~/components/global/StatCard/StatCard.vue";
   import ItemCard from "~/components/Item/Card.vue";
+  import ExpiringCard from "~/components/Item/ExpiringCard.vue";
   import LocationCard from "~/components/Location/Card.vue";
   import TagChip from "~/components/Tag/Chip.vue";
   import Table from "~/components/Item/View/Table.vue";
@@ -44,6 +45,8 @@
           <StatCard v-for="(stat, i) in stats" :key="i" :title="stat.label" :value="stat.value" :type="stat.type" />
         </div>
       </section>
+
+      <ExpiringCard />
 
       <section>
         <Subtitle> {{ $t("home.recently_added") }} </Subtitle>

@@ -418,6 +418,13 @@ definitions:
         description: |-
           Edges holds the relations/edges for other nodes in the graph.
           The values are being populated by the EntityQuery when eager-loading is set.
+      expires_at:
+        description: ExpiresAt holds the value of the "expires_at" field.
+        type: string
+      expiry_kind:
+        allOf:
+        - $ref: '#/definitions/entity.ExpiryKind'
+        description: ExpiryKind holds the value of the "expiry_kind" field.
       id:
         description: ID of the ent.
         type: string
@@ -602,6 +609,15 @@ definitions:
       default_description:
         description: Default description for items created from this template
         type: string
+      default_expiry_kind:
+        allOf:
+        - $ref: '#/definitions/entitytemplate.DefaultExpiryKind'
+        description: DefaultExpiryKind holds the value of the "default_expiry_kind"
+          field.
+      default_expiry_offset_days:
+        description: Items created from this template expire this many days after
+          they are added
+        type: integer
       default_insured:
         description: DefaultInsured holds the value of the "default_insured" field.
         type: boolean
@@ -643,6 +659,10 @@ definitions:
       id:
         description: ID of the ent.
         type: string
+      include_expiry_fields:
+        description: Whether to include the expiry date in items created from this
+          template
+        type: boolean
       include_purchase_fields:
         description: Whether to include purchase fields in items created from this
           template
@@ -694,6 +714,9 @@ definitions:
         description: |-
           Edges holds the relations/edges for other nodes in the graph.
           The values are being populated by the EntityTypeQuery when eager-loading is set.
+      expiry_required:
+        description: ExpiryRequired holds the value of the "expiry_required" field.
+        type: boolean
       icon:
         description: Icon holds the value of the "icon" field.
         type: string
@@ -1445,6 +1468,18 @@ definitions:
         - $ref: '#/definitions/ent.User'
         description: User holds the value of the user edge.
     type: object
+  entity.ExpiryKind:
+    enum:
+    - expires
+    - expires
+    - use_by
+    - best_before
+    type: string
+    x-enum-varnames:
+    - DefaultExpiryKind
+    - ExpiryKindExpires
+    - ExpiryKindUseBy
+    - ExpiryKindBestBefore
   entityfield.Type:
     enum:
     - text
@@ -1469,6 +1504,18 @@ definitions:
     - TypeDatetime
     - TypeURL
     - TypeSelect
+  entitytemplate.DefaultExpiryKind:
+    enum:
+    - expires
+    - expires
+    - use_by
+    - best_before
+    type: string
+    x-enum-varnames:
+    - DefaultDefaultExpiryKind
+    - DefaultExpiryKindExpires
+    - DefaultExpiryKindUseBy
+    - DefaultExpiryKindBestBefore
   export.Kind:
     enum:
     - export
@@ -2083,6 +2130,13 @@ definitions:
         - $ref: '#/definitions/repo.EntityTypeSummary'
         x-nullable: true
         x-omitempty: true
+      expiresAt:
+        description: |-
+          ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind
+          says whether that is a use-by, best-before or plain expiry date.
+        type: string
+      expiryKind:
+        type: string
       fields:
         items:
           $ref: '#/definitions/repo.EntityFieldData'
@@ -2177,6 +2231,17 @@ definitions:
         type: string
         x-nullable: true
         x-omitempty: true
+      expiresAt:
+        description: |-
+          ExpiresAt sets the expiry date; an empty date clears it. ExpiryKind is
+          expires, use_by or best_before. Both are left alone when nil.
+        type: string
+        x-nullable: true
+        x-omitempty: true
+      expiryKind:
+        type: string
+        x-nullable: true
+        x-omitempty: true
       id:
         type: string
       locationId:
@@ -2231,6 +2296,13 @@ definitions:
         - $ref: '#/definitions/repo.EntityTypeSummary'
         x-nullable: true
         x-omitempty: true
+      expiresAt:
+        description: |-
+          ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind
+          says whether that is a use-by, best-before or plain expiry date.
+        type: string
+      expiryKind:
+        type: string
       id:
         type: string
       imageId:
@@ -2274,6 +2346,11 @@ definitions:
         maxLength: 1000
         type: string
         x-nullable: true
+      defaultExpiryKind:
+        type: string
+      defaultExpiryOffsetDays:
+        type: integer
+        x-nullable: true
       defaultInsured:
         type: boolean
       defaultLifetimeWarranty:
@@ -2315,6 +2392,11 @@ definitions:
         items:
           $ref: '#/definitions/repo.TemplateField'
         type: array
+      includeExpiryFields:
+        description: |-
+          Expiry: items made from the template expire DefaultExpiryOffsetDays days
+          after they are added, when it is set.
+        type: boolean
       includePurchaseFields:
         type: boolean
       includeSoldFields:
@@ -2338,6 +2420,11 @@ definitions:
         type: string
       defaultDescription:
         type: string
+      defaultExpiryKind:
+        type: string
+      defaultExpiryOffsetDays:
+        type: integer
+        x-nullable: true
       defaultInsured:
         type: boolean
       defaultLifetimeWarranty:
@@ -2370,6 +2457,11 @@ definitions:
         type: array
       id:
         type: string
+      includeExpiryFields:
+        description: |-
+          Expiry: items made from the template expire DefaultExpiryOffsetDays days
+          after they are added, when it is set.
+        type: boolean
       includePurchaseFields:
         type: boolean
       includeSoldFields:
@@ -2403,6 +2495,11 @@ definitions:
         maxLength: 1000
         type: string
         x-nullable: true
+      defaultExpiryKind:
+        type: string
+      defaultExpiryOffsetDays:
+        type: integer
+        x-nullable: true
       defaultInsured:
         type: boolean
       defaultLifetimeWarranty:
@@ -2446,6 +2543,11 @@ definitions:
         type: array
       id:
         type: string
+      includeExpiryFields:
+        description: |-
+          Expiry: items made from the template expire DefaultExpiryOffsetDays days
+          after they are added, when it is set.
+        type: boolean
       includePurchaseFields:
         type: boolean
       includeSoldFields:
@@ -2467,6 +2569,10 @@ definitions:
     properties:
       defaultTemplateId:
         type: string
+      expiryRequired:
+        description: ExpiryRequired makes an expiry date mandatory on items of this
+          type.
+        type: boolean
       icon:
         type: string
       isLocation:
@@ -2484,6 +2590,8 @@ definitions:
         type: string
       description:
         type: string
+      expiryRequired:
+        type: boolean
       icon:
         type: string
       id:
@@ -2499,6 +2607,10 @@ definitions:
     properties:
       defaultTemplateId:
         type: string
+      expiryRequired:
+        description: ExpiryRequired makes an expiry date mandatory on items of this
+          type.
+        type: boolean
       icon:
         type: string
       id:
@@ -2518,6 +2630,13 @@ definitions:
         maxLength: 1000
         type: string
       entityTypeId:
+        type: string
+      expiresAt:
+        description: |-
+          ExpiresAt is the consumable expiry date; leave it empty to clear it.
+          ExpiryKind is expires, use_by or best_before; empty means expires.
+        type: string
+      expiryKind:
         type: string
       fields:
         items:
@@ -2592,6 +2711,84 @@ definitions:
         type: string
     required:
     - name
+    type: object
+  repo.ExpiringResult:
+    properties:
+      expired:
+        items:
+          $ref: '#/definitions/repo.ExpiryEntry'
+        type: array
+      expiredTotal:
+        type: integer
+      soon:
+        items:
+          $ref: '#/definitions/repo.ExpiryEntry'
+        type: array
+      soonTotal:
+        type: integer
+    type: object
+  repo.ExpiryEntry:
+    properties:
+      archived:
+        type: boolean
+      assetId:
+        example: "0"
+        type: string
+      createdAt:
+        type: string
+      daysLeft:
+        description: DaysLeft is negative once the date has passed.
+        type: integer
+      description:
+        type: string
+      entityType:
+        allOf:
+        - $ref: '#/definitions/repo.EntityTypeSummary'
+        x-nullable: true
+        x-omitempty: true
+      expiresAt:
+        description: |-
+          ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind
+          says whether that is a use-by, best-before or plain expiry date.
+        type: string
+      expiryKind:
+        type: string
+      id:
+        type: string
+      imageId:
+        type: string
+        x-nullable: true
+        x-omitempty: true
+      insured:
+        type: boolean
+      itemCount:
+        description: Container-specific (populated when querying locations)
+        type: number
+      name:
+        type: string
+      parent:
+        allOf:
+        - $ref: '#/definitions/repo.EntitySummary'
+        description: Edges
+        x-nullable: true
+        x-omitempty: true
+      purchasePrice:
+        type: number
+      quantity:
+        type: number
+      soldDate:
+        description: Sale details
+        type: string
+      tags:
+        items:
+          $ref: '#/definitions/repo.TagSummary'
+        type: array
+      thumbnailId:
+        type: string
+        x-nullable: true
+        x-omitempty: true
+      updatedAt:
+        type: string
     type: object
   repo.ExportOut:
     properties:
@@ -3686,9 +3883,17 @@ paths:
         name: entityTypeIds
         type: array
       - description: 'field to order by; valid values: name, createdAt, updatedAt,
-          assetId'
+          assetId, expiresAt (items without an expiry date sort last)'
         in: query
         name: orderBy
+        type: string
+      - description: only items expiring on or before this date (YYYY-MM-DD)
+        in: query
+        name: expiresBefore
+        type: string
+      - description: only items expiring on or after this date (YYYY-MM-DD)
+        in: query
+        name: expiresAfter
         type: string
       - description: 'order direction; valid values: asc, desc. Defaults to desc for
           createdAt and updatedAt, asc otherwise'
@@ -4069,6 +4274,30 @@ paths:
       security:
       - Bearer: []
       summary: Get the full path of an entity
+      tags:
+      - Entities
+  /v1/entities/expiring:
+    get:
+      parameters:
+      - description: how many days ahead counts as expiring soon (default 30, max
+          3650)
+        in: query
+        name: days
+        type: integer
+      - description: most entries to return per list (default 50, max 500)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repo.ExpiringResult'
+      security:
+      - Bearer: []
+      summary: Expired and Expiring Entities
       tags:
       - Entities
   /v1/entities/export:

@@ -254,6 +254,7 @@ type ItemSummary struct {
 	Archived      bool    `json:"archived,omitempty"`
 	PurchasePrice float64 `json:"purchasePrice,omitempty"`
 	ItemCount     float64 `json:"itemCount,omitempty"     jsonschema:"for locations: items stored inside"`
+	ExpiresAt     string  `json:"expiresAt,omitempty"     jsonschema:"YYYY-MM-DD, set for consumables such as food and medicine"`
 	UpdatedAt     string  `json:"updatedAt"`
 }
 
@@ -272,6 +273,9 @@ func (c *call) summary(e repo.EntitySummary) ItemSummary {
 	}
 	if !e.AssetID.Nil() {
 		out.AssetID = e.AssetID.String()
+	}
+	if !e.ExpiresAt.Time().IsZero() {
+		out.ExpiresAt = e.ExpiresAt.String()
 	}
 	if e.EntityType != nil {
 		out.Type = e.EntityType.Name
@@ -329,6 +333,8 @@ type ItemDetail struct {
 	Insured          bool             `json:"insured,omitempty"`
 	LifetimeWarranty bool             `json:"lifetimeWarranty,omitempty"`
 	WarrantyExpires  string           `json:"warrantyExpires,omitempty"`
+	ExpiresAt        string           `json:"expiresAt,omitempty"        jsonschema:"YYYY-MM-DD, set for consumables such as food and medicine"`
+	ExpiryKind       string           `json:"expiryKind,omitempty"       jsonschema:"expires, use_by or best_before; only set together with expiresAt"`
 	WarrantyDetails  string           `json:"warrantyDetails,omitempty"`
 	PurchaseDate     string           `json:"purchaseDate,omitempty"`
 	PurchaseFrom     string           `json:"purchaseFrom,omitempty"`
@@ -374,6 +380,14 @@ func (c *call) detail(e repo.EntityOut) ItemDetail {
 			v = strconv.Itoa(f.NumberValue)
 		case "boolean":
 			v = strconv.FormatBool(f.BooleanValue)
+		case "currency":
+			if f.TextValue != "" {
+				v = f.TextValue + " " + f.CurrencyCode
+			}
+		case "datetime":
+			if f.Timezone != "" {
+				v += " [" + f.Timezone + "]"
+			}
 		}
 		d.Fields = append(d.Fields, CustomField{Name: f.Name, Type: f.Type, Value: c.text(v)})
 	}
@@ -386,6 +400,10 @@ func (c *call) detail(e repo.EntityOut) ItemDetail {
 			break
 		}
 		d.Children = append(d.Children, c.summary(ch))
+	}
+	if !e.ExpiresAt.Time().IsZero() {
+		d.ExpiresAt = e.ExpiresAt.String()
+		d.ExpiryKind = e.ExpiryKind
 	}
 	return d
 }

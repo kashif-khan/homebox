@@ -54,6 +54,7 @@
                 {{ $t("global.archived") }}
               </TooltipContent>
             </Tooltip>
+            <ExpiryBadge :expires-at="item.expiresAt as string" :kind="item.expiryKind" />
             <div class="grow" />
             <Tooltip>
               <TooltipTrigger>
@@ -86,6 +87,7 @@
   import { Separator } from "@/components/ui/separator";
   import Markdown from "@/components/global/Markdown.vue";
   import TagChip from "@/components/Tag/Chip.vue";
+  import ExpiryBadge from "~/components/Item/ExpiryBadge.vue";
   import type { Row } from "@tanstack/vue-table";
   import { Checkbox } from "@/components/ui/checkbox";
 

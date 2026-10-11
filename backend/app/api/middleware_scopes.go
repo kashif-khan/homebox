@@ -61,6 +61,7 @@ var apiKeyRouteScopes = map[string]scopes.Scope{
 	"GET /api/v1/entity-types":                 scopes.ItemsRead,
 	"GET /api/v1/entities":                     scopes.ItemsRead,
 	"GET /api/v1/entities/export":              scopes.ItemsRead,
+	"GET /api/v1/entities/expiring":            scopes.ItemsRead,
 	"GET /api/v1/entities/fields":              scopes.ItemsRead,
 	"GET /api/v1/entities/fields/values":       scopes.ItemsRead,
 	"GET /api/v1/entities/tree":                scopes.ItemsRead,

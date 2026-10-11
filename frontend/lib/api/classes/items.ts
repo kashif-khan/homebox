@@ -1,5 +1,6 @@
 import { BaseAPI, route } from "../base";
 import type {
+  ExpiringResult,
   EntityCreate,
   EntityListResult,
   EntityOut,
@@ -32,6 +33,9 @@ export type ItemsQuery = {
   onlyWithPhoto?: boolean;
   q?: string;
   fields?: string[];
+  /** YYYY-MM-DD; only items expiring on or before / on or after that day. */
+  expiresBefore?: string;
+  expiresAfter?: string;
 };
 
 export type LocationsQuery = {
@@ -126,6 +130,11 @@ export class ItemsApi extends BaseAPI {
   async getAll(q: ItemsQuery = {}) {
     const payload = await this.http.get<EntityListResult>({ url: route("/entities", q) });
     return payload;
+  }
+
+  /** Items that have expired and those expiring within `days`. */
+  expiring(days = 30, limit = 50) {
+    return this.http.get<ExpiringResult>({ url: route("/entities/expiring", { days, limit }) });
   }
 
   async create(item: EntityCreate) {

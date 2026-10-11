@@ -3,6 +3,7 @@
 package entitytemplate
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -47,6 +48,12 @@ const (
 	FieldIncludePurchaseFields = "include_purchase_fields"
 	// FieldIncludeSoldFields holds the string denoting the include_sold_fields field in the database.
 	FieldIncludeSoldFields = "include_sold_fields"
+	// FieldIncludeExpiryFields holds the string denoting the include_expiry_fields field in the database.
+	FieldIncludeExpiryFields = "include_expiry_fields"
+	// FieldDefaultExpiryOffsetDays holds the string denoting the default_expiry_offset_days field in the database.
+	FieldDefaultExpiryOffsetDays = "default_expiry_offset_days"
+	// FieldDefaultExpiryKind holds the string denoting the default_expiry_kind field in the database.
+	FieldDefaultExpiryKind = "default_expiry_kind"
 	// FieldDefaultTagIds holds the string denoting the default_tag_ids field in the database.
 	FieldDefaultTagIds = "default_tag_ids"
 	// EdgeGroup holds the string denoting the group edge name in mutations.
@@ -99,6 +106,9 @@ var Columns = []string{
 	FieldIncludeWarrantyFields,
 	FieldIncludePurchaseFields,
 	FieldIncludeSoldFields,
+	FieldIncludeExpiryFields,
+	FieldDefaultExpiryOffsetDays,
+	FieldDefaultExpiryKind,
 	FieldDefaultTagIds,
 }
 
@@ -159,9 +169,38 @@ var (
 	DefaultIncludePurchaseFields bool
 	// DefaultIncludeSoldFields holds the default value on creation for the "include_sold_fields" field.
 	DefaultIncludeSoldFields bool
+	// DefaultIncludeExpiryFields holds the default value on creation for the "include_expiry_fields" field.
+	DefaultIncludeExpiryFields bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
+
+// DefaultExpiryKind defines the type for the "default_expiry_kind" enum field.
+type DefaultExpiryKind string
+
+// DefaultExpiryKindExpires is the default value of the DefaultExpiryKind enum.
+const DefaultDefaultExpiryKind = DefaultExpiryKindExpires
+
+// DefaultExpiryKind values.
+const (
+	DefaultExpiryKindExpires    DefaultExpiryKind = "expires"
+	DefaultExpiryKindUseBy      DefaultExpiryKind = "use_by"
+	DefaultExpiryKindBestBefore DefaultExpiryKind = "best_before"
+)
+
+func (dek DefaultExpiryKind) String() string {
+	return string(dek)
+}
+
+// DefaultExpiryKindValidator is a validator for the "default_expiry_kind" field enum values. It is called by the builders before save.
+func DefaultExpiryKindValidator(dek DefaultExpiryKind) error {
+	switch dek {
+	case DefaultExpiryKindExpires, DefaultExpiryKindUseBy, DefaultExpiryKindBestBefore:
+		return nil
+	default:
+		return fmt.Errorf("entitytemplate: invalid enum value for default_expiry_kind field: %q", dek)
+	}
+}
 
 // OrderOption defines the ordering options for the EntityTemplate queries.
 type OrderOption func(*sql.Selector)
@@ -249,6 +288,21 @@ func ByIncludePurchaseFields(opts ...sql.OrderTermOption) OrderOption {
 // ByIncludeSoldFields orders the results by the include_sold_fields field.
 func ByIncludeSoldFields(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIncludeSoldFields, opts...).ToFunc()
+}
+
+// ByIncludeExpiryFields orders the results by the include_expiry_fields field.
+func ByIncludeExpiryFields(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIncludeExpiryFields, opts...).ToFunc()
+}
+
+// ByDefaultExpiryOffsetDays orders the results by the default_expiry_offset_days field.
+func ByDefaultExpiryOffsetDays(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDefaultExpiryOffsetDays, opts...).ToFunc()
+}
+
+// ByDefaultExpiryKind orders the results by the default_expiry_kind field.
+func ByDefaultExpiryKind(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDefaultExpiryKind, opts...).ToFunc()
 }
 
 // ByGroupField orders the results by group field.

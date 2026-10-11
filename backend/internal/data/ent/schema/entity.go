@@ -30,6 +30,7 @@ func (Entity) Indexes() []ent.Index {
 		index.Fields("serial_number"),
 		index.Fields("archived"),
 		index.Fields("asset_id"),
+		index.Fields("expires_at"),
 	}
 }
 
@@ -64,6 +65,16 @@ func (Entity) Fields() []ent.Field {
 		field.String("manufacturer").
 			MaxLen(255).
 			Optional(),
+
+		// ------------------------------------
+		// Expiry of a consumable (medicine, food). A calendar date, stored as
+		// midnight UTC like the other date columns. Warranty has its own columns
+		// and is alerted on separately.
+		field.Time("expires_at").
+			Optional(),
+		field.Enum("expiry_kind").
+			Values("expires", "use_by", "best_before").
+			Default("expires"),
 
 		// ------------------------------------
 		// Item Warranty

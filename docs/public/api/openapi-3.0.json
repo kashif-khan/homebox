@@ -313,8 +313,24 @@
                         }
                     },
                     {
-                        "description": "field to order by; valid values: name, createdAt, updatedAt, assetId",
+                        "description": "field to order by; valid values: name, createdAt, updatedAt, assetId, expiresAt (items without an expiry date sort last)",
                         "name": "orderBy",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "only items expiring on or before this date (YYYY-MM-DD)",
+                        "name": "expiresBefore",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "only items expiring on or after this date (YYYY-MM-DD)",
+                        "name": "expiresAfter",
                         "in": "query",
                         "schema": {
                             "type": "string"
@@ -370,6 +386,49 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/repo.EntityOut"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/entities/expiring": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "Entities"
+                ],
+                "summary": "Expired and Expiring Entities",
+                "parameters": [
+                    {
+                        "description": "how many days ahead counts as expiring soon (default 30, max 3650)",
+                        "name": "days",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "most entries to return per list (default 50, max 500)",
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/repo.ExpiringResult"
                                 }
                             }
                         }
@@ -4645,6 +4704,18 @@
                             }
                         ]
                     },
+                    "expires_at": {
+                        "description": "ExpiresAt holds the value of the \"expires_at\" field.",
+                        "type": "string"
+                    },
+                    "expiry_kind": {
+                        "description": "ExpiryKind holds the value of the \"expiry_kind\" field.",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/entity.ExpiryKind"
+                            }
+                        ]
+                    },
                     "id": {
                         "description": "ID of the ent.",
                         "type": "string"
@@ -4910,6 +4981,18 @@
                         "description": "Default description for items created from this template",
                         "type": "string"
                     },
+                    "default_expiry_kind": {
+                        "description": "DefaultExpiryKind holds the value of the \"default_expiry_kind\" field.",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/entitytemplate.DefaultExpiryKind"
+                            }
+                        ]
+                    },
+                    "default_expiry_offset_days": {
+                        "description": "Items created from this template expire this many days after they are added",
+                        "type": "integer"
+                    },
                     "default_insured": {
                         "description": "DefaultInsured holds the value of the \"default_insured\" field.",
                         "type": "boolean"
@@ -4960,6 +5043,10 @@
                     "id": {
                         "description": "ID of the ent.",
                         "type": "string"
+                    },
+                    "include_expiry_fields": {
+                        "description": "Whether to include the expiry date in items created from this template",
+                        "type": "boolean"
                     },
                     "include_purchase_fields": {
                         "description": "Whether to include purchase fields in items created from this template",
@@ -5033,6 +5120,10 @@
                                 "$ref": "#/components/schemas/ent.EntityTypeEdges"
                             }
                         ]
+                    },
+                    "expiry_required": {
+                        "description": "ExpiryRequired holds the value of the \"expiry_required\" field.",
+                        "type": "boolean"
                     },
                     "icon": {
                         "description": "Icon holds the value of the \"icon\" field.",
@@ -6136,6 +6227,21 @@
                     }
                 }
             },
+            "entity.ExpiryKind": {
+                "type": "string",
+                "enum": [
+                    "expires",
+                    "expires",
+                    "use_by",
+                    "best_before"
+                ],
+                "x-enum-varnames": [
+                    "DefaultExpiryKind",
+                    "ExpiryKindExpires",
+                    "ExpiryKindUseBy",
+                    "ExpiryKindBestBefore"
+                ]
+            },
             "entityfield.Type": {
                 "type": "string",
                 "enum": [
@@ -6161,6 +6267,21 @@
                     "TypeDatetime",
                     "TypeURL",
                     "TypeSelect"
+                ]
+            },
+            "entitytemplate.DefaultExpiryKind": {
+                "type": "string",
+                "enum": [
+                    "expires",
+                    "expires",
+                    "use_by",
+                    "best_before"
+                ],
+                "x-enum-varnames": [
+                    "DefaultDefaultExpiryKind",
+                    "DefaultExpiryKindExpires",
+                    "DefaultExpiryKindUseBy",
+                    "DefaultExpiryKindBestBefore"
                 ]
             },
             "export.Kind": {
@@ -6949,6 +7070,13 @@
                         "x-omitempty": true,
                         "nullable": true
                     },
+                    "expiresAt": {
+                        "description": "ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind\nsays whether that is a use-by, best-before or plain expiry date.",
+                        "type": "string"
+                    },
+                    "expiryKind": {
+                        "type": "string"
+                    },
                     "fields": {
                         "type": "array",
                         "items": {
@@ -7078,6 +7206,17 @@
                         "x-omitempty": true,
                         "nullable": true
                     },
+                    "expiresAt": {
+                        "description": "ExpiresAt sets the expiry date; an empty date clears it. ExpiryKind is\nexpires, use_by or best_before. Both are left alone when nil.",
+                        "type": "string",
+                        "x-omitempty": true,
+                        "nullable": true
+                    },
+                    "expiryKind": {
+                        "type": "string",
+                        "x-omitempty": true,
+                        "nullable": true
+                    },
                     "id": {
                         "type": "string"
                     },
@@ -7156,6 +7295,13 @@
                         "x-omitempty": true,
                         "nullable": true
                     },
+                    "expiresAt": {
+                        "description": "ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind\nsays whether that is a use-by, best-before or plain expiry date.",
+                        "type": "string"
+                    },
+                    "expiryKind": {
+                        "type": "string"
+                    },
                     "id": {
                         "type": "string"
                     },
@@ -7221,6 +7367,13 @@
                         "maxLength": 1000,
                         "nullable": true
                     },
+                    "defaultExpiryKind": {
+                        "type": "string"
+                    },
+                    "defaultExpiryOffsetDays": {
+                        "type": "integer",
+                        "nullable": true
+                    },
                     "defaultInsured": {
                         "type": "boolean"
                     },
@@ -7275,6 +7428,10 @@
                             "$ref": "#/components/schemas/repo.TemplateField"
                         }
                     },
+                    "includeExpiryFields": {
+                        "description": "Expiry: items made from the template expire DefaultExpiryOffsetDays days\nafter they are added, when it is set.",
+                        "type": "boolean"
+                    },
                     "includePurchaseFields": {
                         "type": "boolean"
                     },
@@ -7304,6 +7461,13 @@
                     },
                     "defaultDescription": {
                         "type": "string"
+                    },
+                    "defaultExpiryKind": {
+                        "type": "string"
+                    },
+                    "defaultExpiryOffsetDays": {
+                        "type": "integer",
+                        "nullable": true
                     },
                     "defaultInsured": {
                         "type": "boolean"
@@ -7353,6 +7517,10 @@
                     },
                     "id": {
                         "type": "string"
+                    },
+                    "includeExpiryFields": {
+                        "description": "Expiry: items made from the template expire DefaultExpiryOffsetDays days\nafter they are added, when it is set.",
+                        "type": "boolean"
                     },
                     "includePurchaseFields": {
                         "type": "boolean"
@@ -7406,6 +7574,13 @@
                         "maxLength": 1000,
                         "nullable": true
                     },
+                    "defaultExpiryKind": {
+                        "type": "string"
+                    },
+                    "defaultExpiryOffsetDays": {
+                        "type": "integer",
+                        "nullable": true
+                    },
                     "defaultInsured": {
                         "type": "boolean"
                     },
@@ -7463,6 +7638,10 @@
                     "id": {
                         "type": "string"
                     },
+                    "includeExpiryFields": {
+                        "description": "Expiry: items made from the template expire DefaultExpiryOffsetDays days\nafter they are added, when it is set.",
+                        "type": "boolean"
+                    },
                     "includePurchaseFields": {
                         "type": "boolean"
                     },
@@ -7490,6 +7669,10 @@
                     "defaultTemplateId": {
                         "type": "string"
                     },
+                    "expiryRequired": {
+                        "description": "ExpiryRequired makes an expiry date mandatory on items of this type.",
+                        "type": "boolean"
+                    },
                     "icon": {
                         "type": "string"
                     },
@@ -7516,6 +7699,9 @@
                     "description": {
                         "type": "string"
                     },
+                    "expiryRequired": {
+                        "type": "boolean"
+                    },
                     "icon": {
                         "type": "string"
                     },
@@ -7538,6 +7724,10 @@
                 "properties": {
                     "defaultTemplateId": {
                         "type": "string"
+                    },
+                    "expiryRequired": {
+                        "description": "ExpiryRequired makes an expiry date mandatory on items of this type.",
+                        "type": "boolean"
                     },
                     "icon": {
                         "type": "string"
@@ -7570,6 +7760,13 @@
                         "maxLength": 1000
                     },
                     "entityTypeId": {
+                        "type": "string"
+                    },
+                    "expiresAt": {
+                        "description": "ExpiresAt is the consumable expiry date; leave it empty to clear it.\nExpiryKind is expires, use_by or best_before; empty means expires.",
+                        "type": "string"
+                    },
+                    "expiryKind": {
                         "type": "string"
                     },
                     "fields": {
@@ -7664,6 +7861,119 @@
                         "type": "string"
                     },
                     "warrantyExpires": {
+                        "type": "string"
+                    }
+                }
+            },
+            "repo.ExpiringResult": {
+                "type": "object",
+                "properties": {
+                    "expired": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/repo.ExpiryEntry"
+                        }
+                    },
+                    "expiredTotal": {
+                        "type": "integer"
+                    },
+                    "soon": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/repo.ExpiryEntry"
+                        }
+                    },
+                    "soonTotal": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "repo.ExpiryEntry": {
+                "type": "object",
+                "properties": {
+                    "archived": {
+                        "type": "boolean"
+                    },
+                    "assetId": {
+                        "type": "string",
+                        "example": "0"
+                    },
+                    "createdAt": {
+                        "type": "string"
+                    },
+                    "daysLeft": {
+                        "description": "DaysLeft is negative once the date has passed.",
+                        "type": "integer"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "entityType": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/repo.EntityTypeSummary"
+                            }
+                        ],
+                        "x-omitempty": true,
+                        "nullable": true
+                    },
+                    "expiresAt": {
+                        "description": "ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind\nsays whether that is a use-by, best-before or plain expiry date.",
+                        "type": "string"
+                    },
+                    "expiryKind": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "imageId": {
+                        "type": "string",
+                        "x-omitempty": true,
+                        "nullable": true
+                    },
+                    "insured": {
+                        "type": "boolean"
+                    },
+                    "itemCount": {
+                        "description": "Container-specific (populated when querying locations)",
+                        "type": "number"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "parent": {
+                        "description": "Edges",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/repo.EntitySummary"
+                            }
+                        ],
+                        "x-omitempty": true,
+                        "nullable": true
+                    },
+                    "purchasePrice": {
+                        "type": "number"
+                    },
+                    "quantity": {
+                        "type": "number"
+                    },
+                    "soldDate": {
+                        "description": "Sale details",
+                        "type": "string"
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/repo.TagSummary"
+                        }
+                    },
+                    "thumbnailId": {
+                        "type": "string",
+                        "x-omitempty": true,
+                        "nullable": true
+                    },
+                    "updatedAt": {
                         "type": "string"
                     }
                 }

@@ -86,6 +86,11 @@ func Icon(v string) predicate.EntityType {
 	return predicate.EntityType(sql.FieldEQ(FieldIcon, v))
 }
 
+// ExpiryRequired applies equality check predicate on the "expiry_required" field. It's identical to ExpiryRequiredEQ.
+func ExpiryRequired(v bool) predicate.EntityType {
+	return predicate.EntityType(sql.FieldEQ(FieldExpiryRequired, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.EntityType {
 	return predicate.EntityType(sql.FieldEQ(FieldCreatedAt, v))
@@ -389,6 +394,16 @@ func IconEqualFold(v string) predicate.EntityType {
 // IconContainsFold applies the ContainsFold predicate on the "icon" field.
 func IconContainsFold(v string) predicate.EntityType {
 	return predicate.EntityType(sql.FieldContainsFold(FieldIcon, v))
+}
+
+// ExpiryRequiredEQ applies the EQ predicate on the "expiry_required" field.
+func ExpiryRequiredEQ(v bool) predicate.EntityType {
+	return predicate.EntityType(sql.FieldEQ(FieldExpiryRequired, v))
+}
+
+// ExpiryRequiredNEQ applies the NEQ predicate on the "expiry_required" field.
+func ExpiryRequiredNEQ(v bool) predicate.EntityType {
+	return predicate.EntityType(sql.FieldNEQ(FieldExpiryRequired, v))
 }
 
 // HasGroup applies the HasEdge predicate on the "group" edge.

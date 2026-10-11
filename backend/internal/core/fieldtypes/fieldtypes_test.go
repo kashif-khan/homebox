@@ -23,6 +23,20 @@ func TestNormalize_Legacy(t *testing.T) {
 	assert.True(t, v.BooleanValue)
 }
 
+func TestNormalize_LegacyTypesKeepEveryColumn(t *testing.T) {
+	// Older clients send all three value columns whatever the type; they must
+	// come back unchanged.
+	in := Input{TextValue: "t", NumberValue: 4139909222958410, BooleanValue: true}
+	for _, typ := range []string{"text", "number", "boolean"} {
+		in.Type = typ
+		v, err := Normalize(in)
+		require.NoError(t, err, typ)
+		assert.Equal(t, "t", v.TextValue, typ)
+		assert.Equal(t, 4139909222958410, v.NumberValue, typ)
+		assert.True(t, v.BooleanValue, typ)
+	}
+}
+
 func TestNormalize_Unknown(t *testing.T) {
 	_, err := Normalize(Input{Type: "geo"})
 	require.Error(t, err)

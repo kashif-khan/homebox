@@ -6043,6 +6043,8 @@ type EntityMutation struct {
 	serial_number               *string
 	model_number                *string
 	manufacturer                *string
+	expires_at                  *time.Time
+	expiry_kind                 *entity.ExpiryKind
 	lifetime_warranty           *bool
 	warranty_expires            *time.Time
 	warranty_details            *string
@@ -6811,6 +6813,91 @@ func (m *EntityMutation) ManufacturerCleared() bool {
 func (m *EntityMutation) ResetManufacturer() {
 	m.manufacturer = nil
 	delete(m.clearedFields, entity.FieldManufacturer)
+}
+
+// SetExpiresAt sets the "expires_at" field.
+func (m *EntityMutation) SetExpiresAt(t time.Time) {
+	m.expires_at = &t
+}
+
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
+func (m *EntityMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expires_at" field's value of the Entity entity.
+// If the Entity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityMutation) OldExpiresAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (m *EntityMutation) ClearExpiresAt() {
+	m.expires_at = nil
+	m.clearedFields[entity.FieldExpiresAt] = struct{}{}
+}
+
+// ExpiresAtCleared returns if the "expires_at" field was cleared in this mutation.
+func (m *EntityMutation) ExpiresAtCleared() bool {
+	_, ok := m.clearedFields[entity.FieldExpiresAt]
+	return ok
+}
+
+// ResetExpiresAt resets all changes to the "expires_at" field.
+func (m *EntityMutation) ResetExpiresAt() {
+	m.expires_at = nil
+	delete(m.clearedFields, entity.FieldExpiresAt)
+}
+
+// SetExpiryKind sets the "expiry_kind" field.
+func (m *EntityMutation) SetExpiryKind(ek entity.ExpiryKind) {
+	m.expiry_kind = &ek
+}
+
+// ExpiryKind returns the value of the "expiry_kind" field in the mutation.
+func (m *EntityMutation) ExpiryKind() (r entity.ExpiryKind, exists bool) {
+	v := m.expiry_kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiryKind returns the old "expiry_kind" field's value of the Entity entity.
+// If the Entity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityMutation) OldExpiryKind(ctx context.Context) (v entity.ExpiryKind, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiryKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiryKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiryKind: %w", err)
+	}
+	return oldValue.ExpiryKind, nil
+}
+
+// ResetExpiryKind resets all changes to the "expiry_kind" field.
+func (m *EntityMutation) ResetExpiryKind() {
+	m.expiry_kind = nil
 }
 
 // SetLifetimeWarranty sets the "lifetime_warranty" field.
@@ -7818,7 +7905,7 @@ func (m *EntityMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EntityMutation) Fields() []string {
-	fields := make([]string, 0, 24)
+	fields := make([]string, 0, 26)
 	if m.created_at != nil {
 		fields = append(fields, entity.FieldCreatedAt)
 	}
@@ -7860,6 +7947,12 @@ func (m *EntityMutation) Fields() []string {
 	}
 	if m.manufacturer != nil {
 		fields = append(fields, entity.FieldManufacturer)
+	}
+	if m.expires_at != nil {
+		fields = append(fields, entity.FieldExpiresAt)
+	}
+	if m.expiry_kind != nil {
+		fields = append(fields, entity.FieldExpiryKind)
 	}
 	if m.lifetime_warranty != nil {
 		fields = append(fields, entity.FieldLifetimeWarranty)
@@ -7927,6 +8020,10 @@ func (m *EntityMutation) Field(name string) (ent.Value, bool) {
 		return m.ModelNumber()
 	case entity.FieldManufacturer:
 		return m.Manufacturer()
+	case entity.FieldExpiresAt:
+		return m.ExpiresAt()
+	case entity.FieldExpiryKind:
+		return m.ExpiryKind()
 	case entity.FieldLifetimeWarranty:
 		return m.LifetimeWarranty()
 	case entity.FieldWarrantyExpires:
@@ -7984,6 +8081,10 @@ func (m *EntityMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldModelNumber(ctx)
 	case entity.FieldManufacturer:
 		return m.OldManufacturer(ctx)
+	case entity.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
+	case entity.FieldExpiryKind:
+		return m.OldExpiryKind(ctx)
 	case entity.FieldLifetimeWarranty:
 		return m.OldLifetimeWarranty(ctx)
 	case entity.FieldWarrantyExpires:
@@ -8110,6 +8211,20 @@ func (m *EntityMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetManufacturer(v)
+		return nil
+	case entity.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
+		return nil
+	case entity.FieldExpiryKind:
+		v, ok := value.(entity.ExpiryKind)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiryKind(v)
 		return nil
 	case entity.FieldLifetimeWarranty:
 		v, ok := value.(bool)
@@ -8280,6 +8395,9 @@ func (m *EntityMutation) ClearedFields() []string {
 	if m.FieldCleared(entity.FieldManufacturer) {
 		fields = append(fields, entity.FieldManufacturer)
 	}
+	if m.FieldCleared(entity.FieldExpiresAt) {
+		fields = append(fields, entity.FieldExpiresAt)
+	}
 	if m.FieldCleared(entity.FieldWarrantyExpires) {
 		fields = append(fields, entity.FieldWarrantyExpires)
 	}
@@ -8332,6 +8450,9 @@ func (m *EntityMutation) ClearField(name string) error {
 		return nil
 	case entity.FieldManufacturer:
 		m.ClearManufacturer()
+		return nil
+	case entity.FieldExpiresAt:
+		m.ClearExpiresAt()
 		return nil
 	case entity.FieldWarrantyExpires:
 		m.ClearWarrantyExpires()
@@ -8403,6 +8524,12 @@ func (m *EntityMutation) ResetField(name string) error {
 		return nil
 	case entity.FieldManufacturer:
 		m.ResetManufacturer()
+		return nil
+	case entity.FieldExpiresAt:
+		m.ResetExpiresAt()
+		return nil
+	case entity.FieldExpiryKind:
+		m.ResetExpiryKind()
 		return nil
 	case entity.FieldLifetimeWarranty:
 		m.ResetLifetimeWarranty()
@@ -9960,39 +10087,43 @@ func (m *EntityFieldMutation) ResetEdge(name string) error {
 // EntityTemplateMutation represents an operation that mutates the EntityTemplate nodes in the graph.
 type EntityTemplateMutation struct {
 	config
-	op                        Op
-	typ                       string
-	id                        *uuid.UUID
-	created_at                *time.Time
-	updated_at                *time.Time
-	name                      *string
-	description               *string
-	notes                     *string
-	default_quantity          *float64
-	adddefault_quantity       *float64
-	default_insured           *bool
-	default_name              *string
-	default_description       *string
-	default_manufacturer      *string
-	default_model_number      *string
-	default_lifetime_warranty *bool
-	default_warranty_details  *string
-	include_warranty_fields   *bool
-	include_purchase_fields   *bool
-	include_sold_fields       *bool
-	default_tag_ids           *[]uuid.UUID
-	appenddefault_tag_ids     []uuid.UUID
-	clearedFields             map[string]struct{}
-	group                     *uuid.UUID
-	clearedgroup              bool
-	fields                    map[uuid.UUID]struct{}
-	removedfields             map[uuid.UUID]struct{}
-	clearedfields             bool
-	location                  *uuid.UUID
-	clearedlocation           bool
-	done                      bool
-	oldValue                  func(context.Context) (*EntityTemplate, error)
-	predicates                []predicate.EntityTemplate
+	op                            Op
+	typ                           string
+	id                            *uuid.UUID
+	created_at                    *time.Time
+	updated_at                    *time.Time
+	name                          *string
+	description                   *string
+	notes                         *string
+	default_quantity              *float64
+	adddefault_quantity           *float64
+	default_insured               *bool
+	default_name                  *string
+	default_description           *string
+	default_manufacturer          *string
+	default_model_number          *string
+	default_lifetime_warranty     *bool
+	default_warranty_details      *string
+	include_warranty_fields       *bool
+	include_purchase_fields       *bool
+	include_sold_fields           *bool
+	include_expiry_fields         *bool
+	default_expiry_offset_days    *int
+	adddefault_expiry_offset_days *int
+	default_expiry_kind           *entitytemplate.DefaultExpiryKind
+	default_tag_ids               *[]uuid.UUID
+	appenddefault_tag_ids         []uuid.UUID
+	clearedFields                 map[string]struct{}
+	group                         *uuid.UUID
+	clearedgroup                  bool
+	fields                        map[uuid.UUID]struct{}
+	removedfields                 map[uuid.UUID]struct{}
+	clearedfields                 bool
+	location                      *uuid.UUID
+	clearedlocation               bool
+	done                          bool
+	oldValue                      func(context.Context) (*EntityTemplate, error)
+	predicates                    []predicate.EntityTemplate
 }
 
 var _ ent.Mutation = (*EntityTemplateMutation)(nil)
@@ -10786,6 +10917,148 @@ func (m *EntityTemplateMutation) ResetIncludeSoldFields() {
 	m.include_sold_fields = nil
 }
 
+// SetIncludeExpiryFields sets the "include_expiry_fields" field.
+func (m *EntityTemplateMutation) SetIncludeExpiryFields(b bool) {
+	m.include_expiry_fields = &b
+}
+
+// IncludeExpiryFields returns the value of the "include_expiry_fields" field in the mutation.
+func (m *EntityTemplateMutation) IncludeExpiryFields() (r bool, exists bool) {
+	v := m.include_expiry_fields
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIncludeExpiryFields returns the old "include_expiry_fields" field's value of the EntityTemplate entity.
+// If the EntityTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityTemplateMutation) OldIncludeExpiryFields(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIncludeExpiryFields is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIncludeExpiryFields requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIncludeExpiryFields: %w", err)
+	}
+	return oldValue.IncludeExpiryFields, nil
+}
+
+// ResetIncludeExpiryFields resets all changes to the "include_expiry_fields" field.
+func (m *EntityTemplateMutation) ResetIncludeExpiryFields() {
+	m.include_expiry_fields = nil
+}
+
+// SetDefaultExpiryOffsetDays sets the "default_expiry_offset_days" field.
+func (m *EntityTemplateMutation) SetDefaultExpiryOffsetDays(i int) {
+	m.default_expiry_offset_days = &i
+	m.adddefault_expiry_offset_days = nil
+}
+
+// DefaultExpiryOffsetDays returns the value of the "default_expiry_offset_days" field in the mutation.
+func (m *EntityTemplateMutation) DefaultExpiryOffsetDays() (r int, exists bool) {
+	v := m.default_expiry_offset_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDefaultExpiryOffsetDays returns the old "default_expiry_offset_days" field's value of the EntityTemplate entity.
+// If the EntityTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityTemplateMutation) OldDefaultExpiryOffsetDays(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDefaultExpiryOffsetDays is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDefaultExpiryOffsetDays requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDefaultExpiryOffsetDays: %w", err)
+	}
+	return oldValue.DefaultExpiryOffsetDays, nil
+}
+
+// AddDefaultExpiryOffsetDays adds i to the "default_expiry_offset_days" field.
+func (m *EntityTemplateMutation) AddDefaultExpiryOffsetDays(i int) {
+	if m.adddefault_expiry_offset_days != nil {
+		*m.adddefault_expiry_offset_days += i
+	} else {
+		m.adddefault_expiry_offset_days = &i
+	}
+}
+
+// AddedDefaultExpiryOffsetDays returns the value that was added to the "default_expiry_offset_days" field in this mutation.
+func (m *EntityTemplateMutation) AddedDefaultExpiryOffsetDays() (r int, exists bool) {
+	v := m.adddefault_expiry_offset_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDefaultExpiryOffsetDays clears the value of the "default_expiry_offset_days" field.
+func (m *EntityTemplateMutation) ClearDefaultExpiryOffsetDays() {
+	m.default_expiry_offset_days = nil
+	m.adddefault_expiry_offset_days = nil
+	m.clearedFields[entitytemplate.FieldDefaultExpiryOffsetDays] = struct{}{}
+}
+
+// DefaultExpiryOffsetDaysCleared returns if the "default_expiry_offset_days" field was cleared in this mutation.
+func (m *EntityTemplateMutation) DefaultExpiryOffsetDaysCleared() bool {
+	_, ok := m.clearedFields[entitytemplate.FieldDefaultExpiryOffsetDays]
+	return ok
+}
+
+// ResetDefaultExpiryOffsetDays resets all changes to the "default_expiry_offset_days" field.
+func (m *EntityTemplateMutation) ResetDefaultExpiryOffsetDays() {
+	m.default_expiry_offset_days = nil
+	m.adddefault_expiry_offset_days = nil
+	delete(m.clearedFields, entitytemplate.FieldDefaultExpiryOffsetDays)
+}
+
+// SetDefaultExpiryKind sets the "default_expiry_kind" field.
+func (m *EntityTemplateMutation) SetDefaultExpiryKind(eek entitytemplate.DefaultExpiryKind) {
+	m.default_expiry_kind = &eek
+}
+
+// DefaultExpiryKind returns the value of the "default_expiry_kind" field in the mutation.
+func (m *EntityTemplateMutation) DefaultExpiryKind() (r entitytemplate.DefaultExpiryKind, exists bool) {
+	v := m.default_expiry_kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDefaultExpiryKind returns the old "default_expiry_kind" field's value of the EntityTemplate entity.
+// If the EntityTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityTemplateMutation) OldDefaultExpiryKind(ctx context.Context) (v entitytemplate.DefaultExpiryKind, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDefaultExpiryKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDefaultExpiryKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDefaultExpiryKind: %w", err)
+	}
+	return oldValue.DefaultExpiryKind, nil
+}
+
+// ResetDefaultExpiryKind resets all changes to the "default_expiry_kind" field.
+func (m *EntityTemplateMutation) ResetDefaultExpiryKind() {
+	m.default_expiry_kind = nil
+}
+
 // SetDefaultTagIds sets the "default_tag_ids" field.
 func (m *EntityTemplateMutation) SetDefaultTagIds(u []uuid.UUID) {
 	m.default_tag_ids = &u
@@ -11017,7 +11290,7 @@ func (m *EntityTemplateMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EntityTemplateMutation) Fields() []string {
-	fields := make([]string, 0, 17)
+	fields := make([]string, 0, 20)
 	if m.created_at != nil {
 		fields = append(fields, entitytemplate.FieldCreatedAt)
 	}
@@ -11066,6 +11339,15 @@ func (m *EntityTemplateMutation) Fields() []string {
 	if m.include_sold_fields != nil {
 		fields = append(fields, entitytemplate.FieldIncludeSoldFields)
 	}
+	if m.include_expiry_fields != nil {
+		fields = append(fields, entitytemplate.FieldIncludeExpiryFields)
+	}
+	if m.default_expiry_offset_days != nil {
+		fields = append(fields, entitytemplate.FieldDefaultExpiryOffsetDays)
+	}
+	if m.default_expiry_kind != nil {
+		fields = append(fields, entitytemplate.FieldDefaultExpiryKind)
+	}
 	if m.default_tag_ids != nil {
 		fields = append(fields, entitytemplate.FieldDefaultTagIds)
 	}
@@ -11109,6 +11391,12 @@ func (m *EntityTemplateMutation) Field(name string) (ent.Value, bool) {
 		return m.IncludePurchaseFields()
 	case entitytemplate.FieldIncludeSoldFields:
 		return m.IncludeSoldFields()
+	case entitytemplate.FieldIncludeExpiryFields:
+		return m.IncludeExpiryFields()
+	case entitytemplate.FieldDefaultExpiryOffsetDays:
+		return m.DefaultExpiryOffsetDays()
+	case entitytemplate.FieldDefaultExpiryKind:
+		return m.DefaultExpiryKind()
 	case entitytemplate.FieldDefaultTagIds:
 		return m.DefaultTagIds()
 	}
@@ -11152,6 +11440,12 @@ func (m *EntityTemplateMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldIncludePurchaseFields(ctx)
 	case entitytemplate.FieldIncludeSoldFields:
 		return m.OldIncludeSoldFields(ctx)
+	case entitytemplate.FieldIncludeExpiryFields:
+		return m.OldIncludeExpiryFields(ctx)
+	case entitytemplate.FieldDefaultExpiryOffsetDays:
+		return m.OldDefaultExpiryOffsetDays(ctx)
+	case entitytemplate.FieldDefaultExpiryKind:
+		return m.OldDefaultExpiryKind(ctx)
 	case entitytemplate.FieldDefaultTagIds:
 		return m.OldDefaultTagIds(ctx)
 	}
@@ -11275,6 +11569,27 @@ func (m *EntityTemplateMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetIncludeSoldFields(v)
 		return nil
+	case entitytemplate.FieldIncludeExpiryFields:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIncludeExpiryFields(v)
+		return nil
+	case entitytemplate.FieldDefaultExpiryOffsetDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDefaultExpiryOffsetDays(v)
+		return nil
+	case entitytemplate.FieldDefaultExpiryKind:
+		v, ok := value.(entitytemplate.DefaultExpiryKind)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDefaultExpiryKind(v)
+		return nil
 	case entitytemplate.FieldDefaultTagIds:
 		v, ok := value.([]uuid.UUID)
 		if !ok {
@@ -11293,6 +11608,9 @@ func (m *EntityTemplateMutation) AddedFields() []string {
 	if m.adddefault_quantity != nil {
 		fields = append(fields, entitytemplate.FieldDefaultQuantity)
 	}
+	if m.adddefault_expiry_offset_days != nil {
+		fields = append(fields, entitytemplate.FieldDefaultExpiryOffsetDays)
+	}
 	return fields
 }
 
@@ -11303,6 +11621,8 @@ func (m *EntityTemplateMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case entitytemplate.FieldDefaultQuantity:
 		return m.AddedDefaultQuantity()
+	case entitytemplate.FieldDefaultExpiryOffsetDays:
+		return m.AddedDefaultExpiryOffsetDays()
 	}
 	return nil, false
 }
@@ -11318,6 +11638,13 @@ func (m *EntityTemplateMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddDefaultQuantity(v)
+		return nil
+	case entitytemplate.FieldDefaultExpiryOffsetDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDefaultExpiryOffsetDays(v)
 		return nil
 	}
 	return fmt.Errorf("unknown EntityTemplate numeric field %s", name)
@@ -11347,6 +11674,9 @@ func (m *EntityTemplateMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(entitytemplate.FieldDefaultWarrantyDetails) {
 		fields = append(fields, entitytemplate.FieldDefaultWarrantyDetails)
+	}
+	if m.FieldCleared(entitytemplate.FieldDefaultExpiryOffsetDays) {
+		fields = append(fields, entitytemplate.FieldDefaultExpiryOffsetDays)
 	}
 	if m.FieldCleared(entitytemplate.FieldDefaultTagIds) {
 		fields = append(fields, entitytemplate.FieldDefaultTagIds)
@@ -11385,6 +11715,9 @@ func (m *EntityTemplateMutation) ClearField(name string) error {
 		return nil
 	case entitytemplate.FieldDefaultWarrantyDetails:
 		m.ClearDefaultWarrantyDetails()
+		return nil
+	case entitytemplate.FieldDefaultExpiryOffsetDays:
+		m.ClearDefaultExpiryOffsetDays()
 		return nil
 	case entitytemplate.FieldDefaultTagIds:
 		m.ClearDefaultTagIds()
@@ -11444,6 +11777,15 @@ func (m *EntityTemplateMutation) ResetField(name string) error {
 		return nil
 	case entitytemplate.FieldIncludeSoldFields:
 		m.ResetIncludeSoldFields()
+		return nil
+	case entitytemplate.FieldIncludeExpiryFields:
+		m.ResetIncludeExpiryFields()
+		return nil
+	case entitytemplate.FieldDefaultExpiryOffsetDays:
+		m.ResetDefaultExpiryOffsetDays()
+		return nil
+	case entitytemplate.FieldDefaultExpiryKind:
+		m.ResetDefaultExpiryKind()
 		return nil
 	case entitytemplate.FieldDefaultTagIds:
 		m.ResetDefaultTagIds()
@@ -11584,6 +11926,7 @@ type EntityTypeMutation struct {
 	description             *string
 	is_location             *bool
 	icon                    *string
+	expiry_required         *bool
 	clearedFields           map[string]struct{}
 	group                   *uuid.UUID
 	clearedgroup            bool
@@ -11943,6 +12286,42 @@ func (m *EntityTypeMutation) ResetIcon() {
 	delete(m.clearedFields, entitytype.FieldIcon)
 }
 
+// SetExpiryRequired sets the "expiry_required" field.
+func (m *EntityTypeMutation) SetExpiryRequired(b bool) {
+	m.expiry_required = &b
+}
+
+// ExpiryRequired returns the value of the "expiry_required" field in the mutation.
+func (m *EntityTypeMutation) ExpiryRequired() (r bool, exists bool) {
+	v := m.expiry_required
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiryRequired returns the old "expiry_required" field's value of the EntityType entity.
+// If the EntityType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityTypeMutation) OldExpiryRequired(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiryRequired is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiryRequired requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiryRequired: %w", err)
+	}
+	return oldValue.ExpiryRequired, nil
+}
+
+// ResetExpiryRequired resets all changes to the "expiry_required" field.
+func (m *EntityTypeMutation) ResetExpiryRequired() {
+	m.expiry_required = nil
+}
+
 // SetGroupID sets the "group" edge to the Group entity by id.
 func (m *EntityTypeMutation) SetGroupID(id uuid.UUID) {
 	m.group = &id
@@ -12109,7 +12488,7 @@ func (m *EntityTypeMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EntityTypeMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.created_at != nil {
 		fields = append(fields, entitytype.FieldCreatedAt)
 	}
@@ -12127,6 +12506,9 @@ func (m *EntityTypeMutation) Fields() []string {
 	}
 	if m.icon != nil {
 		fields = append(fields, entitytype.FieldIcon)
+	}
+	if m.expiry_required != nil {
+		fields = append(fields, entitytype.FieldExpiryRequired)
 	}
 	return fields
 }
@@ -12148,6 +12530,8 @@ func (m *EntityTypeMutation) Field(name string) (ent.Value, bool) {
 		return m.IsLocation()
 	case entitytype.FieldIcon:
 		return m.Icon()
+	case entitytype.FieldExpiryRequired:
+		return m.ExpiryRequired()
 	}
 	return nil, false
 }
@@ -12169,6 +12553,8 @@ func (m *EntityTypeMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldIsLocation(ctx)
 	case entitytype.FieldIcon:
 		return m.OldIcon(ctx)
+	case entitytype.FieldExpiryRequired:
+		return m.OldExpiryRequired(ctx)
 	}
 	return nil, fmt.Errorf("unknown EntityType field %s", name)
 }
@@ -12219,6 +12605,13 @@ func (m *EntityTypeMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetIcon(v)
+		return nil
+	case entitytype.FieldExpiryRequired:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiryRequired(v)
 		return nil
 	}
 	return fmt.Errorf("unknown EntityType field %s", name)
@@ -12301,6 +12694,9 @@ func (m *EntityTypeMutation) ResetField(name string) error {
 		return nil
 	case entitytype.FieldIcon:
 		m.ResetIcon()
+		return nil
+	case entitytype.FieldExpiryRequired:
+		m.ResetExpiryRequired()
 		return nil
 	}
 	return fmt.Errorf("unknown EntityType field %s", name)

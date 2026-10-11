@@ -220,6 +220,8 @@ var (
 		{Name: "serial_number", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "model_number", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "manufacturer", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
+		{Name: "expiry_kind", Type: field.TypeEnum, Enums: []string{"expires", "use_by", "best_before"}, Default: "expires"},
 		{Name: "lifetime_warranty", Type: field.TypeBool, Default: false},
 		{Name: "warranty_expires", Type: field.TypeTime, Nullable: true},
 		{Name: "warranty_details", Type: field.TypeString, Nullable: true, Size: 1000},
@@ -243,25 +245,25 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "entities_entities_children",
-				Columns:    []*schema.Column{EntitiesColumns[25]},
+				Columns:    []*schema.Column{EntitiesColumns[27]},
 				RefColumns: []*schema.Column{EntitiesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "entities_entities_location_entities",
-				Columns:    []*schema.Column{EntitiesColumns[26]},
+				Columns:    []*schema.Column{EntitiesColumns[28]},
 				RefColumns: []*schema.Column{EntitiesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "entities_entity_types_entities",
-				Columns:    []*schema.Column{EntitiesColumns[27]},
+				Columns:    []*schema.Column{EntitiesColumns[29]},
 				RefColumns: []*schema.Column{EntityTypesColumns[0]},
 				OnDelete:   schema.Restrict,
 			},
 			{
 				Symbol:     "entities_groups_entities",
-				Columns:    []*schema.Column{EntitiesColumns[28]},
+				Columns:    []*schema.Column{EntitiesColumns[30]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -296,6 +298,11 @@ var (
 				Name:    "entity_asset_id",
 				Unique:  false,
 				Columns: []*schema.Column{EntitiesColumns[10]},
+			},
+			{
+				Name:    "entity_expires_at",
+				Unique:  false,
+				Columns: []*schema.Column{EntitiesColumns[15]},
 			},
 		},
 	}
@@ -350,6 +357,9 @@ var (
 		{Name: "include_warranty_fields", Type: field.TypeBool, Default: false},
 		{Name: "include_purchase_fields", Type: field.TypeBool, Default: false},
 		{Name: "include_sold_fields", Type: field.TypeBool, Default: false},
+		{Name: "include_expiry_fields", Type: field.TypeBool, Default: false},
+		{Name: "default_expiry_offset_days", Type: field.TypeInt, Nullable: true},
+		{Name: "default_expiry_kind", Type: field.TypeEnum, Enums: []string{"expires", "use_by", "best_before"}, Default: "expires"},
 		{Name: "default_tag_ids", Type: field.TypeJSON, Nullable: true},
 		{Name: "entity_template_location", Type: field.TypeUUID, Nullable: true},
 		{Name: "group_entity_templates", Type: field.TypeUUID},
@@ -362,13 +372,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "entity_templates_entities_location",
-				Columns:    []*schema.Column{EntityTemplatesColumns[18]},
+				Columns:    []*schema.Column{EntityTemplatesColumns[21]},
 				RefColumns: []*schema.Column{EntitiesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "entity_templates_groups_entity_templates",
-				Columns:    []*schema.Column{EntityTemplatesColumns[19]},
+				Columns:    []*schema.Column{EntityTemplatesColumns[22]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -390,6 +400,7 @@ var (
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 1000},
 		{Name: "is_location", Type: field.TypeBool, Default: false},
 		{Name: "icon", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "expiry_required", Type: field.TypeBool, Default: false},
 		{Name: "entity_type_default_template", Type: field.TypeUUID, Nullable: true},
 		{Name: "group_entity_types", Type: field.TypeUUID},
 	}
@@ -401,13 +412,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "entity_types_entity_templates_default_template",
-				Columns:    []*schema.Column{EntityTypesColumns[7]},
+				Columns:    []*schema.Column{EntityTypesColumns[8]},
 				RefColumns: []*schema.Column{EntityTemplatesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "entity_types_groups_entity_types",
-				Columns:    []*schema.Column{EntityTypesColumns[8]},
+				Columns:    []*schema.Column{EntityTypesColumns[9]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},

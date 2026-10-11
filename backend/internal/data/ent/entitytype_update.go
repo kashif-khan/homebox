@@ -106,6 +106,20 @@ func (_u *EntityTypeUpdate) ClearIcon() *EntityTypeUpdate {
 	return _u
 }
 
+// SetExpiryRequired sets the "expiry_required" field.
+func (_u *EntityTypeUpdate) SetExpiryRequired(v bool) *EntityTypeUpdate {
+	_u.mutation.SetExpiryRequired(v)
+	return _u
+}
+
+// SetNillableExpiryRequired sets the "expiry_required" field if the given value is not nil.
+func (_u *EntityTypeUpdate) SetNillableExpiryRequired(v *bool) *EntityTypeUpdate {
+	if v != nil {
+		_u.SetExpiryRequired(*v)
+	}
+	return _u
+}
+
 // SetGroupID sets the "group" edge to the Group entity by ID.
 func (_u *EntityTypeUpdate) SetGroupID(id uuid.UUID) *EntityTypeUpdate {
 	_u.mutation.SetGroupID(id)
@@ -280,6 +294,9 @@ func (_u *EntityTypeUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	}
 	if _u.mutation.IconCleared() {
 		_spec.ClearField(entitytype.FieldIcon, field.TypeString)
+	}
+	if value, ok := _u.mutation.ExpiryRequired(); ok {
+		_spec.SetField(entitytype.FieldExpiryRequired, field.TypeBool, value)
 	}
 	if _u.mutation.GroupCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -475,6 +492,20 @@ func (_u *EntityTypeUpdateOne) SetNillableIcon(v *string) *EntityTypeUpdateOne {
 // ClearIcon clears the value of the "icon" field.
 func (_u *EntityTypeUpdateOne) ClearIcon() *EntityTypeUpdateOne {
 	_u.mutation.ClearIcon()
+	return _u
+}
+
+// SetExpiryRequired sets the "expiry_required" field.
+func (_u *EntityTypeUpdateOne) SetExpiryRequired(v bool) *EntityTypeUpdateOne {
+	_u.mutation.SetExpiryRequired(v)
+	return _u
+}
+
+// SetNillableExpiryRequired sets the "expiry_required" field if the given value is not nil.
+func (_u *EntityTypeUpdateOne) SetNillableExpiryRequired(v *bool) *EntityTypeUpdateOne {
+	if v != nil {
+		_u.SetExpiryRequired(*v)
+	}
 	return _u
 }
 
@@ -682,6 +713,9 @@ func (_u *EntityTypeUpdateOne) sqlSave(ctx context.Context) (_node *EntityType, 
 	}
 	if _u.mutation.IconCleared() {
 		_spec.ClearField(entitytype.FieldIcon, field.TypeString)
+	}
+	if value, ok := _u.mutation.ExpiryRequired(); ok {
+		_spec.SetField(entitytype.FieldExpiryRequired, field.TypeBool, value)
 	}
 	if _u.mutation.GroupCleared() {
 		edge := &sqlgraph.EdgeSpec{

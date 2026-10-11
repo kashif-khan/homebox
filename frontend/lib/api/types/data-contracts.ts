@@ -67,6 +67,13 @@ export enum ExportKind {
   KindImport = "import",
 }
 
+export enum EntitytemplateDefaultExpiryKind {
+  DefaultDefaultExpiryKind = "expires",
+  DefaultExpiryKindExpires = "expires",
+  DefaultExpiryKindUseBy = "use_by",
+  DefaultExpiryKindBestBefore = "best_before",
+}
+
 export enum EntityfieldType {
   TypeText = "text",
   TypeNumber = "number",
@@ -78,6 +85,13 @@ export enum EntityfieldType {
   TypeDatetime = "datetime",
   TypeURL = "url",
   TypeSelect = "select",
+}
+
+export enum EntityExpiryKind {
+  DefaultExpiryKind = "expires",
+  ExpiryKindExpires = "expires",
+  ExpiryKindUseBy = "use_by",
+  ExpiryKindBestBefore = "best_before",
 }
 
 export enum BackupdestinationType {
@@ -351,6 +365,10 @@ export interface EntEntity {
    * The values are being populated by the EntityQuery when eager-loading is set.
    */
   edges: EntEntityEdges;
+  /** ExpiresAt holds the value of the "expires_at" field. */
+  expires_at: string;
+  /** ExpiryKind holds the value of the "expiry_kind" field. */
+  expiry_kind: EntityExpiryKind;
   /** ID of the ent. */
   id: string;
   /** ImportRef holds the value of the "import_ref" field. */
@@ -464,6 +482,10 @@ export interface EntEntityTemplate {
   created_at: string;
   /** Default description for items created from this template */
   default_description: string;
+  /** DefaultExpiryKind holds the value of the "default_expiry_kind" field. */
+  default_expiry_kind: EntitytemplateDefaultExpiryKind;
+  /** Items created from this template expire this many days after they are added */
+  default_expiry_offset_days: number;
   /** DefaultInsured holds the value of the "default_insured" field. */
   default_insured: boolean;
   /** DefaultLifetimeWarranty holds the value of the "default_lifetime_warranty" field. */
@@ -489,6 +511,8 @@ export interface EntEntityTemplate {
   edges: EntEntityTemplateEdges;
   /** ID of the ent. */
   id: string;
+  /** Whether to include the expiry date in items created from this template */
+  include_expiry_fields: boolean;
   /** Whether to include purchase fields in items created from this template */
   include_purchase_fields: boolean;
   /** Whether to include sold fields in items created from this template */
@@ -522,6 +546,8 @@ export interface EntEntityType {
    * The values are being populated by the EntityTypeQuery when eager-loading is set.
    */
   edges: EntEntityTypeEdges;
+  /** ExpiryRequired holds the value of the "expiry_required" field. */
+  expiry_required: boolean;
   /** Icon holds the value of the "icon" field. */
   icon: string;
   /** ID of the ent. */
@@ -1415,6 +1441,12 @@ export interface EntityOut {
   createdAt: Date | string;
   description: string;
   entityType?: EntityTypeSummary | null;
+  /**
+   * ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind
+   * says whether that is a use-by, best-before or plain expiry date.
+   */
+  expiresAt: Date | string;
+  expiryKind: string;
   fields: EntityFieldData[];
   id: string;
   imageId?: string | null;
@@ -1463,6 +1495,12 @@ export interface EntityOut {
 
 export interface EntityPatch {
   entityTypeId?: string | null;
+  /**
+   * ExpiresAt sets the expiry date; an empty date clears it. ExpiryKind is
+   * expires, use_by or best_before. Both are left alone when nil.
+   */
+  expiresAt?: string | null;
+  expiryKind?: string | null;
   id: string;
   locationId?: string | null;
   parentId?: string | null;
@@ -1483,6 +1521,12 @@ export interface EntitySummary {
   createdAt: Date | string;
   description: string;
   entityType?: EntityTypeSummary | null;
+  /**
+   * ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind
+   * says whether that is a use-by, best-before or plain expiry date.
+   */
+  expiresAt: Date | string;
+  expiryKind: string;
   id: string;
   imageId?: string | null;
   insured: boolean;
@@ -1503,6 +1547,8 @@ export interface EntitySummary {
 export interface EntityTemplateCreate {
   /** @maxLength 1000 */
   defaultDescription?: string | null;
+  defaultExpiryKind: string;
+  defaultExpiryOffsetDays?: number | null;
   defaultInsured: boolean;
   defaultLifetimeWarranty: boolean;
   /** Default location and tags */
@@ -1522,6 +1568,11 @@ export interface EntityTemplateCreate {
   description: string;
   /** Custom fields */
   fields: TemplateField[];
+  /**
+   * Expiry: items made from the template expire DefaultExpiryOffsetDays days
+   * after they are added, when it is set.
+   */
+  includeExpiryFields: boolean;
   includePurchaseFields: boolean;
   includeSoldFields: boolean;
   /** Metadata flags */
@@ -1538,6 +1589,8 @@ export interface EntityTemplateCreate {
 export interface EntityTemplateOut {
   createdAt: Date | string;
   defaultDescription: string;
+  defaultExpiryKind: string;
+  defaultExpiryOffsetDays?: number | null;
   defaultInsured: boolean;
   defaultLifetimeWarranty: boolean;
   /** Default location and tags */
@@ -1553,6 +1606,11 @@ export interface EntityTemplateOut {
   /** Custom fields */
   fields: TemplateField[];
   id: string;
+  /**
+   * Expiry: items made from the template expire DefaultExpiryOffsetDays days
+   * after they are added, when it is set.
+   */
+  includeExpiryFields: boolean;
   includePurchaseFields: boolean;
   includeSoldFields: boolean;
   /** Metadata flags */
@@ -1573,6 +1631,8 @@ export interface EntityTemplateSummary {
 export interface EntityTemplateUpdate {
   /** @maxLength 1000 */
   defaultDescription?: string | null;
+  defaultExpiryKind: string;
+  defaultExpiryOffsetDays?: number | null;
   defaultInsured: boolean;
   defaultLifetimeWarranty: boolean;
   /** Default location and tags */
@@ -1593,6 +1653,11 @@ export interface EntityTemplateUpdate {
   /** Custom fields */
   fields: TemplateField[];
   id: string;
+  /**
+   * Expiry: items made from the template expire DefaultExpiryOffsetDays days
+   * after they are added, when it is set.
+   */
+  includeExpiryFields: boolean;
   includePurchaseFields: boolean;
   includeSoldFields: boolean;
   /** Metadata flags */
@@ -1608,6 +1673,8 @@ export interface EntityTemplateUpdate {
 
 export interface EntityTypeCreate {
   defaultTemplateId: string;
+  /** ExpiryRequired makes an expiry date mandatory on items of this type. */
+  expiryRequired: boolean;
   icon: string;
   isLocation: boolean;
   name: string;
@@ -1618,6 +1685,7 @@ export interface EntityTypeSummary {
   defaultTemplate: EntityTemplateSummary;
   defaultTemplateId: string;
   description: string;
+  expiryRequired: boolean;
   icon: string;
   id: string;
   isLocation: boolean;
@@ -1627,6 +1695,8 @@ export interface EntityTypeSummary {
 
 export interface EntityTypeUpdate {
   defaultTemplateId: string;
+  /** ExpiryRequired makes an expiry date mandatory on items of this type. */
+  expiryRequired: boolean;
   icon: string;
   id: string;
   isLocation: boolean;
@@ -1639,6 +1709,12 @@ export interface EntityUpdate {
   /** @maxLength 1000 */
   description: string;
   entityTypeId: string;
+  /**
+   * ExpiresAt is the consumable expiry date; leave it empty to clear it.
+   * ExpiryKind is expires, use_by or best_before; empty means expires.
+   */
+  expiresAt: Date | string;
+  expiryKind: string;
   fields: EntityFieldData[];
   id: string;
   insured: boolean;
@@ -1678,6 +1754,45 @@ export interface EntityUpdate {
   tagIds: string[];
   warrantyDetails: string;
   warrantyExpires: Date | string;
+}
+
+export interface ExpiringResult {
+  expired: ExpiryEntry[];
+  expiredTotal: number;
+  soon: ExpiryEntry[];
+  soonTotal: number;
+}
+
+export interface ExpiryEntry {
+  archived: boolean;
+  /** @example "0" */
+  assetId: string;
+  createdAt: Date | string;
+  /** DaysLeft is negative once the date has passed. */
+  daysLeft: number;
+  description: string;
+  entityType?: EntityTypeSummary | null;
+  /**
+   * ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind
+   * says whether that is a use-by, best-before or plain expiry date.
+   */
+  expiresAt: Date | string;
+  expiryKind: string;
+  id: string;
+  imageId?: string | null;
+  insured: boolean;
+  /** Container-specific (populated when querying locations) */
+  itemCount: number;
+  name: string;
+  /** Edges */
+  parent?: EntitySummary | null;
+  purchasePrice: number;
+  quantity: number;
+  /** Sale details */
+  soldDate: Date | string;
+  tags: TagSummary[];
+  thumbnailId?: string | null;
+  updatedAt: Date | string;
 }
 
 export interface ExportOut {
