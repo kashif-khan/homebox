@@ -187,6 +187,8 @@
     label: string;
     ref: NonNullableNumberKeys<EntityOut> | NonNullableStringKeys<EntityOut>;
     min?: number;
+    /** An amount of money: shown with the collection's currency and two decimals. */
+    money?: boolean;
   };
 
   interface BoolFormField {
@@ -275,6 +277,7 @@
       type: "number",
       label: "items.purchase_price",
       ref: "purchasePrice",
+      money: true,
     },
     {
       type: "date",
@@ -320,6 +323,7 @@
       type: "number",
       label: "items.sold_price",
       ref: "soldPrice",
+      money: true,
     },
     {
       type: "date",
@@ -520,6 +524,13 @@
     editState.type = "";
 
     toast.success(t("items.toast.attachment_updated"));
+  }
+
+  /** A money field's label carries the collection's currency, e.g. "Purchase Price (GBP)". */
+  function fieldLabel(field: { label: string; money?: boolean }) {
+    return field.money && fieldDefaultCurrency.value
+      ? `${t(field.label)} (${fieldDefaultCurrency.value})`
+      : t(field.label);
   }
 
   function addField() {
@@ -751,9 +762,9 @@
                   v-else-if="field.type === 'number'"
                   v-model.number="item[field.ref]"
                   type="number"
-                  step="any"
-                  :min="field.min"
-                  :label="$t(field.label)"
+                  :step="field.money ? '0.01' : 'any'"
+                  :min="field.money ? 0 : field.min"
+                  :label="fieldLabel(field)"
                   inline
                 />
                 <FormDatePicker
@@ -950,9 +961,9 @@
                   v-else-if="field.type === 'number'"
                   v-model.number="item[field.ref]"
                   type="number"
-                  step="any"
-                  :min="field.min"
-                  :label="$t(field.label)"
+                  :step="field.money ? '0.01' : 'any'"
+                  :min="field.money ? 0 : field.min"
+                  :label="fieldLabel(field)"
                   inline
                 />
                 <FormDatePicker
@@ -999,9 +1010,9 @@
                   v-else-if="field.type === 'number'"
                   v-model.number="item[field.ref]"
                   type="number"
-                  step="any"
-                  :min="field.min"
-                  :label="$t(field.label)"
+                  :step="field.money ? '0.01' : 'any'"
+                  :min="field.money ? 0 : field.min"
+                  :label="fieldLabel(field)"
                   inline
                 />
                 <FormDatePicker
@@ -1048,9 +1059,9 @@
                   v-else-if="field.type === 'number'"
                   v-model.number="item[field.ref]"
                   type="number"
-                  step="any"
-                  :min="field.min"
-                  :label="$t(field.label)"
+                  :step="field.money ? '0.01' : 'any'"
+                  :min="field.money ? 0 : field.min"
+                  :label="fieldLabel(field)"
                   inline
                 />
                 <FormDatePicker

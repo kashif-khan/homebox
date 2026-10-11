@@ -53,6 +53,16 @@
     }
   }
 
+  // A whole number takes no decimal point or exponent: block them as they are
+  // typed, and truncate anything pasted in.
+  function blockNonWhole(e: KeyboardEvent) {
+    if ([".", ",", "e", "E", "+"].includes(e.key)) e.preventDefault();
+  }
+  function onWhole(v: string | number) {
+    const n = Math.trunc(Number(v));
+    field.value.numberValue = Number.isFinite(n) ? n : 0;
+  }
+
   function onType(v: unknown) {
     if (!isFieldType(v) || v === field.value.type) return;
     retypeField(field.value, v, { currency: props.defaultCurrency, timezone: props.defaultTimezone });
@@ -89,9 +99,12 @@
       <Input
         v-else-if="field.type === 'number'"
         :id="`${uid}-value`"
-        v-model.number="field.numberValue"
+        :model-value="field.numberValue"
         type="number"
         step="1"
+        inputmode="numeric"
+        @keydown="blockNonWhole"
+        @update:model-value="onWhole"
       />
 
       <div v-else-if="field.type === 'boolean'" class="flex h-9 items-center gap-2">
