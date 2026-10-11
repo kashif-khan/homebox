@@ -41,6 +41,37 @@ HomeBox is the inventory and organization system built for the Home User! With a
 - 💰 Purchase & Maintenance Tracking - Track purchase dates, prices, and maintenance schedules for your items.
 - 📱 Responsive Design - Homebox is designed to work on any device, including desktops, tablets, and smartphones.
 
+## Fork roadmap
+
+This is the `kashif-khan/homebox` fork. Its working branch is `custom`, rebased on upstream `sysadminsmedia/homebox` and released as `*-kk.N` tags. The roadmap below comes from the most requested upstream [Ideas](https://github.com/sysadminsmedia/homebox/discussions/categories/ideas) and open issues. Where a feature is not started it says so; dates are intentionally absent.
+
+**Shipped on `custom`**
+
+| Feature | Upstream request |
+| --- | --- |
+| Expiry dates for consumables, with alert rules (offsets before/after, per-collection time zone) | [#714](https://github.com/sysadminsmedia/homebox/discussions/714), [#1135](https://github.com/sysadminsmedia/homebox/discussions/1135) |
+| Scoped API keys, with an OAuth 2.1 server | [#539](https://github.com/sysadminsmedia/homebox/discussions/539), [#979](https://github.com/sysadminsmedia/homebox/discussions/979) |
+| MCP server for AI assistants (opt-in, permission-capped per collection) | [#1603](https://github.com/sysadminsmedia/homebox/discussions/1603) |
+| Signed outbound webhooks with retries | none |
+| Typed custom fields | none |
+| Scheduled, versioned, remote backups | [#1767](https://github.com/sysadminsmedia/homebox/discussions/1767) |
+
+**Planned, not started.** Order is a proposal and may change.
+
+| Wave | Work | Upstream requests |
+| --- | --- | --- |
+| 0 | Reliability: CSV export/import round-trip, import timeouts, wipe and backup-download bugs, mobile camera | [#1776](https://github.com/sysadminsmedia/homebox/issues/1776), [#793](https://github.com/sysadminsmedia/homebox/issues/793), [#1781](https://github.com/sysadminsmedia/homebox/issues/1781), [#1752](https://github.com/sysadminsmedia/homebox/issues/1752), [#531](https://github.com/sysadminsmedia/homebox/issues/531), [#1290](https://github.com/sysadminsmedia/homebox/issues/1290) |
+| 1 | Recurring maintenance plans, with a calendar feed | [#172](https://github.com/sysadminsmedia/homebox/issues/172), [#10](https://github.com/sysadminsmedia/homebox/discussions/10), [#722](https://github.com/sysadminsmedia/homebox/discussions/722) |
+| 1 | Audit log and item history | [#1139](https://github.com/sysadminsmedia/homebox/discussions/1139) |
+| 2 | Lending and checkout ledger | [#713](https://github.com/sysadminsmedia/homebox/discussions/713), [#761](https://github.com/sysadminsmedia/homebox/discussions/761), [#74](https://github.com/sysadminsmedia/homebox/issues/74) |
+| 2 | Label and QR overhaul, public "found me" page | [#53](https://github.com/sysadminsmedia/homebox/discussions/53), [#1202](https://github.com/sysadminsmedia/homebox/discussions/1202), [#13](https://github.com/sysadminsmedia/homebox/issues/13) |
+| 3 | Barcode lookup and batch scan capture | [#477](https://github.com/sysadminsmedia/homebox/discussions/477), [#724](https://github.com/sysadminsmedia/homebox/discussions/724), [#997](https://github.com/sysadminsmedia/homebox/discussions/997) |
+| 3 | Document hub: Paperless-ngx, Immich, Nextcloud | [#544](https://github.com/sysadminsmedia/homebox/discussions/544), [#266](https://github.com/sysadminsmedia/homebox/discussions/266) |
+| 4 | User management and OIDC fixes | [#439](https://github.com/sysadminsmedia/homebox/issues/439), [#1259](https://github.com/sysadminsmedia/homebox/issues/1259) |
+| 4 | Sub-location rollups, floor plans, finance and insurance pack, table view | [#1201](https://github.com/sysadminsmedia/homebox/discussions/1201), [#767](https://github.com/sysadminsmedia/homebox/discussions/767), [#743](https://github.com/sysadminsmedia/homebox/discussions/743) |
+
+Everything outward-facing (lookup providers, AI features, public pages, integrations) will be off by default. Useful pieces will be offered upstream as small PRs.
+
 ## Screenshots
 ![Login Screen](.github/screenshots/1.png)
 ![Dashboard](.github/screenshots/2.png)
