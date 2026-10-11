@@ -79,6 +79,20 @@ func (_c *GroupCreate) SetNillableCurrency(v *string) *GroupCreate {
 	return _c
 }
 
+// SetTimezone sets the "timezone" field.
+func (_c *GroupCreate) SetTimezone(v string) *GroupCreate {
+	_c.mutation.SetTimezone(v)
+	return _c
+}
+
+// SetNillableTimezone sets the "timezone" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableTimezone(v *string) *GroupCreate {
+	if v != nil {
+		_c.SetTimezone(*v)
+	}
+	return _c
+}
+
 // SetMcpAccess sets the "mcp_access" field.
 func (_c *GroupCreate) SetMcpAccess(v string) *GroupCreate {
 	_c.mutation.SetMcpAccess(v)
@@ -304,6 +318,10 @@ func (_c *GroupCreate) defaults() {
 		v := group.DefaultCurrency
 		_c.mutation.SetCurrency(v)
 	}
+	if _, ok := _c.mutation.Timezone(); !ok {
+		v := group.DefaultTimezone
+		_c.mutation.SetTimezone(v)
+	}
 	if _, ok := _c.mutation.McpAccess(); !ok {
 		v := group.DefaultMcpAccess
 		_c.mutation.SetMcpAccess(v)
@@ -332,6 +350,14 @@ func (_c *GroupCreate) check() error {
 	}
 	if _, ok := _c.mutation.Currency(); !ok {
 		return &ValidationError{Name: "currency", err: errors.New(`ent: missing required field "Group.currency"`)}
+	}
+	if _, ok := _c.mutation.Timezone(); !ok {
+		return &ValidationError{Name: "timezone", err: errors.New(`ent: missing required field "Group.timezone"`)}
+	}
+	if v, ok := _c.mutation.Timezone(); ok {
+		if err := group.TimezoneValidator(v); err != nil {
+			return &ValidationError{Name: "timezone", err: fmt.Errorf(`ent: validator failed for field "Group.timezone": %w`, err)}
+		}
 	}
 	if _, ok := _c.mutation.McpAccess(); !ok {
 		return &ValidationError{Name: "mcp_access", err: errors.New(`ent: missing required field "Group.mcp_access"`)}
@@ -386,6 +412,10 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Currency(); ok {
 		_spec.SetField(group.FieldCurrency, field.TypeString, value)
 		_node.Currency = value
+	}
+	if value, ok := _c.mutation.Timezone(); ok {
+		_spec.SetField(group.FieldTimezone, field.TypeString, value)
+		_node.Timezone = value
 	}
 	if value, ok := _c.mutation.McpAccess(); ok {
 		_spec.SetField(group.FieldMcpAccess, field.TypeString, value)

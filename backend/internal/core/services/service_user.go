@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/regional"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/scopes"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authroles"
@@ -46,6 +47,8 @@ const PasswordMinLength = 6
 type UserService struct {
 	repos  *repo.AllRepos
 	mailer *mailer.Mailer
+	// isCurrency reports whether a currency code is supported. Nil accepts none.
+	isCurrency func(string) bool
 }
 
 type (
@@ -54,6 +57,13 @@ type (
 		Name       string `json:"name"`
 		Email      string `json:"email"`
 		Password   string `json:"password"`
+		// Optional regional hints, normally taken from the browser. Invalid
+		// values are ignored. Currency and Timezone only apply when the
+		// registration creates a new collection.
+		Country  string `json:"country,omitempty"`
+		Locale   string `json:"locale,omitempty"`
+		Timezone string `json:"timezone,omitempty"`
+		Currency string `json:"currency,omitempty"`
 	}
 	UserAuthTokenDetail struct {
 		Raw             string    `json:"raw"`
@@ -137,6 +147,23 @@ func (svc *UserService) RegisterUser(ctx context.Context, data UserRegistration,
 		}
 		groupSpan.SetAttributes(attribute.String("group.id", group.ID.String()))
 		groupSpan.End()
+
+		// Seed the new collection's currency and timezone from the sign-up hints.
+		// They are suggestions, so a failure here must not block registration.
+		if cur, tz := svc.supportedCurrency(data.Currency), regional.Timezone(data.Timezone); cur != "" || tz != "" {
+			upd := repo.GroupUpdate{Name: group.Name, Currency: group.Currency}
+			if cur != "" {
+				upd.Currency = cur
+			}
+			if tz != "" {
+				upd.Timezone = &tz
+			}
+			if g, uerr := svc.repos.Groups.GroupUpdate(ctx, group.ID, upd); uerr != nil {
+				log.Warn().Err(uerr).Msg("failed to apply regional defaults to new group")
+			} else {
+				group = g
+			}
+		}
 	default:
 		joinCtx, joinSpan := entityServiceTracer().Start(ctx, "service.UserService.RegisterUser.joinGroup")
 		log.Debug().Msg("joining existing group")
@@ -192,6 +219,9 @@ func (svc *UserService) RegisterUser(ctx context.Context, data UserRegistration,
 		IsSuperuser:    false,
 		DefaultGroupID: group.ID,
 		IsOwner:        creatingGroup,
+		Country:        regional.Country(data.Country),
+		Locale:         regional.Locale(data.Locale),
+		Timezone:       regional.Timezone(data.Timezone),
 	}
 
 	// Claim an invitation use before the user and membership are committed. The
@@ -300,6 +330,28 @@ func (svc *UserService) UpdateSelf(ctx context.Context, id uuid.UUID, data repo.
 	ctx, span := entityServiceTracer().Start(ctx, "service.UserService.UpdateSelf",
 		trace.WithAttributes(attribute.String("user.id", id.String())))
 	defer span.End()
+
+	// An explicit edit is rejected when invalid, unlike sign-up hints, which are
+	// silently dropped. An empty string clears the preference.
+	for _, f := range []struct {
+		name string
+		val  *string
+		norm func(string) string
+	}{
+		{"country", data.Country, regional.Country},
+		{"timezone", data.Timezone, regional.Timezone},
+		{"locale", data.Locale, regional.Locale},
+	} {
+		if f.val == nil || *f.val == "" {
+			continue
+		}
+		n := f.norm(*f.val)
+		if n == "" {
+			return repo.UserOut{}, validate.NewRequestError(
+				fmt.Errorf("invalid %s", f.name), http.StatusUnprocessableEntity)
+		}
+		*f.val = n
+	}
 
 	err := svc.repos.Users.Update(ctx, id, data)
 	if err != nil {
@@ -968,4 +1020,14 @@ func resolveAPIKeyScopes(in repo.APIKeyCreate) ([]string, error) {
 		return nil, validate.NewRequestError(err, http.StatusUnprocessableEntity)
 	}
 	return out, nil
+}
+
+// supportedCurrency returns the upper-case code when it is a supported
+// currency, or "" otherwise.
+func (svc *UserService) supportedCurrency(code string) string {
+	code = strings.ToUpper(strings.TrimSpace(code))
+	if code == "" || svc.isCurrency == nil || !svc.isCurrency(code) {
+		return ""
+	}
+	return code
 }

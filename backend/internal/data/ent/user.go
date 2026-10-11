@@ -43,6 +43,12 @@ type User struct {
 	DefaultGroupID *uuid.UUID `json:"default_group_id,omitempty"`
 	// Settings holds the value of the "settings" field.
 	Settings map[string]interface{} `json:"settings,omitempty"`
+	// Country holds the value of the "country" field.
+	Country string `json:"country,omitempty"`
+	// Timezone holds the value of the "timezone" field.
+	Timezone string `json:"timezone,omitempty"`
+	// Locale holds the value of the "locale" field.
+	Locale string `json:"locale,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
 	Edges        UserEdges `json:"edges"`
@@ -144,7 +150,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case user.FieldIsSuperuser, user.FieldSuperuser:
 			values[i] = new(sql.NullBool)
-		case user.FieldName, user.FieldEmail, user.FieldPassword, user.FieldOidcIssuer, user.FieldOidcSubject:
+		case user.FieldName, user.FieldEmail, user.FieldPassword, user.FieldOidcIssuer, user.FieldOidcSubject, user.FieldCountry, user.FieldTimezone, user.FieldLocale:
 			values[i] = new(sql.NullString)
 		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldActivatedOn:
 			values[i] = new(sql.NullTime)
@@ -248,6 +254,24 @@ func (_m *User) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &_m.Settings); err != nil {
 					return fmt.Errorf("unmarshal field settings: %w", err)
 				}
+			}
+		case user.FieldCountry:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field country", values[i])
+			} else if value.Valid {
+				_m.Country = value.String
+			}
+		case user.FieldTimezone:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field timezone", values[i])
+			} else if value.Valid {
+				_m.Timezone = value.String
+			}
+		case user.FieldLocale:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field locale", values[i])
+			} else if value.Valid {
+				_m.Locale = value.String
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -360,6 +384,15 @@ func (_m *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("settings=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Settings))
+	builder.WriteString(", ")
+	builder.WriteString("country=")
+	builder.WriteString(_m.Country)
+	builder.WriteString(", ")
+	builder.WriteString("timezone=")
+	builder.WriteString(_m.Timezone)
+	builder.WriteString(", ")
+	builder.WriteString("locale=")
+	builder.WriteString(_m.Locale)
 	builder.WriteByte(')')
 	return builder.String()
 }

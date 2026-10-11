@@ -3230,6 +3230,9 @@ components:
         name:
           description: Name holds the value of the "name" field.
           type: string
+        timezone:
+          description: Timezone holds the value of the "timezone" field.
+          type: string
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
           type: string
@@ -3744,6 +3747,9 @@ components:
         activated_on:
           description: ActivatedOn holds the value of the "activated_on" field.
           type: string
+        country:
+          description: Country holds the value of the "country" field.
+          type: string
         created_at:
           description: CreatedAt holds the value of the "created_at" field.
           type: string
@@ -3766,6 +3772,9 @@ components:
         is_superuser:
           description: IsSuperuser holds the value of the "is_superuser" field.
           type: boolean
+        locale:
+          description: Locale holds the value of the "locale" field.
+          type: string
         name:
           description: Name holds the value of the "name" field.
           type: string
@@ -3782,6 +3791,9 @@ components:
         superuser:
           description: Superuser holds the value of the "superuser" field.
           type: boolean
+        timezone:
+          description: Timezone holds the value of the "timezone" field.
+          type: string
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
           type: string
@@ -5048,6 +5060,9 @@ components:
           type: string
         name:
           type: string
+        timezone:
+          description: Timezone is the IANA zone the collection's alerts are scheduled in.
+          type: string
         updatedAt:
           type: string
     repo.GroupInvitation:
@@ -5088,6 +5103,11 @@ components:
           nullable: true
         name:
           type: string
+        timezone:
+          description: Timezone is left unchanged when nil.
+          type: string
+          x-omitempty: true
+          nullable: true
     repo.ItemAttachment:
       type: object
       properties:
@@ -5424,6 +5444,8 @@ components:
     repo.UserOut:
       type: object
       properties:
+        country:
+          type: string
         defaultGroupId:
           type: string
         email:
@@ -5436,11 +5458,15 @@ components:
           type: string
         isSuperuser:
           type: boolean
+        locale:
+          type: string
         name:
           type: string
         oidcIssuer:
           type: string
         oidcSubject:
+          type: string
+        timezone:
           type: string
     repo.UserSummary:
       type: object
@@ -5454,10 +5480,27 @@ components:
     repo.UserUpdate:
       type: object
       properties:
+        country:
+          description: >-
+            Regional preferences. Nil leaves the stored value unchanged; an
+            empty
+
+            string clears it.
+          type: string
+          x-omitempty: true
+          nullable: true
         email:
           type: string
+        locale:
+          type: string
+          x-omitempty: true
+          nullable: true
         name:
           type: string
+        timezone:
+          type: string
+          x-omitempty: true
+          nullable: true
     repo.ValueOverTime:
       type: object
       properties:
@@ -5515,11 +5558,23 @@ components:
     services.UserRegistration:
       type: object
       properties:
+        country:
+          description: |-
+            Optional regional hints, normally taken from the browser. Invalid
+            values are ignored. Currency and Timezone only apply when the
+            registration creates a new collection.
+          type: string
+        currency:
+          type: string
         email:
+          type: string
+        locale:
           type: string
         name:
           type: string
         password:
+          type: string
+        timezone:
           type: string
         token:
           type: string

@@ -73,6 +73,20 @@ func (_u *GroupUpdate) SetNillableCurrency(v *string) *GroupUpdate {
 	return _u
 }
 
+// SetTimezone sets the "timezone" field.
+func (_u *GroupUpdate) SetTimezone(v string) *GroupUpdate {
+	_u.mutation.SetTimezone(v)
+	return _u
+}
+
+// SetNillableTimezone sets the "timezone" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableTimezone(v *string) *GroupUpdate {
+	if v != nil {
+		_u.SetTimezone(*v)
+	}
+	return _u
+}
+
 // SetMcpAccess sets the "mcp_access" field.
 func (_u *GroupUpdate) SetMcpAccess(v string) *GroupUpdate {
 	_u.mutation.SetMcpAccess(v)
@@ -495,6 +509,11 @@ func (_u *GroupUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Group.name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Timezone(); ok {
+		if err := group.TimezoneValidator(v); err != nil {
+			return &ValidationError{Name: "timezone", err: fmt.Errorf(`ent: validator failed for field "Group.timezone": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -518,6 +537,9 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Currency(); ok {
 		_spec.SetField(group.FieldCurrency, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Timezone(); ok {
+		_spec.SetField(group.FieldTimezone, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.McpAccess(); ok {
 		_spec.SetField(group.FieldMcpAccess, field.TypeString, value)
@@ -1038,6 +1060,20 @@ func (_u *GroupUpdateOne) SetNillableCurrency(v *string) *GroupUpdateOne {
 	return _u
 }
 
+// SetTimezone sets the "timezone" field.
+func (_u *GroupUpdateOne) SetTimezone(v string) *GroupUpdateOne {
+	_u.mutation.SetTimezone(v)
+	return _u
+}
+
+// SetNillableTimezone sets the "timezone" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableTimezone(v *string) *GroupUpdateOne {
+	if v != nil {
+		_u.SetTimezone(*v)
+	}
+	return _u
+}
+
 // SetMcpAccess sets the "mcp_access" field.
 func (_u *GroupUpdateOne) SetMcpAccess(v string) *GroupUpdateOne {
 	_u.mutation.SetMcpAccess(v)
@@ -1473,6 +1509,11 @@ func (_u *GroupUpdateOne) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Group.name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Timezone(); ok {
+		if err := group.TimezoneValidator(v); err != nil {
+			return &ValidationError{Name: "timezone", err: fmt.Errorf(`ent: validator failed for field "Group.timezone": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -1513,6 +1554,9 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if value, ok := _u.mutation.Currency(); ok {
 		_spec.SetField(group.FieldCurrency, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Timezone(); ok {
+		_spec.SetField(group.FieldTimezone, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.McpAccess(); ok {
 		_spec.SetField(group.FieldMcpAccess, field.TypeString, value)

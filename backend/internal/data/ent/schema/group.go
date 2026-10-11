@@ -29,6 +29,12 @@ func (Group) Fields() []ent.Field {
 			NotEmpty(),
 		field.String("currency").
 			Default("usd"),
+		// timezone is the IANA zone the collection's alerts and digests are
+		// scheduled in. Instants are always stored in UTC; this only decides
+		// what "08:00" means.
+		field.String("timezone").
+			MaxLen(64).
+			Default("UTC"),
 		// mcp_access is the ceiling a collection owner sets for AI assistants
 		// connected over MCP: off (default), read, write or full. See
 		// scopes.Ceiling.

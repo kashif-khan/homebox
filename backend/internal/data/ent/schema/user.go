@@ -56,6 +56,18 @@ func (User) Fields() []ent.Field {
 			Nillable(),
 		field.JSON("settings", map[string]interface{}{}).
 			Optional(),
+		// Regional preferences, pre-filled from the browser at sign-up and
+		// editable afterwards. country is ISO 3166-1 alpha-2, timezone an IANA
+		// zone name and locale a BCP 47 tag. Empty means "not set".
+		field.String("country").
+			MaxLen(2).
+			Default(""),
+		field.String("timezone").
+			MaxLen(64).
+			Default(""),
+		field.String("locale").
+			MaxLen(35).
+			Default(""),
 	}
 }
 

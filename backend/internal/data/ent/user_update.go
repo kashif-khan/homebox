@@ -209,6 +209,48 @@ func (_u *UserUpdate) ClearSettings() *UserUpdate {
 	return _u
 }
 
+// SetCountry sets the "country" field.
+func (_u *UserUpdate) SetCountry(v string) *UserUpdate {
+	_u.mutation.SetCountry(v)
+	return _u
+}
+
+// SetNillableCountry sets the "country" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableCountry(v *string) *UserUpdate {
+	if v != nil {
+		_u.SetCountry(*v)
+	}
+	return _u
+}
+
+// SetTimezone sets the "timezone" field.
+func (_u *UserUpdate) SetTimezone(v string) *UserUpdate {
+	_u.mutation.SetTimezone(v)
+	return _u
+}
+
+// SetNillableTimezone sets the "timezone" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableTimezone(v *string) *UserUpdate {
+	if v != nil {
+		_u.SetTimezone(*v)
+	}
+	return _u
+}
+
+// SetLocale sets the "locale" field.
+func (_u *UserUpdate) SetLocale(v string) *UserUpdate {
+	_u.mutation.SetLocale(v)
+	return _u
+}
+
+// SetNillableLocale sets the "locale" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableLocale(v *string) *UserUpdate {
+	if v != nil {
+		_u.SetLocale(*v)
+	}
+	return _u
+}
+
 // AddGroupIDs adds the "groups" edge to the Group entity by IDs.
 func (_u *UserUpdate) AddGroupIDs(ids ...uuid.UUID) *UserUpdate {
 	_u.mutation.AddGroupIDs(ids...)
@@ -483,6 +525,21 @@ func (_u *UserUpdate) check() error {
 			return &ValidationError{Name: "password", err: fmt.Errorf(`ent: validator failed for field "User.password": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Country(); ok {
+		if err := user.CountryValidator(v); err != nil {
+			return &ValidationError{Name: "country", err: fmt.Errorf(`ent: validator failed for field "User.country": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Timezone(); ok {
+		if err := user.TimezoneValidator(v); err != nil {
+			return &ValidationError{Name: "timezone", err: fmt.Errorf(`ent: validator failed for field "User.timezone": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Locale(); ok {
+		if err := user.LocaleValidator(v); err != nil {
+			return &ValidationError{Name: "locale", err: fmt.Errorf(`ent: validator failed for field "User.locale": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -548,6 +605,15 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.SettingsCleared() {
 		_spec.ClearField(user.FieldSettings, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.Country(); ok {
+		_spec.SetField(user.FieldCountry, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Timezone(); ok {
+		_spec.SetField(user.FieldTimezone, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Locale(); ok {
+		_spec.SetField(user.FieldLocale, field.TypeString, value)
 	}
 	if _u.mutation.GroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1025,6 +1091,48 @@ func (_u *UserUpdateOne) ClearSettings() *UserUpdateOne {
 	return _u
 }
 
+// SetCountry sets the "country" field.
+func (_u *UserUpdateOne) SetCountry(v string) *UserUpdateOne {
+	_u.mutation.SetCountry(v)
+	return _u
+}
+
+// SetNillableCountry sets the "country" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableCountry(v *string) *UserUpdateOne {
+	if v != nil {
+		_u.SetCountry(*v)
+	}
+	return _u
+}
+
+// SetTimezone sets the "timezone" field.
+func (_u *UserUpdateOne) SetTimezone(v string) *UserUpdateOne {
+	_u.mutation.SetTimezone(v)
+	return _u
+}
+
+// SetNillableTimezone sets the "timezone" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableTimezone(v *string) *UserUpdateOne {
+	if v != nil {
+		_u.SetTimezone(*v)
+	}
+	return _u
+}
+
+// SetLocale sets the "locale" field.
+func (_u *UserUpdateOne) SetLocale(v string) *UserUpdateOne {
+	_u.mutation.SetLocale(v)
+	return _u
+}
+
+// SetNillableLocale sets the "locale" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableLocale(v *string) *UserUpdateOne {
+	if v != nil {
+		_u.SetLocale(*v)
+	}
+	return _u
+}
+
 // AddGroupIDs adds the "groups" edge to the Group entity by IDs.
 func (_u *UserUpdateOne) AddGroupIDs(ids ...uuid.UUID) *UserUpdateOne {
 	_u.mutation.AddGroupIDs(ids...)
@@ -1312,6 +1420,21 @@ func (_u *UserUpdateOne) check() error {
 			return &ValidationError{Name: "password", err: fmt.Errorf(`ent: validator failed for field "User.password": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Country(); ok {
+		if err := user.CountryValidator(v); err != nil {
+			return &ValidationError{Name: "country", err: fmt.Errorf(`ent: validator failed for field "User.country": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Timezone(); ok {
+		if err := user.TimezoneValidator(v); err != nil {
+			return &ValidationError{Name: "timezone", err: fmt.Errorf(`ent: validator failed for field "User.timezone": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Locale(); ok {
+		if err := user.LocaleValidator(v); err != nil {
+			return &ValidationError{Name: "locale", err: fmt.Errorf(`ent: validator failed for field "User.locale": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -1394,6 +1517,15 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if _u.mutation.SettingsCleared() {
 		_spec.ClearField(user.FieldSettings, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.Country(); ok {
+		_spec.SetField(user.FieldCountry, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Timezone(); ok {
+		_spec.SetField(user.FieldTimezone, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Locale(); ok {
+		_spec.SetField(user.FieldLocale, field.TypeString, value)
 	}
 	if _u.mutation.GroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{

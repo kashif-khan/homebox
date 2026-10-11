@@ -4920,6 +4920,10 @@ const docTemplate = `{
                     "description": "Name holds the value of the \"name\" field.",
                     "type": "string"
                 },
+                "timezone": {
+                    "description": "Timezone holds the value of the \"timezone\" field.",
+                    "type": "string"
+                },
                 "updated_at": {
                     "description": "UpdatedAt holds the value of the \"updated_at\" field.",
                     "type": "string"
@@ -5661,6 +5665,10 @@ const docTemplate = `{
                     "description": "ActivatedOn holds the value of the \"activated_on\" field.",
                     "type": "string"
                 },
+                "country": {
+                    "description": "Country holds the value of the \"country\" field.",
+                    "type": "string"
+                },
                 "created_at": {
                     "description": "CreatedAt holds the value of the \"created_at\" field.",
                     "type": "string"
@@ -5689,6 +5697,10 @@ const docTemplate = `{
                     "description": "IsSuperuser holds the value of the \"is_superuser\" field.",
                     "type": "boolean"
                 },
+                "locale": {
+                    "description": "Locale holds the value of the \"locale\" field.",
+                    "type": "string"
+                },
                 "name": {
                     "description": "Name holds the value of the \"name\" field.",
                     "type": "string"
@@ -5709,6 +5721,10 @@ const docTemplate = `{
                 "superuser": {
                     "description": "Superuser holds the value of the \"superuser\" field.",
                     "type": "boolean"
+                },
+                "timezone": {
+                    "description": "Timezone holds the value of the \"timezone\" field.",
+                    "type": "string"
                 },
                 "updated_at": {
                     "description": "UpdatedAt holds the value of the \"updated_at\" field.",
@@ -7378,6 +7394,10 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "timezone": {
+                    "description": "Timezone is the IANA zone the collection's alerts are scheduled in.",
+                    "type": "string"
+                },
                 "updatedAt": {
                     "type": "string"
                 }
@@ -7437,6 +7457,12 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "timezone": {
+                    "description": "Timezone is left unchanged when nil.",
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
                 }
             }
         },
@@ -7941,6 +7967,9 @@ const docTemplate = `{
         "repo.UserOut": {
             "type": "object",
             "properties": {
+                "country": {
+                    "type": "string"
+                },
                 "defaultGroupId": {
                     "type": "string"
                 },
@@ -7959,6 +7988,9 @@ const docTemplate = `{
                 "isSuperuser": {
                     "type": "boolean"
                 },
+                "locale": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -7966,6 +7998,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "oidcSubject": {
+                    "type": "string"
+                },
+                "timezone": {
                     "type": "string"
                 }
             }
@@ -7987,11 +8022,27 @@ const docTemplate = `{
         "repo.UserUpdate": {
             "type": "object",
             "properties": {
+                "country": {
+                    "description": "Regional preferences. Nil leaves the stored value unchanged; an empty\nstring clears it.",
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
                 "email": {
                     "type": "string"
                 },
+                "locale": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
                 "name": {
                     "type": "string"
+                },
+                "timezone": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
                 }
             }
         },
@@ -8078,13 +8129,26 @@ const docTemplate = `{
         "services.UserRegistration": {
             "type": "object",
             "properties": {
+                "country": {
+                    "description": "Optional regional hints, normally taken from the browser. Invalid\nvalues are ignored. Currency and Timezone only apply when the\nregistration creates a new collection.",
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
                 "email": {
+                    "type": "string"
+                },
+                "locale": {
                     "type": "string"
                 },
                 "name": {
                     "type": "string"
                 },
                 "password": {
+                    "type": "string"
+                },
+                "timezone": {
                     "type": "string"
                 },
                 "token": {

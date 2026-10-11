@@ -23,6 +23,8 @@ const (
 	FieldName = "name"
 	// FieldCurrency holds the string denoting the currency field in the database.
 	FieldCurrency = "currency"
+	// FieldTimezone holds the string denoting the timezone field in the database.
+	FieldTimezone = "timezone"
 	// FieldMcpAccess holds the string denoting the mcp_access field in the database.
 	FieldMcpAccess = "mcp_access"
 	// EdgeUsers holds the string denoting the users edge name in mutations.
@@ -133,6 +135,7 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldName,
 	FieldCurrency,
+	FieldTimezone,
 	FieldMcpAccess,
 }
 
@@ -163,6 +166,10 @@ var (
 	NameValidator func(string) error
 	// DefaultCurrency holds the default value on creation for the "currency" field.
 	DefaultCurrency string
+	// DefaultTimezone holds the default value on creation for the "timezone" field.
+	DefaultTimezone string
+	// TimezoneValidator is a validator for the "timezone" field. It is called by the builders before save.
+	TimezoneValidator func(string) error
 	// DefaultMcpAccess holds the default value on creation for the "mcp_access" field.
 	DefaultMcpAccess string
 	// DefaultID holds the default value on creation for the "id" field.
@@ -195,6 +202,11 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByCurrency orders the results by the currency field.
 func ByCurrency(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCurrency, opts...).ToFunc()
+}
+
+// ByTimezone orders the results by the timezone field.
+func ByTimezone(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTimezone, opts...).ToFunc()
 }
 
 // ByMcpAccess orders the results by the mcp_access field.

@@ -111,6 +111,21 @@ func DefaultGroupID(v uuid.UUID) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldDefaultGroupID, v))
 }
 
+// Country applies equality check predicate on the "country" field. It's identical to CountryEQ.
+func Country(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldCountry, v))
+}
+
+// Timezone applies equality check predicate on the "timezone" field. It's identical to TimezoneEQ.
+func Timezone(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTimezone, v))
+}
+
+// Locale applies equality check predicate on the "locale" field. It's identical to LocaleEQ.
+func Locale(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldLocale, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldCreatedAt, v))
@@ -674,6 +689,201 @@ func SettingsIsNil() predicate.User {
 // SettingsNotNil applies the NotNil predicate on the "settings" field.
 func SettingsNotNil() predicate.User {
 	return predicate.User(sql.FieldNotNull(FieldSettings))
+}
+
+// CountryEQ applies the EQ predicate on the "country" field.
+func CountryEQ(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldCountry, v))
+}
+
+// CountryNEQ applies the NEQ predicate on the "country" field.
+func CountryNEQ(v string) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldCountry, v))
+}
+
+// CountryIn applies the In predicate on the "country" field.
+func CountryIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldIn(FieldCountry, vs...))
+}
+
+// CountryNotIn applies the NotIn predicate on the "country" field.
+func CountryNotIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldCountry, vs...))
+}
+
+// CountryGT applies the GT predicate on the "country" field.
+func CountryGT(v string) predicate.User {
+	return predicate.User(sql.FieldGT(FieldCountry, v))
+}
+
+// CountryGTE applies the GTE predicate on the "country" field.
+func CountryGTE(v string) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldCountry, v))
+}
+
+// CountryLT applies the LT predicate on the "country" field.
+func CountryLT(v string) predicate.User {
+	return predicate.User(sql.FieldLT(FieldCountry, v))
+}
+
+// CountryLTE applies the LTE predicate on the "country" field.
+func CountryLTE(v string) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldCountry, v))
+}
+
+// CountryContains applies the Contains predicate on the "country" field.
+func CountryContains(v string) predicate.User {
+	return predicate.User(sql.FieldContains(FieldCountry, v))
+}
+
+// CountryHasPrefix applies the HasPrefix predicate on the "country" field.
+func CountryHasPrefix(v string) predicate.User {
+	return predicate.User(sql.FieldHasPrefix(FieldCountry, v))
+}
+
+// CountryHasSuffix applies the HasSuffix predicate on the "country" field.
+func CountryHasSuffix(v string) predicate.User {
+	return predicate.User(sql.FieldHasSuffix(FieldCountry, v))
+}
+
+// CountryEqualFold applies the EqualFold predicate on the "country" field.
+func CountryEqualFold(v string) predicate.User {
+	return predicate.User(sql.FieldEqualFold(FieldCountry, v))
+}
+
+// CountryContainsFold applies the ContainsFold predicate on the "country" field.
+func CountryContainsFold(v string) predicate.User {
+	return predicate.User(sql.FieldContainsFold(FieldCountry, v))
+}
+
+// TimezoneEQ applies the EQ predicate on the "timezone" field.
+func TimezoneEQ(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTimezone, v))
+}
+
+// TimezoneNEQ applies the NEQ predicate on the "timezone" field.
+func TimezoneNEQ(v string) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldTimezone, v))
+}
+
+// TimezoneIn applies the In predicate on the "timezone" field.
+func TimezoneIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldIn(FieldTimezone, vs...))
+}
+
+// TimezoneNotIn applies the NotIn predicate on the "timezone" field.
+func TimezoneNotIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldTimezone, vs...))
+}
+
+// TimezoneGT applies the GT predicate on the "timezone" field.
+func TimezoneGT(v string) predicate.User {
+	return predicate.User(sql.FieldGT(FieldTimezone, v))
+}
+
+// TimezoneGTE applies the GTE predicate on the "timezone" field.
+func TimezoneGTE(v string) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldTimezone, v))
+}
+
+// TimezoneLT applies the LT predicate on the "timezone" field.
+func TimezoneLT(v string) predicate.User {
+	return predicate.User(sql.FieldLT(FieldTimezone, v))
+}
+
+// TimezoneLTE applies the LTE predicate on the "timezone" field.
+func TimezoneLTE(v string) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldTimezone, v))
+}
+
+// TimezoneContains applies the Contains predicate on the "timezone" field.
+func TimezoneContains(v string) predicate.User {
+	return predicate.User(sql.FieldContains(FieldTimezone, v))
+}
+
+// TimezoneHasPrefix applies the HasPrefix predicate on the "timezone" field.
+func TimezoneHasPrefix(v string) predicate.User {
+	return predicate.User(sql.FieldHasPrefix(FieldTimezone, v))
+}
+
+// TimezoneHasSuffix applies the HasSuffix predicate on the "timezone" field.
+func TimezoneHasSuffix(v string) predicate.User {
+	return predicate.User(sql.FieldHasSuffix(FieldTimezone, v))
+}
+
+// TimezoneEqualFold applies the EqualFold predicate on the "timezone" field.
+func TimezoneEqualFold(v string) predicate.User {
+	return predicate.User(sql.FieldEqualFold(FieldTimezone, v))
+}
+
+// TimezoneContainsFold applies the ContainsFold predicate on the "timezone" field.
+func TimezoneContainsFold(v string) predicate.User {
+	return predicate.User(sql.FieldContainsFold(FieldTimezone, v))
+}
+
+// LocaleEQ applies the EQ predicate on the "locale" field.
+func LocaleEQ(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldLocale, v))
+}
+
+// LocaleNEQ applies the NEQ predicate on the "locale" field.
+func LocaleNEQ(v string) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldLocale, v))
+}
+
+// LocaleIn applies the In predicate on the "locale" field.
+func LocaleIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldIn(FieldLocale, vs...))
+}
+
+// LocaleNotIn applies the NotIn predicate on the "locale" field.
+func LocaleNotIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldLocale, vs...))
+}
+
+// LocaleGT applies the GT predicate on the "locale" field.
+func LocaleGT(v string) predicate.User {
+	return predicate.User(sql.FieldGT(FieldLocale, v))
+}
+
+// LocaleGTE applies the GTE predicate on the "locale" field.
+func LocaleGTE(v string) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldLocale, v))
+}
+
+// LocaleLT applies the LT predicate on the "locale" field.
+func LocaleLT(v string) predicate.User {
+	return predicate.User(sql.FieldLT(FieldLocale, v))
+}
+
+// LocaleLTE applies the LTE predicate on the "locale" field.
+func LocaleLTE(v string) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldLocale, v))
+}
+
+// LocaleContains applies the Contains predicate on the "locale" field.
+func LocaleContains(v string) predicate.User {
+	return predicate.User(sql.FieldContains(FieldLocale, v))
+}
+
+// LocaleHasPrefix applies the HasPrefix predicate on the "locale" field.
+func LocaleHasPrefix(v string) predicate.User {
+	return predicate.User(sql.FieldHasPrefix(FieldLocale, v))
+}
+
+// LocaleHasSuffix applies the HasSuffix predicate on the "locale" field.
+func LocaleHasSuffix(v string) predicate.User {
+	return predicate.User(sql.FieldHasSuffix(FieldLocale, v))
+}
+
+// LocaleEqualFold applies the EqualFold predicate on the "locale" field.
+func LocaleEqualFold(v string) predicate.User {
+	return predicate.User(sql.FieldEqualFold(FieldLocale, v))
+}
+
+// LocaleContainsFold applies the ContainsFold predicate on the "locale" field.
+func LocaleContainsFold(v string) predicate.User {
+	return predicate.User(sql.FieldContainsFold(FieldLocale, v))
 }
 
 // HasGroups applies the HasEdge predicate on the "groups" edge.

@@ -576,6 +576,8 @@ export interface EntGroup {
   mcp_access: string;
   /** Name holds the value of the "name" field. */
   name: string;
+  /** Timezone holds the value of the "timezone" field. */
+  timezone: string;
   /** UpdatedAt holds the value of the "updated_at" field. */
   updated_at: string;
 }
@@ -906,6 +908,8 @@ export interface EntTemplateFieldEdges {
 export interface EntUser {
   /** ActivatedOn holds the value of the "activated_on" field. */
   activated_on: string;
+  /** Country holds the value of the "country" field. */
+  country: string;
   /** CreatedAt holds the value of the "created_at" field. */
   created_at: string;
   /** DefaultGroupID holds the value of the "default_group_id" field. */
@@ -921,6 +925,8 @@ export interface EntUser {
   id: string;
   /** IsSuperuser holds the value of the "is_superuser" field. */
   is_superuser: boolean;
+  /** Locale holds the value of the "locale" field. */
+  locale: string;
   /** Name holds the value of the "name" field. */
   name: string;
   /** OidcIssuer holds the value of the "oidc_issuer" field. */
@@ -931,6 +937,8 @@ export interface EntUser {
   settings: Record<string, any>;
   /** Superuser holds the value of the "superuser" field. */
   superuser: boolean;
+  /** Timezone holds the value of the "timezone" field. */
+  timezone: string;
   /** UpdatedAt holds the value of the "updated_at" field. */
   updated_at: string;
 }
@@ -1667,6 +1675,8 @@ export interface Group {
    */
   mcpAccess: string;
   name: string;
+  /** Timezone is the IANA zone the collection's alerts are scheduled in. */
+  timezone: string;
   updatedAt: Date | string;
 }
 
@@ -1691,6 +1701,8 @@ export interface GroupUpdate {
   /** MCPAccess is left unchanged when nil. */
   mcpAccess?: string | null;
   name: string;
+  /** Timezone is left unchanged when nil. */
+  timezone?: string | null;
 }
 
 export interface ItemAttachment {
@@ -1888,14 +1900,17 @@ export interface TreeItem {
 }
 
 export interface UserOut {
+  country: string;
   defaultGroupId: string;
   email: string;
   groupIds: string[];
   id: string;
   isSuperuser: boolean;
+  locale: string;
   name: string;
   oidcIssuer: string;
   oidcSubject: string;
+  timezone: string;
 }
 
 export interface UserSummary {
@@ -1905,8 +1920,15 @@ export interface UserSummary {
 }
 
 export interface UserUpdate {
+  /**
+   * Regional preferences. Nil leaves the stored value unchanged; an empty
+   * string clears it.
+   */
+  country?: string | null;
   email: string;
+  locale?: string | null;
   name: string;
+  timezone?: string | null;
 }
 
 export interface ValueOverTime {
@@ -1946,9 +1968,18 @@ export interface TestResult {
 }
 
 export interface UserRegistration {
+  /**
+   * Optional regional hints, normally taken from the browser. Invalid
+   * values are ignored. Currency and Timezone only apply when the
+   * registration creates a new collection.
+   */
+  country: string;
+  currency: string;
   email: string;
+  locale: string;
   name: string;
   password: string;
+  timezone: string;
   token: string;
 }
 

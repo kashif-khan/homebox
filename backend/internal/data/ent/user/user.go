@@ -39,6 +39,12 @@ const (
 	FieldDefaultGroupID = "default_group_id"
 	// FieldSettings holds the string denoting the settings field in the database.
 	FieldSettings = "settings"
+	// FieldCountry holds the string denoting the country field in the database.
+	FieldCountry = "country"
+	// FieldTimezone holds the string denoting the timezone field in the database.
+	FieldTimezone = "timezone"
+	// FieldLocale holds the string denoting the locale field in the database.
+	FieldLocale = "locale"
 	// EdgeGroups holds the string denoting the groups edge name in mutations.
 	EdgeGroups = "groups"
 	// EdgeAuthTokens holds the string denoting the auth_tokens edge name in mutations.
@@ -119,6 +125,9 @@ var Columns = []string{
 	FieldOidcSubject,
 	FieldDefaultGroupID,
 	FieldSettings,
+	FieldCountry,
+	FieldTimezone,
+	FieldLocale,
 }
 
 var (
@@ -154,6 +163,18 @@ var (
 	DefaultIsSuperuser bool
 	// DefaultSuperuser holds the default value on creation for the "superuser" field.
 	DefaultSuperuser bool
+	// DefaultCountry holds the default value on creation for the "country" field.
+	DefaultCountry string
+	// CountryValidator is a validator for the "country" field. It is called by the builders before save.
+	CountryValidator func(string) error
+	// DefaultTimezone holds the default value on creation for the "timezone" field.
+	DefaultTimezone string
+	// TimezoneValidator is a validator for the "timezone" field. It is called by the builders before save.
+	TimezoneValidator func(string) error
+	// DefaultLocale holds the default value on creation for the "locale" field.
+	DefaultLocale string
+	// LocaleValidator is a validator for the "locale" field. It is called by the builders before save.
+	LocaleValidator func(string) error
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -219,6 +240,21 @@ func ByOidcSubject(opts ...sql.OrderTermOption) OrderOption {
 // ByDefaultGroupID orders the results by the default_group_id field.
 func ByDefaultGroupID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDefaultGroupID, opts...).ToFunc()
+}
+
+// ByCountry orders the results by the country field.
+func ByCountry(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCountry, opts...).ToFunc()
+}
+
+// ByTimezone orders the results by the timezone field.
+func ByTimezone(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTimezone, opts...).ToFunc()
+}
+
+// ByLocale orders the results by the locale field.
+func ByLocale(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLocale, opts...).ToFunc()
 }
 
 // ByGroupsCount orders the results by groups count.

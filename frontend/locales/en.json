@@ -1238,5 +1238,19 @@
             "missing_request": "This page needs to be opened from an AI assistant's connection flow.",
             "expired": "This request has expired or was already handled. Start the connection again from the assistant."
         }
+    },
+    "regional": {
+        "country": "Country",
+        "currency": "Currency",
+        "timezone": "Time zone",
+        "not_set": "Not set",
+        "section_title": "Regional settings",
+        "detected_hint": "Pre-filled from your browser. Change anything that is wrong.",
+        "timezone_hint": "Alerts are scheduled in this time zone. Example: Europe/London.",
+        "profile_sub": "Used to pre-fill new collections and to schedule alerts.",
+        "toast": {
+            "saved": "Regional settings saved",
+            "failed": "Could not save regional settings"
+        }
     }
 }

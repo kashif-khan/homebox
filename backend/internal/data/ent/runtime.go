@@ -656,8 +656,14 @@ func init() {
 	groupDescCurrency := groupFields[1].Descriptor()
 	// group.DefaultCurrency holds the default value on creation for the currency field.
 	group.DefaultCurrency = groupDescCurrency.Default.(string)
+	// groupDescTimezone is the schema descriptor for timezone field.
+	groupDescTimezone := groupFields[2].Descriptor()
+	// group.DefaultTimezone holds the default value on creation for the timezone field.
+	group.DefaultTimezone = groupDescTimezone.Default.(string)
+	// group.TimezoneValidator is a validator for the "timezone" field. It is called by the builders before save.
+	group.TimezoneValidator = groupDescTimezone.Validators[0].(func(string) error)
 	// groupDescMcpAccess is the schema descriptor for mcp_access field.
-	groupDescMcpAccess := groupFields[2].Descriptor()
+	groupDescMcpAccess := groupFields[3].Descriptor()
 	// group.DefaultMcpAccess holds the default value on creation for the mcp_access field.
 	group.DefaultMcpAccess = groupDescMcpAccess.Default.(string)
 	// groupDescID is the schema descriptor for id field.
@@ -1151,6 +1157,24 @@ func init() {
 	userDescSuperuser := userFields[4].Descriptor()
 	// user.DefaultSuperuser holds the default value on creation for the superuser field.
 	user.DefaultSuperuser = userDescSuperuser.Default.(bool)
+	// userDescCountry is the schema descriptor for country field.
+	userDescCountry := userFields[10].Descriptor()
+	// user.DefaultCountry holds the default value on creation for the country field.
+	user.DefaultCountry = userDescCountry.Default.(string)
+	// user.CountryValidator is a validator for the "country" field. It is called by the builders before save.
+	user.CountryValidator = userDescCountry.Validators[0].(func(string) error)
+	// userDescTimezone is the schema descriptor for timezone field.
+	userDescTimezone := userFields[11].Descriptor()
+	// user.DefaultTimezone holds the default value on creation for the timezone field.
+	user.DefaultTimezone = userDescTimezone.Default.(string)
+	// user.TimezoneValidator is a validator for the "timezone" field. It is called by the builders before save.
+	user.TimezoneValidator = userDescTimezone.Validators[0].(func(string) error)
+	// userDescLocale is the schema descriptor for locale field.
+	userDescLocale := userFields[12].Descriptor()
+	// user.DefaultLocale holds the default value on creation for the locale field.
+	user.DefaultLocale = userDescLocale.Default.(string)
+	// user.LocaleValidator is a validator for the "locale" field. It is called by the builders before save.
+	user.LocaleValidator = userDescLocale.Validators[0].(func(string) error)
 	// userDescID is the schema descriptor for id field.
 	userDescID := userMixinFields0[0].Descriptor()
 	// user.DefaultID holds the default value on creation for the id field.

@@ -9,12 +9,17 @@ import type {
   OAuthGrantOut,
   OauthserverConsentInfo,
   UserOut,
+  UserUpdate,
 } from "../types/data-contracts";
 import type { Result } from "../types/non-generated";
 
 export class UserApi extends BaseAPI {
   public self() {
     return this.http.get<Result<UserOut>>({ url: route("/users/self") });
+  }
+
+  public update(body: UserUpdate) {
+    return this.http.put<UserUpdate, Result<UserOut>>({ url: route("/users/self"), body });
   }
 
   public logout() {
