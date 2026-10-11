@@ -2,11 +2,20 @@
   <div class="flex flex-col gap-1">
     <Label :for="id" class="px-1">
       {{ $t("components.location.selector.parent_location") }}
+      <span v-if="required" class="text-destructive" aria-hidden="true" title="Required">*</span>
     </Label>
 
     <Popover v-model:open="open">
       <PopoverTrigger as-child>
-        <Button :id="id" variant="outline" role="combobox" :aria-expanded="open" class="w-full justify-between">
+        <Button
+          :id="id"
+          variant="outline"
+          role="combobox"
+          :aria-expanded="open"
+          :aria-invalid="error ? true : undefined"
+          class="w-full justify-between"
+          :class="error ? 'border-destructive ring-1 ring-destructive' : ''"
+        >
           <span class="min-w-0 flex-auto truncate text-left">
             {{ value && value.name ? value.name : $t("components.location.selector.select_location") }}
           </span>
@@ -57,6 +66,7 @@
         </Command>
       </PopoverContent>
     </Popover>
+    <p v-if="error" class="px-1 text-xs text-destructive" role="alert">{{ error }}</p>
   </div>
 </template>
 
@@ -74,6 +84,10 @@
   type Props = {
     modelValue?: EntitySummary | null;
     currentLocation?: EntitySummary;
+    /** Shows the red asterisk. */
+    required?: boolean;
+    /** A message shown under the selector in red. */
+    error?: string;
   };
 
   const props = defineProps<Props>();
