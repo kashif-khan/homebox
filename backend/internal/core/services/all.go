@@ -3,6 +3,7 @@ package services
 
 import (
 	"github.com/sysadminsmedia/homebox/backend/internal/core/currencies"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/fieldtypes"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services/reporting/eventbus"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/repo"
@@ -141,6 +142,7 @@ func New(repos *repo.AllRepos, opts ...OptionsFunc) *AllServices {
 	backupSvc.secrets = box
 
 	currencyRegistry := currencies.NewCurrencyService(options.currencies)
+	fieldtypes.UseCurrencies(options.currencies)
 
 	return &AllServices{
 		User:  &UserService{repos: repos, mailer: options.mailer, isCurrency: currencyRegistry.IsSupported},

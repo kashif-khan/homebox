@@ -306,11 +306,15 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString, Size: 255},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 1000},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"text", "number", "boolean", "time"}},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"text", "number", "boolean", "time", "decimal", "currency", "date", "datetime", "url", "select"}},
 		{Name: "text_value", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "number_value", Type: field.TypeInt, Nullable: true},
 		{Name: "boolean_value", Type: field.TypeBool, Default: false},
 		{Name: "time_value", Type: field.TypeTime},
+		{Name: "decimal_value", Type: field.TypeFloat64, Nullable: true},
+		{Name: "currency_code", Type: field.TypeString, Size: 3, Default: ""},
+		{Name: "timezone", Type: field.TypeString, Size: 64, Default: ""},
+		{Name: "choices", Type: field.TypeJSON, Nullable: true},
 		{Name: "entity_fields", Type: field.TypeUUID, Nullable: true},
 	}
 	// EntityFieldsTable holds the schema information for the "entity_fields" table.
@@ -321,7 +325,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "entity_fields_entities_fields",
-				Columns:    []*schema.Column{EntityFieldsColumns[10]},
+				Columns:    []*schema.Column{EntityFieldsColumns[14]},
 				RefColumns: []*schema.Column{EntitiesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -771,11 +775,15 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString, Size: 255},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 1000},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"text", "number", "boolean", "time"}},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"text", "number", "boolean", "time", "decimal", "currency", "date", "datetime", "url", "select"}},
 		{Name: "text_value", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "number_value", Type: field.TypeInt, Nullable: true},
 		{Name: "boolean_value", Type: field.TypeBool, Default: false},
 		{Name: "time_value", Type: field.TypeTime},
+		{Name: "decimal_value", Type: field.TypeFloat64, Nullable: true},
+		{Name: "currency_code", Type: field.TypeString, Size: 3, Default: ""},
+		{Name: "timezone", Type: field.TypeString, Size: 64, Default: ""},
+		{Name: "choices", Type: field.TypeJSON, Nullable: true},
 		{Name: "entity_template_fields", Type: field.TypeUUID, Nullable: true},
 	}
 	// TemplateFieldsTable holds the schema information for the "template_fields" table.
@@ -786,7 +794,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "template_fields_entity_templates_fields",
-				Columns:    []*schema.Column{TemplateFieldsColumns[10]},
+				Columns:    []*schema.Column{TemplateFieldsColumns[14]},
 				RefColumns: []*schema.Column{EntityTemplatesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},

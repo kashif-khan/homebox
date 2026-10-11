@@ -1252,5 +1252,23 @@
             "saved": "Regional settings saved",
             "failed": "Could not save regional settings"
         }
+    },
+    "custom_fields": {
+        "type": "Type",
+        "pick_choice": "Pick one",
+        "choices": "Choices",
+        "choices_placeholder": "Choices, separated by commas",
+        "types": {
+            "text": "Text",
+            "number": "Whole number",
+            "decimal": "Decimal",
+            "currency": "Currency",
+            "boolean": "Yes / no",
+            "date": "Date",
+            "time": "Time",
+            "datetime": "Date and time",
+            "url": "Link",
+            "select": "Choice list"
+        }
     }
 }

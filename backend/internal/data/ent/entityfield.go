@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -37,6 +38,14 @@ type EntityField struct {
 	BooleanValue bool `json:"boolean_value,omitempty"`
 	// TimeValue holds the value of the "time_value" field.
 	TimeValue time.Time `json:"time_value,omitempty"`
+	// DecimalValue holds the value of the "decimal_value" field.
+	DecimalValue *float64 `json:"decimal_value,omitempty"`
+	// CurrencyCode holds the value of the "currency_code" field.
+	CurrencyCode string `json:"currency_code,omitempty"`
+	// Timezone holds the value of the "timezone" field.
+	Timezone string `json:"timezone,omitempty"`
+	// Choices holds the value of the "choices" field.
+	Choices []string `json:"choices,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the EntityFieldQuery when eager-loading is set.
 	Edges         EntityFieldEdges `json:"edges"`
@@ -69,11 +78,15 @@ func (*EntityField) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case entityfield.FieldChoices:
+			values[i] = new([]byte)
 		case entityfield.FieldBooleanValue:
 			values[i] = new(sql.NullBool)
+		case entityfield.FieldDecimalValue:
+			values[i] = new(sql.NullFloat64)
 		case entityfield.FieldNumberValue:
 			values[i] = new(sql.NullInt64)
-		case entityfield.FieldName, entityfield.FieldDescription, entityfield.FieldType, entityfield.FieldTextValue:
+		case entityfield.FieldName, entityfield.FieldDescription, entityfield.FieldType, entityfield.FieldTextValue, entityfield.FieldCurrencyCode, entityfield.FieldTimezone:
 			values[i] = new(sql.NullString)
 		case entityfield.FieldCreatedAt, entityfield.FieldUpdatedAt, entityfield.FieldTimeValue:
 			values[i] = new(sql.NullTime)
@@ -156,6 +169,33 @@ func (_m *EntityField) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.TimeValue = value.Time
 			}
+		case entityfield.FieldDecimalValue:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field decimal_value", values[i])
+			} else if value.Valid {
+				_m.DecimalValue = new(float64)
+				*_m.DecimalValue = value.Float64
+			}
+		case entityfield.FieldCurrencyCode:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field currency_code", values[i])
+			} else if value.Valid {
+				_m.CurrencyCode = value.String
+			}
+		case entityfield.FieldTimezone:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field timezone", values[i])
+			} else if value.Valid {
+				_m.Timezone = value.String
+			}
+		case entityfield.FieldChoices:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field choices", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Choices); err != nil {
+					return fmt.Errorf("unmarshal field choices: %w", err)
+				}
+			}
 		case entityfield.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field entity_fields", values[i])
@@ -230,6 +270,20 @@ func (_m *EntityField) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("time_value=")
 	builder.WriteString(_m.TimeValue.Format(time.ANSIC))
+	builder.WriteString(", ")
+	if v := _m.DecimalValue; v != nil {
+		builder.WriteString("decimal_value=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("currency_code=")
+	builder.WriteString(_m.CurrencyCode)
+	builder.WriteString(", ")
+	builder.WriteString("timezone=")
+	builder.WriteString(_m.Timezone)
+	builder.WriteString(", ")
+	builder.WriteString("choices=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Choices))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -4555,9 +4555,24 @@ const docTemplate = `{
                     "description": "BooleanValue holds the value of the \"boolean_value\" field.",
                     "type": "boolean"
                 },
+                "choices": {
+                    "description": "Choices holds the value of the \"choices\" field.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "created_at": {
                     "description": "CreatedAt holds the value of the \"created_at\" field.",
                     "type": "string"
+                },
+                "currency_code": {
+                    "description": "CurrencyCode holds the value of the \"currency_code\" field.",
+                    "type": "string"
+                },
+                "decimal_value": {
+                    "description": "DecimalValue holds the value of the \"decimal_value\" field.",
+                    "type": "number"
                 },
                 "description": {
                     "description": "Description holds the value of the \"description\" field.",
@@ -4589,6 +4604,10 @@ const docTemplate = `{
                 },
                 "time_value": {
                     "description": "TimeValue holds the value of the \"time_value\" field.",
+                    "type": "string"
+                },
+                "timezone": {
+                    "description": "Timezone holds the value of the \"timezone\" field.",
                     "type": "string"
                 },
                 "type": {
@@ -5595,9 +5614,24 @@ const docTemplate = `{
                     "description": "BooleanValue holds the value of the \"boolean_value\" field.",
                     "type": "boolean"
                 },
+                "choices": {
+                    "description": "Choices holds the value of the \"choices\" field.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "created_at": {
                     "description": "CreatedAt holds the value of the \"created_at\" field.",
                     "type": "string"
+                },
+                "currency_code": {
+                    "description": "CurrencyCode holds the value of the \"currency_code\" field.",
+                    "type": "string"
+                },
+                "decimal_value": {
+                    "description": "DecimalValue holds the value of the \"decimal_value\" field.",
+                    "type": "number"
                 },
                 "description": {
                     "description": "Description holds the value of the \"description\" field.",
@@ -5629,6 +5663,10 @@ const docTemplate = `{
                 },
                 "time_value": {
                     "description": "TimeValue holds the value of the \"time_value\" field.",
+                    "type": "string"
+                },
+                "timezone": {
+                    "description": "Timezone holds the value of the \"timezone\" field.",
                     "type": "string"
                 },
                 "type": {
@@ -5842,13 +5880,25 @@ const docTemplate = `{
                 "text",
                 "number",
                 "boolean",
-                "time"
+                "time",
+                "decimal",
+                "currency",
+                "date",
+                "datetime",
+                "url",
+                "select"
             ],
             "x-enum-varnames": [
                 "TypeText",
                 "TypeNumber",
                 "TypeBoolean",
-                "TypeTime"
+                "TypeTime",
+                "TypeDecimal",
+                "TypeCurrency",
+                "TypeDate",
+                "TypeDatetime",
+                "TypeURL",
+                "TypeSelect"
             ]
         },
         "export.Kind": {
@@ -6533,6 +6583,23 @@ const docTemplate = `{
                 "booleanValue": {
                     "type": "boolean"
                 },
+                "choices": {
+                    "description": "Choices lists the allowed values of a select field.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "currencyCode": {
+                    "description": "CurrencyCode is the ISO 4217 code of a currency field; NumberValue holds\nits amount in minor units.",
+                    "type": "string"
+                },
+                "decimalValue": {
+                    "description": "DecimalValue, TimeValue (a UTC instant) and the other typed values are\nderived from TextValue by the server.",
+                    "type": "number",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
                 "id": {
                     "type": "string"
                 },
@@ -6543,6 +6610,15 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "textValue": {
+                    "type": "string"
+                },
+                "timeValue": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "timezone": {
+                    "description": "Timezone is the IANA zone a datetime field was entered in.",
                     "type": "string"
                 },
                 "type": {
@@ -7888,6 +7964,21 @@ const docTemplate = `{
                 "booleanValue": {
                     "type": "boolean"
                 },
+                "choices": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "currencyCode": {
+                    "type": "string"
+                },
+                "decimalValue": {
+                    "description": "DecimalValue, TimeValue and the rest are derived from TextValue by the\nserver; see EntityFieldData.",
+                    "type": "number",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
                 "id": {
                     "type": "string"
                 },
@@ -7901,6 +7992,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "timeValue": {
+                    "type": "string",
+                    "x-nullable": true,
+                    "x-omitempty": true
+                },
+                "timezone": {
                     "type": "string"
                 },
                 "type": {
@@ -8162,13 +8258,25 @@ const docTemplate = `{
                 "text",
                 "number",
                 "boolean",
-                "time"
+                "time",
+                "decimal",
+                "currency",
+                "date",
+                "datetime",
+                "url",
+                "select"
             ],
             "x-enum-varnames": [
                 "TypeText",
                 "TypeNumber",
                 "TypeBoolean",
-                "TypeTime"
+                "TypeTime",
+                "TypeDecimal",
+                "TypeCurrency",
+                "TypeDate",
+                "TypeDatetime",
+                "TypeURL",
+                "TypeSelect"
             ]
         },
         "usergroup.Role": {

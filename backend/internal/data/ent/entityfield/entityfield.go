@@ -34,6 +34,14 @@ const (
 	FieldBooleanValue = "boolean_value"
 	// FieldTimeValue holds the string denoting the time_value field in the database.
 	FieldTimeValue = "time_value"
+	// FieldDecimalValue holds the string denoting the decimal_value field in the database.
+	FieldDecimalValue = "decimal_value"
+	// FieldCurrencyCode holds the string denoting the currency_code field in the database.
+	FieldCurrencyCode = "currency_code"
+	// FieldTimezone holds the string denoting the timezone field in the database.
+	FieldTimezone = "timezone"
+	// FieldChoices holds the string denoting the choices field in the database.
+	FieldChoices = "choices"
 	// EdgeEntity holds the string denoting the entity edge name in mutations.
 	EdgeEntity = "entity"
 	// Table holds the table name of the entityfield in the database.
@@ -59,6 +67,10 @@ var Columns = []string{
 	FieldNumberValue,
 	FieldBooleanValue,
 	FieldTimeValue,
+	FieldDecimalValue,
+	FieldCurrencyCode,
+	FieldTimezone,
+	FieldChoices,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "entity_fields"
@@ -99,6 +111,14 @@ var (
 	DefaultBooleanValue bool
 	// DefaultTimeValue holds the default value on creation for the "time_value" field.
 	DefaultTimeValue func() time.Time
+	// DefaultCurrencyCode holds the default value on creation for the "currency_code" field.
+	DefaultCurrencyCode string
+	// CurrencyCodeValidator is a validator for the "currency_code" field. It is called by the builders before save.
+	CurrencyCodeValidator func(string) error
+	// DefaultTimezone holds the default value on creation for the "timezone" field.
+	DefaultTimezone string
+	// TimezoneValidator is a validator for the "timezone" field. It is called by the builders before save.
+	TimezoneValidator func(string) error
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -108,10 +128,16 @@ type Type string
 
 // Type values.
 const (
-	TypeText    Type = "text"
-	TypeNumber  Type = "number"
-	TypeBoolean Type = "boolean"
-	TypeTime    Type = "time"
+	TypeText     Type = "text"
+	TypeNumber   Type = "number"
+	TypeBoolean  Type = "boolean"
+	TypeTime     Type = "time"
+	TypeDecimal  Type = "decimal"
+	TypeCurrency Type = "currency"
+	TypeDate     Type = "date"
+	TypeDatetime Type = "datetime"
+	TypeURL      Type = "url"
+	TypeSelect   Type = "select"
 )
 
 func (_type Type) String() string {
@@ -121,7 +147,7 @@ func (_type Type) String() string {
 // TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
 func TypeValidator(_type Type) error {
 	switch _type {
-	case TypeText, TypeNumber, TypeBoolean, TypeTime:
+	case TypeText, TypeNumber, TypeBoolean, TypeTime, TypeDecimal, TypeCurrency, TypeDate, TypeDatetime, TypeURL, TypeSelect:
 		return nil
 	default:
 		return fmt.Errorf("entityfield: invalid enum value for type field: %q", _type)
@@ -179,6 +205,21 @@ func ByBooleanValue(opts ...sql.OrderTermOption) OrderOption {
 // ByTimeValue orders the results by the time_value field.
 func ByTimeValue(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTimeValue, opts...).ToFunc()
+}
+
+// ByDecimalValue orders the results by the decimal_value field.
+func ByDecimalValue(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDecimalValue, opts...).ToFunc()
+}
+
+// ByCurrencyCode orders the results by the currency_code field.
+func ByCurrencyCode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCurrencyCode, opts...).ToFunc()
+}
+
+// ByTimezone orders the results by the timezone field.
+func ByTimezone(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTimezone, opts...).ToFunc()
 }
 
 // ByEntityField orders the results by entity field.

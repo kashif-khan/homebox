@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/fieldtypes"
 	"time"
 
 	"github.com/google/uuid"
@@ -28,7 +29,13 @@ type (
 		TextValue    string     `json:"textValue"`
 		NumberValue  int        `json:"numberValue"`
 		BooleanValue bool       `json:"booleanValue"`
-		TimeValue    time.Time  `json:"timeValue"`
+		// DecimalValue, TimeValue and the rest are derived from TextValue by the
+		// server; see EntityFieldData.
+		DecimalValue *float64   `json:"decimalValue,omitempty" extensions:"x-nullable,x-omitempty"`
+		TimeValue    *time.Time `json:"timeValue,omitempty" extensions:"x-nullable,x-omitempty"`
+		CurrencyCode string     `json:"currencyCode,omitempty"`
+		Timezone     string     `json:"timezone,omitempty"`
+		Choices      []string   `json:"choices,omitempty"`
 	}
 
 	TemplateTagSummary struct {
@@ -126,6 +133,21 @@ type (
 	}
 )
 
+// ToEntityField copies a template field's definition and default value onto an
+// item. The derived typed values are recomputed when the item is saved.
+func (f TemplateField) ToEntityField() EntityFieldData {
+	return EntityFieldData{
+		Type:         f.Type,
+		Name:         f.Name,
+		TextValue:    f.TextValue,
+		NumberValue:  f.NumberValue,
+		BooleanValue: f.BooleanValue,
+		CurrencyCode: f.CurrencyCode,
+		Timezone:     f.Timezone,
+		Choices:      f.Choices,
+	}
+}
+
 func mapTemplateField(field *ent.TemplateField) TemplateField {
 	return TemplateField{
 		ID:           lo.ToPtr(field.ID),
@@ -134,7 +156,11 @@ func mapTemplateField(field *ent.TemplateField) TemplateField {
 		TextValue:    field.TextValue,
 		NumberValue:  field.NumberValue,
 		BooleanValue: field.BooleanValue,
-		TimeValue:    field.TimeValue,
+		DecimalValue: field.DecimalValue,
+		TimeValue:    timeValueFor(string(field.Type), field.TimeValue),
+		CurrencyCode: field.CurrencyCode,
+		Timezone:     field.Timezone,
+		Choices:      field.Choices,
 	}
 }
 
@@ -252,7 +278,36 @@ func (r *EntityTemplatesRepository) GetOne(ctx context.Context, gid uuid.UUID, i
 }
 
 // Create creates a new template
+
+// normalizeTemplateFields validates every field up front so an invalid one
+// rejects the request before anything is written.
+func normalizeTemplateFields(fields []TemplateField) ([]fieldtypes.Value, error) {
+	out := make([]fieldtypes.Value, len(fields))
+	for i, f := range fields {
+		v, err := normalizeFieldInput(fieldtypes.Input{
+			Type:         f.Type,
+			Name:         f.Name,
+			TextValue:    f.TextValue,
+			NumberValue:  f.NumberValue,
+			BooleanValue: f.BooleanValue,
+			CurrencyCode: f.CurrencyCode,
+			Timezone:     f.Timezone,
+			Choices:      f.Choices,
+		})
+		if err != nil {
+			return nil, err
+		}
+		out[i] = v
+	}
+	return out, nil
+}
+
 func (r *EntityTemplatesRepository) Create(ctx context.Context, gid uuid.UUID, data EntityTemplateCreate) (EntityTemplateOut, error) {
+	fieldValues, err := normalizeTemplateFields(data.Fields)
+	if err != nil {
+		return EntityTemplateOut{}, err
+	}
+
 	if err := assertEntityInGroup(ctx, r.db.Entity, gid, data.DefaultLocationID); err != nil {
 		return EntityTemplateOut{}, err
 	}
@@ -287,12 +342,10 @@ func (r *EntityTemplatesRepository) Create(ctx context.Context, gid uuid.UUID, d
 	}
 
 	// Create template fields
-	for _, field := range data.Fields {
-		_, err = r.db.TemplateField.Create().
+	for i, field := range data.Fields {
+		_, err = applyTemplateFieldCreate(r.db.TemplateField.Create().
 			SetEntityTemplateID(template.ID).
-			SetType(templatefield.Type(field.Type)).
-			SetName(field.Name).
-			SetTextValue(field.TextValue).
+			SetName(field.Name), fieldValues[i]).
 			Save(ctx)
 
 		if err != nil {
@@ -307,6 +360,11 @@ func (r *EntityTemplatesRepository) Create(ctx context.Context, gid uuid.UUID, d
 
 // Update updates an existing template
 func (r *EntityTemplatesRepository) Update(ctx context.Context, gid uuid.UUID, data EntityTemplateUpdate) (EntityTemplateOut, error) {
+	fieldValues, err := normalizeTemplateFields(data.Fields)
+	if err != nil {
+		return EntityTemplateOut{}, err
+	}
+
 	if err := assertEntityInGroup(ctx, r.db.Entity, gid, data.DefaultLocationID); err != nil {
 		return EntityTemplateOut{}, err
 	}
@@ -372,14 +430,12 @@ func (r *EntityTemplatesRepository) Update(ctx context.Context, gid uuid.UUID, d
 	updatedFieldIDs := make(map[uuid.UUID]bool)
 
 	// Create or update fields
-	for _, field := range data.Fields {
+	for i, field := range data.Fields {
 		if field.ID == nil || *field.ID == uuid.Nil {
 			// Create new field
-			_, err = r.db.TemplateField.Create().
+			_, err = applyTemplateFieldCreate(r.db.TemplateField.Create().
 				SetEntityTemplateID(data.ID).
-				SetType(templatefield.Type(field.Type)).
-				SetName(field.Name).
-				SetTextValue(field.TextValue).
+				SetName(field.Name), fieldValues[i]).
 				Save(ctx)
 
 			if err != nil {
@@ -389,14 +445,12 @@ func (r *EntityTemplatesRepository) Update(ctx context.Context, gid uuid.UUID, d
 		} else {
 			// Update existing field
 			updatedFieldIDs[*field.ID] = true
-			_, err = r.db.TemplateField.Update().
+			_, err = applyTemplateFieldUpdate(r.db.TemplateField.Update().
 				Where(
 					templatefield.ID(*field.ID),
 					templatefield.HasEntityTemplateWith(entitytemplate.ID(data.ID)),
 				).
-				SetType(templatefield.Type(field.Type)).
-				SetName(field.Name).
-				SetTextValue(field.TextValue).
+				SetName(field.Name), fieldValues[i]).
 				Save(ctx)
 
 			if err != nil {

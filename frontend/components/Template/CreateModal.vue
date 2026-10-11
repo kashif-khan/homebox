@@ -69,18 +69,14 @@
           {{ $t("global.add") }}
         </Button>
       </div>
-      <div v-if="form.fields.length > 0" class="flex flex-col gap-2">
+      <div v-if="form.fields.length > 0" class="flex flex-col gap-3">
         <div v-for="(field, idx) in form.fields" :key="idx" class="flex items-end gap-2">
-          <FormTextField
-            v-model="field.name"
-            :label="$t('components.template.form.field_name')"
-            :max-length="255"
-            class="flex-1"
-          />
-          <FormTextField
-            v-model="field.textValue"
-            :label="$t('components.template.form.default_value')"
-            class="flex-1"
+          <FormCustomFieldRow
+            :model-value="field"
+            :currencies="fieldCurrencies"
+            :default-currency="fieldDefaultCurrency"
+            :default-timezone="fieldDefaultTimezone"
+            :value-label="$t('components.template.form.default_value')"
           />
           <Button type="button" size="icon" variant="ghost" @click="form.fields.splice(idx, 1)">
             <MdiDelete class="size-4" />
@@ -97,6 +93,8 @@
 </template>
 
 <script setup lang="ts">
+  import FormCustomFieldRow from "~/components/Form/CustomFieldRow.vue";
+  import { blankField, useFieldDefaults, type EditableField } from "~/composables/use-custom-fields";
   import { useI18n } from "vue-i18n";
   import { toast } from "@/components/ui/sonner";
   import MdiPlus from "~icons/mdi/plus";
@@ -140,13 +138,22 @@
     includeWarrantyFields: false,
     includePurchaseFields: false,
     includeSoldFields: false,
-    fields: [] as Array<{ id: string; name: string; type: "text"; textValue: string }>,
+    fields: [] as EditableField[],
   });
+
+  const {
+    currencies: fieldCurrencies,
+    defaultCurrency: fieldDefaultCurrency,
+    defaultTimezone: fieldDefaultTimezone,
+  } = useFieldDefaults();
 
   const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 
   function addField() {
-    form.fields.push({ id: NIL_UUID, name: "", type: "text", textValue: "" });
+    form.fields.push({
+      ...blankField({ currency: fieldDefaultCurrency.value, timezone: fieldDefaultTimezone.value }),
+      id: NIL_UUID,
+    });
   }
 
   function reset() {

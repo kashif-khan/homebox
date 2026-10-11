@@ -538,9 +538,20 @@ definitions:
       boolean_value:
         description: BooleanValue holds the value of the "boolean_value" field.
         type: boolean
+      choices:
+        description: Choices holds the value of the "choices" field.
+        items:
+          type: string
+        type: array
       created_at:
         description: CreatedAt holds the value of the "created_at" field.
         type: string
+      currency_code:
+        description: CurrencyCode holds the value of the "currency_code" field.
+        type: string
+      decimal_value:
+        description: DecimalValue holds the value of the "decimal_value" field.
+        type: number
       description:
         description: Description holds the value of the "description" field.
         type: string
@@ -564,6 +575,9 @@ definitions:
         type: string
       time_value:
         description: TimeValue holds the value of the "time_value" field.
+        type: string
+      timezone:
+        description: Timezone holds the value of the "timezone" field.
         type: string
       type:
         allOf:
@@ -1251,9 +1265,20 @@ definitions:
       boolean_value:
         description: BooleanValue holds the value of the "boolean_value" field.
         type: boolean
+      choices:
+        description: Choices holds the value of the "choices" field.
+        items:
+          type: string
+        type: array
       created_at:
         description: CreatedAt holds the value of the "created_at" field.
         type: string
+      currency_code:
+        description: CurrencyCode holds the value of the "currency_code" field.
+        type: string
+      decimal_value:
+        description: DecimalValue holds the value of the "decimal_value" field.
+        type: number
       description:
         description: Description holds the value of the "description" field.
         type: string
@@ -1277,6 +1302,9 @@ definitions:
         type: string
       time_value:
         description: TimeValue holds the value of the "time_value" field.
+        type: string
+      timezone:
+        description: Timezone holds the value of the "timezone" field.
         type: string
       type:
         allOf:
@@ -1423,12 +1451,24 @@ definitions:
     - number
     - boolean
     - time
+    - decimal
+    - currency
+    - date
+    - datetime
+    - url
+    - select
     type: string
     x-enum-varnames:
     - TypeText
     - TypeNumber
     - TypeBoolean
     - TypeTime
+    - TypeDecimal
+    - TypeCurrency
+    - TypeDate
+    - TypeDatetime
+    - TypeURL
+    - TypeSelect
   export.Kind:
     enum:
     - export
@@ -1967,6 +2007,23 @@ definitions:
     properties:
       booleanValue:
         type: boolean
+      choices:
+        description: Choices lists the allowed values of a select field.
+        items:
+          type: string
+        type: array
+      currencyCode:
+        description: |-
+          CurrencyCode is the ISO 4217 code of a currency field; NumberValue holds
+          its amount in minor units.
+        type: string
+      decimalValue:
+        description: |-
+          DecimalValue, TimeValue (a UTC instant) and the other typed values are
+          derived from TextValue by the server.
+        type: number
+        x-nullable: true
+        x-omitempty: true
       id:
         type: string
       name:
@@ -1974,6 +2031,13 @@ definitions:
       numberValue:
         type: integer
       textValue:
+        type: string
+      timeValue:
+        type: string
+        x-nullable: true
+        x-omitempty: true
+      timezone:
+        description: Timezone is the IANA zone a datetime field was entered in.
         type: string
       type:
         type: string
@@ -2916,6 +2980,19 @@ definitions:
     properties:
       booleanValue:
         type: boolean
+      choices:
+        items:
+          type: string
+        type: array
+      currencyCode:
+        type: string
+      decimalValue:
+        description: |-
+          DecimalValue, TimeValue and the rest are derived from TextValue by the
+          server; see EntityFieldData.
+        type: number
+        x-nullable: true
+        x-omitempty: true
       id:
         type: string
       name:
@@ -2925,6 +3002,10 @@ definitions:
       textValue:
         type: string
       timeValue:
+        type: string
+        x-nullable: true
+        x-omitempty: true
+      timezone:
         type: string
       type:
         type: string
@@ -3106,12 +3187,24 @@ definitions:
     - number
     - boolean
     - time
+    - decimal
+    - currency
+    - date
+    - datetime
+    - url
+    - select
     type: string
     x-enum-varnames:
     - TypeText
     - TypeNumber
     - TypeBoolean
     - TypeTime
+    - TypeDecimal
+    - TypeCurrency
+    - TypeDate
+    - TypeDatetime
+    - TypeURL
+    - TypeSelect
   usergroup.Role:
     enum:
     - user
