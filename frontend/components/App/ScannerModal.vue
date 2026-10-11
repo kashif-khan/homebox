@@ -49,6 +49,7 @@
             <MdiCameraOutline class="mr-2" />
             {{ t("scanner_ar.ar_mode") }}
           </Button>
+          <p class="text-xs text-muted-foreground" data-testid="ar-mode-hint">{{ t("scanner_ar.ar_mode_hint") }}</p>
         </div>
       </div>
     </DialogScrollContent>

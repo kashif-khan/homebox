@@ -27,6 +27,14 @@
       :error="detection.error"
     />
 
+    <!-- First-use hint, until something is recognised -->
+    <p
+      v-if="isScanning && !error && detections.length === 0"
+      class="pointer-events-none absolute inset-x-0 top-4 mx-auto w-fit max-w-xs rounded-md bg-black/60 px-3 py-1.5 text-center text-xs text-white"
+    >
+      {{ t("scanner_ar.hint") }}
+    </p>
+
     <!-- Controls -->
     <ScannerARControls :is-scanning="isScanning" @back="handleBack" @switch-camera="switchCamera" />
   </div>

@@ -1,4 +1,9 @@
-import { BarcodeDetector } from "barcode-detector";
+import { BarcodeDetector, prepareZXingModule, setZXingModuleOverrides } from "barcode-detector";
+// The QR decoder is a WebAssembly file. By default the library downloads it from
+// a public CDN the first time it scans, which fails (silently: nothing is ever
+// detected) behind an ad or DNS blocker, on a network without internet, or in a
+// locked-down browser. Serve it from this app instead.
+import zxingWasmUrl from "zxing-wasm/reader/zxing_reader.wasm?url";
 
 interface DetectRequest {
   type: "detect";
@@ -33,6 +38,12 @@ let detector: BarcodeDetector | null = null;
 
 async function init() {
   try {
+    setZXingModuleOverrides({
+      locateFile: (path: string, prefix: string) => (path.endsWith(".wasm") ? zxingWasmUrl : prefix + path),
+    });
+    // Load the decoder now, so a failure is reported as an error instead of every
+    // frame quietly finding nothing.
+    await prepareZXingModule({ fireImmediately: true });
     detector = new BarcodeDetector({ formats: ["qr_code"] });
     self.postMessage({ type: "ready" } satisfies ReadyMessage);
   } catch (e) {

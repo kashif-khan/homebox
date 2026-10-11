@@ -1000,7 +1000,7 @@
         "permission_denied": "Camera permission denied, please allow access to the camera in your browser settings",
         "select_video_source": "Pick a video source",
         "title": "Scanner",
-        "unsupported": "Media Stream API is not supported without HTTPS"
+        "unsupported": "The camera only works on a secure (https) address. Open Homebox over https, or use localhost, and allow camera access."
     },
     "scanner_ar": {
         "ar_mode": "AR Mode",
@@ -1016,7 +1016,10 @@
         "scanning": "Scanning",
         "switch_camera": "Switch Camera",
         "title": "AR Scanner",
-        "unsupported": "AR scanning is not supported in this browser"
+        "unsupported": "AR scanning is not supported in this browser",
+        "ar_mode_hint": "AR Mode keeps the camera open and shows what is inside every Homebox QR label it can see, such as the item name, quantity and location, on top of the live picture. Use it to check a shelf, box or room of labelled things at a glance. To open one item or look up a product barcode, scan it with the scanner above instead.",
+        "hint": "Point the camera at Homebox QR labels. Each one is outlined with what it holds.",
+        "engine_failed": "The QR reader could not start. Reload the page and try again."
     },
     "tags": {
         "no_results": "No Tags Found",
