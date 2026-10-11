@@ -497,7 +497,15 @@ export function useBarcodeDetector(videoRef: Ref<HTMLVideoElement | undefined>) 
         console.debug("[AR] Video playing:", videoRef.value.videoWidth, "x", videoRef.value.videoHeight);
       }
 
-      await initWorker();
+      try {
+        await initWorker();
+      } catch (e) {
+        // The decoder itself could not start (for example its file did not load),
+        // which is different from the camera failing.
+        console.error("[AR] decoder failed to start:", e);
+        if (sessionId === mySession) error.value = "scanner_ar.engine_failed";
+        return;
+      }
       if (sessionId !== mySession) return;
 
       if (isSupported.value) {
