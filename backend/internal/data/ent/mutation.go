@@ -13186,6 +13186,7 @@ type GroupMutation struct {
 	updated_at                 *time.Time
 	name                       *string
 	currency                   *string
+	timezone                   *string
 	mcp_access                 *string
 	clearedFields              map[string]struct{}
 	users                      map[uuid.UUID]struct{}
@@ -13469,6 +13470,42 @@ func (m *GroupMutation) OldCurrency(ctx context.Context) (v string, err error) {
 // ResetCurrency resets all changes to the "currency" field.
 func (m *GroupMutation) ResetCurrency() {
 	m.currency = nil
+}
+
+// SetTimezone sets the "timezone" field.
+func (m *GroupMutation) SetTimezone(s string) {
+	m.timezone = &s
+}
+
+// Timezone returns the value of the "timezone" field in the mutation.
+func (m *GroupMutation) Timezone() (r string, exists bool) {
+	v := m.timezone
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTimezone returns the old "timezone" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldTimezone(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTimezone is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTimezone requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTimezone: %w", err)
+	}
+	return oldValue.Timezone, nil
+}
+
+// ResetTimezone resets all changes to the "timezone" field.
+func (m *GroupMutation) ResetTimezone() {
+	m.timezone = nil
 }
 
 // SetMcpAccess sets the "mcp_access" field.
@@ -14081,7 +14118,7 @@ func (m *GroupMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GroupMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.created_at != nil {
 		fields = append(fields, group.FieldCreatedAt)
 	}
@@ -14093,6 +14130,9 @@ func (m *GroupMutation) Fields() []string {
 	}
 	if m.currency != nil {
 		fields = append(fields, group.FieldCurrency)
+	}
+	if m.timezone != nil {
+		fields = append(fields, group.FieldTimezone)
 	}
 	if m.mcp_access != nil {
 		fields = append(fields, group.FieldMcpAccess)
@@ -14113,6 +14153,8 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case group.FieldCurrency:
 		return m.Currency()
+	case group.FieldTimezone:
+		return m.Timezone()
 	case group.FieldMcpAccess:
 		return m.McpAccess()
 	}
@@ -14132,6 +14174,8 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldName(ctx)
 	case group.FieldCurrency:
 		return m.OldCurrency(ctx)
+	case group.FieldTimezone:
+		return m.OldTimezone(ctx)
 	case group.FieldMcpAccess:
 		return m.OldMcpAccess(ctx)
 	}
@@ -14170,6 +14214,13 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCurrency(v)
+		return nil
+	case group.FieldTimezone:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTimezone(v)
 		return nil
 	case group.FieldMcpAccess:
 		v, ok := value.(string)
@@ -14238,6 +14289,9 @@ func (m *GroupMutation) ResetField(name string) error {
 		return nil
 	case group.FieldCurrency:
 		m.ResetCurrency()
+		return nil
+	case group.FieldTimezone:
+		m.ResetTimezone()
 		return nil
 	case group.FieldMcpAccess:
 		m.ResetMcpAccess()
@@ -22706,6 +22760,9 @@ type UserMutation struct {
 	oidc_subject                 *string
 	default_group_id             *uuid.UUID
 	settings                     *map[string]interface{}
+	country                      *string
+	timezone                     *string
+	locale                       *string
 	clearedFields                map[string]struct{}
 	groups                       map[uuid.UUID]struct{}
 	removedgroups                map[uuid.UUID]struct{}
@@ -23344,6 +23401,114 @@ func (m *UserMutation) ResetSettings() {
 	delete(m.clearedFields, user.FieldSettings)
 }
 
+// SetCountry sets the "country" field.
+func (m *UserMutation) SetCountry(s string) {
+	m.country = &s
+}
+
+// Country returns the value of the "country" field in the mutation.
+func (m *UserMutation) Country() (r string, exists bool) {
+	v := m.country
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCountry returns the old "country" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldCountry(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCountry is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCountry requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCountry: %w", err)
+	}
+	return oldValue.Country, nil
+}
+
+// ResetCountry resets all changes to the "country" field.
+func (m *UserMutation) ResetCountry() {
+	m.country = nil
+}
+
+// SetTimezone sets the "timezone" field.
+func (m *UserMutation) SetTimezone(s string) {
+	m.timezone = &s
+}
+
+// Timezone returns the value of the "timezone" field in the mutation.
+func (m *UserMutation) Timezone() (r string, exists bool) {
+	v := m.timezone
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTimezone returns the old "timezone" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldTimezone(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTimezone is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTimezone requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTimezone: %w", err)
+	}
+	return oldValue.Timezone, nil
+}
+
+// ResetTimezone resets all changes to the "timezone" field.
+func (m *UserMutation) ResetTimezone() {
+	m.timezone = nil
+}
+
+// SetLocale sets the "locale" field.
+func (m *UserMutation) SetLocale(s string) {
+	m.locale = &s
+}
+
+// Locale returns the value of the "locale" field in the mutation.
+func (m *UserMutation) Locale() (r string, exists bool) {
+	v := m.locale
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLocale returns the old "locale" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldLocale(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLocale is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLocale requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLocale: %w", err)
+	}
+	return oldValue.Locale, nil
+}
+
+// ResetLocale resets all changes to the "locale" field.
+func (m *UserMutation) ResetLocale() {
+	m.locale = nil
+}
+
 // AddGroupIDs adds the "groups" edge to the Group entity by ids.
 func (m *UserMutation) AddGroupIDs(ids ...uuid.UUID) {
 	if m.groups == nil {
@@ -23702,7 +23867,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 15)
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
 	}
@@ -23739,6 +23904,15 @@ func (m *UserMutation) Fields() []string {
 	if m.settings != nil {
 		fields = append(fields, user.FieldSettings)
 	}
+	if m.country != nil {
+		fields = append(fields, user.FieldCountry)
+	}
+	if m.timezone != nil {
+		fields = append(fields, user.FieldTimezone)
+	}
+	if m.locale != nil {
+		fields = append(fields, user.FieldLocale)
+	}
 	return fields
 }
 
@@ -23771,6 +23945,12 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.DefaultGroupID()
 	case user.FieldSettings:
 		return m.Settings()
+	case user.FieldCountry:
+		return m.Country()
+	case user.FieldTimezone:
+		return m.Timezone()
+	case user.FieldLocale:
+		return m.Locale()
 	}
 	return nil, false
 }
@@ -23804,6 +23984,12 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldDefaultGroupID(ctx)
 	case user.FieldSettings:
 		return m.OldSettings(ctx)
+	case user.FieldCountry:
+		return m.OldCountry(ctx)
+	case user.FieldTimezone:
+		return m.OldTimezone(ctx)
+	case user.FieldLocale:
+		return m.OldLocale(ctx)
 	}
 	return nil, fmt.Errorf("unknown User field %s", name)
 }
@@ -23896,6 +24082,27 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetSettings(v)
+		return nil
+	case user.FieldCountry:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCountry(v)
+		return nil
+	case user.FieldTimezone:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTimezone(v)
+		return nil
+	case user.FieldLocale:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLocale(v)
 		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)
@@ -24020,6 +24227,15 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldSettings:
 		m.ResetSettings()
+		return nil
+	case user.FieldCountry:
+		m.ResetCountry()
+		return nil
+	case user.FieldTimezone:
+		m.ResetTimezone()
+		return nil
+	case user.FieldLocale:
+		m.ResetLocale()
 		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)

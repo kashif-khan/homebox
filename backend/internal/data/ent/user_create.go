@@ -171,6 +171,48 @@ func (_c *UserCreate) SetSettings(v map[string]interface{}) *UserCreate {
 	return _c
 }
 
+// SetCountry sets the "country" field.
+func (_c *UserCreate) SetCountry(v string) *UserCreate {
+	_c.mutation.SetCountry(v)
+	return _c
+}
+
+// SetNillableCountry sets the "country" field if the given value is not nil.
+func (_c *UserCreate) SetNillableCountry(v *string) *UserCreate {
+	if v != nil {
+		_c.SetCountry(*v)
+	}
+	return _c
+}
+
+// SetTimezone sets the "timezone" field.
+func (_c *UserCreate) SetTimezone(v string) *UserCreate {
+	_c.mutation.SetTimezone(v)
+	return _c
+}
+
+// SetNillableTimezone sets the "timezone" field if the given value is not nil.
+func (_c *UserCreate) SetNillableTimezone(v *string) *UserCreate {
+	if v != nil {
+		_c.SetTimezone(*v)
+	}
+	return _c
+}
+
+// SetLocale sets the "locale" field.
+func (_c *UserCreate) SetLocale(v string) *UserCreate {
+	_c.mutation.SetLocale(v)
+	return _c
+}
+
+// SetNillableLocale sets the "locale" field if the given value is not nil.
+func (_c *UserCreate) SetNillableLocale(v *string) *UserCreate {
+	if v != nil {
+		_c.SetLocale(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *UserCreate) SetID(v uuid.UUID) *UserCreate {
 	_c.mutation.SetID(v)
@@ -326,6 +368,18 @@ func (_c *UserCreate) defaults() {
 		v := user.DefaultSuperuser
 		_c.mutation.SetSuperuser(v)
 	}
+	if _, ok := _c.mutation.Country(); !ok {
+		v := user.DefaultCountry
+		_c.mutation.SetCountry(v)
+	}
+	if _, ok := _c.mutation.Timezone(); !ok {
+		v := user.DefaultTimezone
+		_c.mutation.SetTimezone(v)
+	}
+	if _, ok := _c.mutation.Locale(); !ok {
+		v := user.DefaultLocale
+		_c.mutation.SetLocale(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := user.DefaultID()
 		_c.mutation.SetID(v)
@@ -366,6 +420,30 @@ func (_c *UserCreate) check() error {
 	}
 	if _, ok := _c.mutation.Superuser(); !ok {
 		return &ValidationError{Name: "superuser", err: errors.New(`ent: missing required field "User.superuser"`)}
+	}
+	if _, ok := _c.mutation.Country(); !ok {
+		return &ValidationError{Name: "country", err: errors.New(`ent: missing required field "User.country"`)}
+	}
+	if v, ok := _c.mutation.Country(); ok {
+		if err := user.CountryValidator(v); err != nil {
+			return &ValidationError{Name: "country", err: fmt.Errorf(`ent: validator failed for field "User.country": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.Timezone(); !ok {
+		return &ValidationError{Name: "timezone", err: errors.New(`ent: missing required field "User.timezone"`)}
+	}
+	if v, ok := _c.mutation.Timezone(); ok {
+		if err := user.TimezoneValidator(v); err != nil {
+			return &ValidationError{Name: "timezone", err: fmt.Errorf(`ent: validator failed for field "User.timezone": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.Locale(); !ok {
+		return &ValidationError{Name: "locale", err: errors.New(`ent: missing required field "User.locale"`)}
+	}
+	if v, ok := _c.mutation.Locale(); ok {
+		if err := user.LocaleValidator(v); err != nil {
+			return &ValidationError{Name: "locale", err: fmt.Errorf(`ent: validator failed for field "User.locale": %w`, err)}
+		}
 	}
 	return nil
 }
@@ -449,6 +527,18 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Settings(); ok {
 		_spec.SetField(user.FieldSettings, field.TypeJSON, value)
 		_node.Settings = value
+	}
+	if value, ok := _c.mutation.Country(); ok {
+		_spec.SetField(user.FieldCountry, field.TypeString, value)
+		_node.Country = value
+	}
+	if value, ok := _c.mutation.Timezone(); ok {
+		_spec.SetField(user.FieldTimezone, field.TypeString, value)
+		_node.Timezone = value
+	}
+	if value, ok := _c.mutation.Locale(); ok {
+		_spec.SetField(user.FieldLocale, field.TypeString, value)
+		_node.Locale = value
 	}
 	if nodes := _c.mutation.GroupsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

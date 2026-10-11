@@ -457,6 +457,7 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString, Size: 255},
 		{Name: "currency", Type: field.TypeString, Default: "usd"},
+		{Name: "timezone", Type: field.TypeString, Size: 64, Default: "UTC"},
 		{Name: "mcp_access", Type: field.TypeString, Default: "off"},
 	}
 	// GroupsTable holds the schema information for the "groups" table.
@@ -806,6 +807,9 @@ var (
 		{Name: "oidc_subject", Type: field.TypeString, Nullable: true},
 		{Name: "default_group_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "settings", Type: field.TypeJSON, Nullable: true},
+		{Name: "country", Type: field.TypeString, Size: 2, Default: ""},
+		{Name: "timezone", Type: field.TypeString, Size: 64, Default: ""},
+		{Name: "locale", Type: field.TypeString, Size: 35, Default: ""},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{

@@ -42,11 +42,20 @@ type (
 		// IsOwner controls the role on the membership row created for
 		// (user, DefaultGroupID). It does not grant any cross-group privilege.
 		IsOwner bool `json:"isOwner"`
+		// Regional preferences; empty means not set.
+		Country  string `json:"country"`
+		Timezone string `json:"timezone"`
+		Locale   string `json:"locale"`
 	}
 
 	UserUpdate struct {
 		Name  string `json:"name"`
 		Email string `json:"email"`
+		// Regional preferences. Nil leaves the stored value unchanged; an empty
+		// string clears it.
+		Country  *string `json:"country,omitempty" extensions:"x-nullable,x-omitempty"`
+		Timezone *string `json:"timezone,omitempty" extensions:"x-nullable,x-omitempty"`
+		Locale   *string `json:"locale,omitempty" extensions:"x-nullable,x-omitempty"`
 	}
 
 	UserOut struct {
@@ -59,6 +68,9 @@ type (
 		PasswordHash   string      `json:"-"`
 		OidcIssuer     *string     `json:"oidcIssuer"`
 		OidcSubject    *string     `json:"oidcSubject"`
+		Country        string      `json:"country"`
+		Timezone       string      `json:"timezone"`
+		Locale         string      `json:"locale"`
 	}
 
 	UserSummary struct {
@@ -87,6 +99,9 @@ func mapUserOut(user *ent.User) UserOut {
 		PasswordHash: lo.FromPtrOr(user.Password, ""),
 		OidcIssuer:   user.OidcIssuer,
 		OidcSubject:  user.OidcSubject,
+		Country:      user.Country,
+		Timezone:     user.Timezone,
+		Locale:       user.Locale,
 	}
 }
 
@@ -217,7 +232,10 @@ func (r *UserRepository) createUserWithMembership(
 		SetName(usr.Name).
 		SetEmail(normalizeEmail(usr.Email)).
 		SetIsSuperuser(usr.IsSuperuser).
-		SetDefaultGroupID(usr.DefaultGroupID)
+		SetDefaultGroupID(usr.DefaultGroupID).
+		SetCountry(usr.Country).
+		SetTimezone(usr.Timezone).
+		SetLocale(usr.Locale)
 
 	if usr.Password != nil {
 		q = q.SetPassword(*usr.Password)
@@ -308,6 +326,15 @@ func (r *UserRepository) Update(ctx context.Context, id uuid.UUID, data UserUpda
 		Where(user.ID(id)).
 		SetName(data.Name).
 		SetEmail(normalizeEmail(data.Email))
+	if data.Country != nil {
+		q.SetCountry(*data.Country)
+	}
+	if data.Timezone != nil {
+		q.SetTimezone(*data.Timezone)
+	}
+	if data.Locale != nil {
+		q.SetLocale(*data.Locale)
+	}
 
 	_, err := q.Save(ctx)
 	recordSpanError(span, err)

@@ -140,8 +140,10 @@ func New(repos *repo.AllRepos, opts ...OptionsFunc) *AllServices {
 	}
 	backupSvc.secrets = box
 
+	currencyRegistry := currencies.NewCurrencyService(options.currencies)
+
 	return &AllServices{
-		User:  &UserService{repos: repos, mailer: options.mailer},
+		User:  &UserService{repos: repos, mailer: options.mailer, isCurrency: currencyRegistry.IsSupported},
 		Group: &GroupService{repos},
 		Entities: &EntityService{
 			repo:                 repos,
@@ -154,6 +156,6 @@ func New(repos *repo.AllRepos, opts ...OptionsFunc) *AllServices {
 		},
 		Exports:    exportSvc,
 		Backups:    backupSvc,
-		Currencies: currencies.NewCurrencyService(options.currencies),
+		Currencies: currencyRegistry,
 	}
 }

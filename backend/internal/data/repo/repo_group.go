@@ -36,6 +36,7 @@ func NewGroupRepository(db *ent.Client, attachments *AttachmentRepo) *GroupRepos
 			CreatedAt: g.CreatedAt,
 			UpdatedAt: g.UpdatedAt,
 			Currency:  strings.ToUpper(g.Currency),
+			Timezone:  g.Timezone,
 			MCPAccess: g.McpAccess,
 		}
 	}
@@ -64,6 +65,8 @@ type (
 		CreatedAt time.Time `json:"createdAt,omitempty"`
 		UpdatedAt time.Time `json:"updatedAt,omitempty"`
 		Currency  string    `json:"currency,omitempty"`
+		// Timezone is the IANA zone the collection's alerts are scheduled in.
+		Timezone string `json:"timezone,omitempty"`
 		// MCPAccess is the ceiling for AI assistants connected over MCP:
 		// off, read, write or full.
 		MCPAccess string `json:"mcpAccess,omitempty"`
@@ -72,6 +75,8 @@ type (
 	GroupUpdate struct {
 		Name     string `json:"name"`
 		Currency string `json:"currency"`
+		// Timezone is left unchanged when nil.
+		Timezone *string `json:"timezone,omitempty" extensions:"x-nullable,x-omitempty"`
 		// MCPAccess is left unchanged when nil.
 		MCPAccess *string `json:"mcpAccess,omitempty" extensions:"x-nullable,x-omitempty"`
 	}
@@ -322,6 +327,9 @@ func (r *GroupRepository) GroupUpdate(ctx context.Context, id uuid.UUID, data Gr
 	q := r.db.Group.UpdateOneID(id).
 		SetName(data.Name).
 		SetCurrency(strings.ToLower(data.Currency))
+	if data.Timezone != nil {
+		q.SetTimezone(*data.Timezone)
+	}
 	if data.MCPAccess != nil {
 		q.SetMcpAccess(*data.MCPAccess)
 	}

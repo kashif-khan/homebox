@@ -18,7 +18,10 @@
   import FormTextField from "~/components/Form/TextField.vue";
   import FormPassword from "~/components/Form/Password.vue";
   import FormCheckbox from "~/components/Form/Checkbox.vue";
+  import FormRegionalFields from "~/components/Form/RegionalFields.vue";
   import PasswordScore from "~/components/global/PasswordScore.vue";
+  import { detectRegionalDefaults } from "~/composables/use-regional-defaults";
+  import type { CurrenciesCurrency } from "~/lib/api/types/data-contracts";
   import { PASSWORD_MIN_LENGTH, PASSWORD_RULES } from "~/lib/passwords";
 
   const { t } = useI18n();
@@ -102,6 +105,15 @@
   const canRegister = ref(false);
   const remember = ref(false);
 
+  // Regional hints are read from the browser after mount (not during SSR) and
+  // stay editable. They are sent with the registration and ignored by the
+  // server if invalid.
+  const regCountry = ref("");
+  const regCurrency = ref("");
+  const regTimezone = ref("");
+  const regLocale = ref("");
+  const currencies = ref<CurrenciesCurrency[]>([]);
+
   const groupToken = computed<string>({
     get() {
       const params = route.query.token;
@@ -137,6 +149,10 @@
       email: email.value,
       password: password.value,
       token: groupToken.value,
+      country: regCountry.value,
+      currency: regCurrency.value,
+      timezone: regTimezone.value,
+      locale: regLocale.value,
     });
 
     if (error) {
@@ -154,7 +170,19 @@
     registerForm.value = false;
   }
 
-  onMounted(() => {
+  onMounted(async () => {
+    const detected = detectRegionalDefaults();
+    regCountry.value = detected.country;
+    regTimezone.value = detected.timezone;
+    regLocale.value = detected.locale;
+
+    const { data } = await api.currencies();
+    if (data) {
+      currencies.value = data;
+      // Only suggest a currency the server can actually accept.
+      regCurrency.value = data.some(c => c.code === detected.currency) ? detected.currency : "";
+    }
+
     if (groupToken.value !== "") {
       registerForm.value = true;
     }
@@ -351,6 +379,16 @@
                     data-testid="password-input"
                   />
                   <PasswordScore v-model:valid="canRegister" :password="password" />
+                  <details v-if="groupToken == ''" class="pt-2" data-testid="regional-section">
+                    <summary class="cursor-pointer text-sm font-medium">{{ $t("regional.section_title") }}</summary>
+                    <p class="py-2 text-xs text-muted-foreground">{{ $t("regional.detected_hint") }}</p>
+                    <FormRegionalFields
+                      v-model:country="regCountry"
+                      v-model:currency="regCurrency"
+                      v-model:timezone="regTimezone"
+                      :currencies="currencies"
+                    />
+                  </details>
                 </CardContent>
                 <CardFooter>
                   <Button
