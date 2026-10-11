@@ -8727,25 +8727,31 @@ func (m *EntityMutation) ResetEdge(name string) error {
 // EntityFieldMutation represents an operation that mutates the EntityField nodes in the graph.
 type EntityFieldMutation struct {
 	config
-	op              Op
-	typ             string
-	id              *uuid.UUID
-	created_at      *time.Time
-	updated_at      *time.Time
-	name            *string
-	description     *string
-	_type           *entityfield.Type
-	text_value      *string
-	number_value    *int
-	addnumber_value *int
-	boolean_value   *bool
-	time_value      *time.Time
-	clearedFields   map[string]struct{}
-	entity          *uuid.UUID
-	clearedentity   bool
-	done            bool
-	oldValue        func(context.Context) (*EntityField, error)
-	predicates      []predicate.EntityField
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	created_at       *time.Time
+	updated_at       *time.Time
+	name             *string
+	description      *string
+	_type            *entityfield.Type
+	text_value       *string
+	number_value     *int
+	addnumber_value  *int
+	boolean_value    *bool
+	time_value       *time.Time
+	decimal_value    *float64
+	adddecimal_value *float64
+	currency_code    *string
+	timezone         *string
+	choices          *[]string
+	appendchoices    []string
+	clearedFields    map[string]struct{}
+	entity           *uuid.UUID
+	clearedentity    bool
+	done             bool
+	oldValue         func(context.Context) (*EntityField, error)
+	predicates       []predicate.EntityField
 }
 
 var _ ent.Mutation = (*EntityFieldMutation)(nil)
@@ -9236,6 +9242,213 @@ func (m *EntityFieldMutation) ResetTimeValue() {
 	m.time_value = nil
 }
 
+// SetDecimalValue sets the "decimal_value" field.
+func (m *EntityFieldMutation) SetDecimalValue(f float64) {
+	m.decimal_value = &f
+	m.adddecimal_value = nil
+}
+
+// DecimalValue returns the value of the "decimal_value" field in the mutation.
+func (m *EntityFieldMutation) DecimalValue() (r float64, exists bool) {
+	v := m.decimal_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDecimalValue returns the old "decimal_value" field's value of the EntityField entity.
+// If the EntityField object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityFieldMutation) OldDecimalValue(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDecimalValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDecimalValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDecimalValue: %w", err)
+	}
+	return oldValue.DecimalValue, nil
+}
+
+// AddDecimalValue adds f to the "decimal_value" field.
+func (m *EntityFieldMutation) AddDecimalValue(f float64) {
+	if m.adddecimal_value != nil {
+		*m.adddecimal_value += f
+	} else {
+		m.adddecimal_value = &f
+	}
+}
+
+// AddedDecimalValue returns the value that was added to the "decimal_value" field in this mutation.
+func (m *EntityFieldMutation) AddedDecimalValue() (r float64, exists bool) {
+	v := m.adddecimal_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDecimalValue clears the value of the "decimal_value" field.
+func (m *EntityFieldMutation) ClearDecimalValue() {
+	m.decimal_value = nil
+	m.adddecimal_value = nil
+	m.clearedFields[entityfield.FieldDecimalValue] = struct{}{}
+}
+
+// DecimalValueCleared returns if the "decimal_value" field was cleared in this mutation.
+func (m *EntityFieldMutation) DecimalValueCleared() bool {
+	_, ok := m.clearedFields[entityfield.FieldDecimalValue]
+	return ok
+}
+
+// ResetDecimalValue resets all changes to the "decimal_value" field.
+func (m *EntityFieldMutation) ResetDecimalValue() {
+	m.decimal_value = nil
+	m.adddecimal_value = nil
+	delete(m.clearedFields, entityfield.FieldDecimalValue)
+}
+
+// SetCurrencyCode sets the "currency_code" field.
+func (m *EntityFieldMutation) SetCurrencyCode(s string) {
+	m.currency_code = &s
+}
+
+// CurrencyCode returns the value of the "currency_code" field in the mutation.
+func (m *EntityFieldMutation) CurrencyCode() (r string, exists bool) {
+	v := m.currency_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCurrencyCode returns the old "currency_code" field's value of the EntityField entity.
+// If the EntityField object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityFieldMutation) OldCurrencyCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCurrencyCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCurrencyCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCurrencyCode: %w", err)
+	}
+	return oldValue.CurrencyCode, nil
+}
+
+// ResetCurrencyCode resets all changes to the "currency_code" field.
+func (m *EntityFieldMutation) ResetCurrencyCode() {
+	m.currency_code = nil
+}
+
+// SetTimezone sets the "timezone" field.
+func (m *EntityFieldMutation) SetTimezone(s string) {
+	m.timezone = &s
+}
+
+// Timezone returns the value of the "timezone" field in the mutation.
+func (m *EntityFieldMutation) Timezone() (r string, exists bool) {
+	v := m.timezone
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTimezone returns the old "timezone" field's value of the EntityField entity.
+// If the EntityField object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityFieldMutation) OldTimezone(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTimezone is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTimezone requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTimezone: %w", err)
+	}
+	return oldValue.Timezone, nil
+}
+
+// ResetTimezone resets all changes to the "timezone" field.
+func (m *EntityFieldMutation) ResetTimezone() {
+	m.timezone = nil
+}
+
+// SetChoices sets the "choices" field.
+func (m *EntityFieldMutation) SetChoices(s []string) {
+	m.choices = &s
+	m.appendchoices = nil
+}
+
+// Choices returns the value of the "choices" field in the mutation.
+func (m *EntityFieldMutation) Choices() (r []string, exists bool) {
+	v := m.choices
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldChoices returns the old "choices" field's value of the EntityField entity.
+// If the EntityField object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityFieldMutation) OldChoices(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldChoices is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldChoices requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldChoices: %w", err)
+	}
+	return oldValue.Choices, nil
+}
+
+// AppendChoices adds s to the "choices" field.
+func (m *EntityFieldMutation) AppendChoices(s []string) {
+	m.appendchoices = append(m.appendchoices, s...)
+}
+
+// AppendedChoices returns the list of values that were appended to the "choices" field in this mutation.
+func (m *EntityFieldMutation) AppendedChoices() ([]string, bool) {
+	if len(m.appendchoices) == 0 {
+		return nil, false
+	}
+	return m.appendchoices, true
+}
+
+// ClearChoices clears the value of the "choices" field.
+func (m *EntityFieldMutation) ClearChoices() {
+	m.choices = nil
+	m.appendchoices = nil
+	m.clearedFields[entityfield.FieldChoices] = struct{}{}
+}
+
+// ChoicesCleared returns if the "choices" field was cleared in this mutation.
+func (m *EntityFieldMutation) ChoicesCleared() bool {
+	_, ok := m.clearedFields[entityfield.FieldChoices]
+	return ok
+}
+
+// ResetChoices resets all changes to the "choices" field.
+func (m *EntityFieldMutation) ResetChoices() {
+	m.choices = nil
+	m.appendchoices = nil
+	delete(m.clearedFields, entityfield.FieldChoices)
+}
+
 // SetEntityID sets the "entity" edge to the Entity entity by id.
 func (m *EntityFieldMutation) SetEntityID(id uuid.UUID) {
 	m.entity = &id
@@ -9309,7 +9522,7 @@ func (m *EntityFieldMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EntityFieldMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, entityfield.FieldCreatedAt)
 	}
@@ -9337,6 +9550,18 @@ func (m *EntityFieldMutation) Fields() []string {
 	if m.time_value != nil {
 		fields = append(fields, entityfield.FieldTimeValue)
 	}
+	if m.decimal_value != nil {
+		fields = append(fields, entityfield.FieldDecimalValue)
+	}
+	if m.currency_code != nil {
+		fields = append(fields, entityfield.FieldCurrencyCode)
+	}
+	if m.timezone != nil {
+		fields = append(fields, entityfield.FieldTimezone)
+	}
+	if m.choices != nil {
+		fields = append(fields, entityfield.FieldChoices)
+	}
 	return fields
 }
 
@@ -9363,6 +9588,14 @@ func (m *EntityFieldMutation) Field(name string) (ent.Value, bool) {
 		return m.BooleanValue()
 	case entityfield.FieldTimeValue:
 		return m.TimeValue()
+	case entityfield.FieldDecimalValue:
+		return m.DecimalValue()
+	case entityfield.FieldCurrencyCode:
+		return m.CurrencyCode()
+	case entityfield.FieldTimezone:
+		return m.Timezone()
+	case entityfield.FieldChoices:
+		return m.Choices()
 	}
 	return nil, false
 }
@@ -9390,6 +9623,14 @@ func (m *EntityFieldMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldBooleanValue(ctx)
 	case entityfield.FieldTimeValue:
 		return m.OldTimeValue(ctx)
+	case entityfield.FieldDecimalValue:
+		return m.OldDecimalValue(ctx)
+	case entityfield.FieldCurrencyCode:
+		return m.OldCurrencyCode(ctx)
+	case entityfield.FieldTimezone:
+		return m.OldTimezone(ctx)
+	case entityfield.FieldChoices:
+		return m.OldChoices(ctx)
 	}
 	return nil, fmt.Errorf("unknown EntityField field %s", name)
 }
@@ -9462,6 +9703,34 @@ func (m *EntityFieldMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetTimeValue(v)
 		return nil
+	case entityfield.FieldDecimalValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDecimalValue(v)
+		return nil
+	case entityfield.FieldCurrencyCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCurrencyCode(v)
+		return nil
+	case entityfield.FieldTimezone:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTimezone(v)
+		return nil
+	case entityfield.FieldChoices:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetChoices(v)
+		return nil
 	}
 	return fmt.Errorf("unknown EntityField field %s", name)
 }
@@ -9473,6 +9742,9 @@ func (m *EntityFieldMutation) AddedFields() []string {
 	if m.addnumber_value != nil {
 		fields = append(fields, entityfield.FieldNumberValue)
 	}
+	if m.adddecimal_value != nil {
+		fields = append(fields, entityfield.FieldDecimalValue)
+	}
 	return fields
 }
 
@@ -9483,6 +9755,8 @@ func (m *EntityFieldMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case entityfield.FieldNumberValue:
 		return m.AddedNumberValue()
+	case entityfield.FieldDecimalValue:
+		return m.AddedDecimalValue()
 	}
 	return nil, false
 }
@@ -9498,6 +9772,13 @@ func (m *EntityFieldMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddNumberValue(v)
+		return nil
+	case entityfield.FieldDecimalValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDecimalValue(v)
 		return nil
 	}
 	return fmt.Errorf("unknown EntityField numeric field %s", name)
@@ -9515,6 +9796,12 @@ func (m *EntityFieldMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(entityfield.FieldNumberValue) {
 		fields = append(fields, entityfield.FieldNumberValue)
+	}
+	if m.FieldCleared(entityfield.FieldDecimalValue) {
+		fields = append(fields, entityfield.FieldDecimalValue)
+	}
+	if m.FieldCleared(entityfield.FieldChoices) {
+		fields = append(fields, entityfield.FieldChoices)
 	}
 	return fields
 }
@@ -9538,6 +9825,12 @@ func (m *EntityFieldMutation) ClearField(name string) error {
 		return nil
 	case entityfield.FieldNumberValue:
 		m.ClearNumberValue()
+		return nil
+	case entityfield.FieldDecimalValue:
+		m.ClearDecimalValue()
+		return nil
+	case entityfield.FieldChoices:
+		m.ClearChoices()
 		return nil
 	}
 	return fmt.Errorf("unknown EntityField nullable field %s", name)
@@ -9573,6 +9866,18 @@ func (m *EntityFieldMutation) ResetField(name string) error {
 		return nil
 	case entityfield.FieldTimeValue:
 		m.ResetTimeValue()
+		return nil
+	case entityfield.FieldDecimalValue:
+		m.ResetDecimalValue()
+		return nil
+	case entityfield.FieldCurrencyCode:
+		m.ResetCurrencyCode()
+		return nil
+	case entityfield.FieldTimezone:
+		m.ResetTimezone()
+		return nil
+	case entityfield.FieldChoices:
+		m.ResetChoices()
 		return nil
 	}
 	return fmt.Errorf("unknown EntityField field %s", name)
@@ -21830,6 +22135,12 @@ type TemplateFieldMutation struct {
 	addnumber_value        *int
 	boolean_value          *bool
 	time_value             *time.Time
+	decimal_value          *float64
+	adddecimal_value       *float64
+	currency_code          *string
+	timezone               *string
+	choices                *[]string
+	appendchoices          []string
 	clearedFields          map[string]struct{}
 	entity_template        *uuid.UUID
 	clearedentity_template bool
@@ -22326,6 +22637,213 @@ func (m *TemplateFieldMutation) ResetTimeValue() {
 	m.time_value = nil
 }
 
+// SetDecimalValue sets the "decimal_value" field.
+func (m *TemplateFieldMutation) SetDecimalValue(f float64) {
+	m.decimal_value = &f
+	m.adddecimal_value = nil
+}
+
+// DecimalValue returns the value of the "decimal_value" field in the mutation.
+func (m *TemplateFieldMutation) DecimalValue() (r float64, exists bool) {
+	v := m.decimal_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDecimalValue returns the old "decimal_value" field's value of the TemplateField entity.
+// If the TemplateField object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TemplateFieldMutation) OldDecimalValue(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDecimalValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDecimalValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDecimalValue: %w", err)
+	}
+	return oldValue.DecimalValue, nil
+}
+
+// AddDecimalValue adds f to the "decimal_value" field.
+func (m *TemplateFieldMutation) AddDecimalValue(f float64) {
+	if m.adddecimal_value != nil {
+		*m.adddecimal_value += f
+	} else {
+		m.adddecimal_value = &f
+	}
+}
+
+// AddedDecimalValue returns the value that was added to the "decimal_value" field in this mutation.
+func (m *TemplateFieldMutation) AddedDecimalValue() (r float64, exists bool) {
+	v := m.adddecimal_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDecimalValue clears the value of the "decimal_value" field.
+func (m *TemplateFieldMutation) ClearDecimalValue() {
+	m.decimal_value = nil
+	m.adddecimal_value = nil
+	m.clearedFields[templatefield.FieldDecimalValue] = struct{}{}
+}
+
+// DecimalValueCleared returns if the "decimal_value" field was cleared in this mutation.
+func (m *TemplateFieldMutation) DecimalValueCleared() bool {
+	_, ok := m.clearedFields[templatefield.FieldDecimalValue]
+	return ok
+}
+
+// ResetDecimalValue resets all changes to the "decimal_value" field.
+func (m *TemplateFieldMutation) ResetDecimalValue() {
+	m.decimal_value = nil
+	m.adddecimal_value = nil
+	delete(m.clearedFields, templatefield.FieldDecimalValue)
+}
+
+// SetCurrencyCode sets the "currency_code" field.
+func (m *TemplateFieldMutation) SetCurrencyCode(s string) {
+	m.currency_code = &s
+}
+
+// CurrencyCode returns the value of the "currency_code" field in the mutation.
+func (m *TemplateFieldMutation) CurrencyCode() (r string, exists bool) {
+	v := m.currency_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCurrencyCode returns the old "currency_code" field's value of the TemplateField entity.
+// If the TemplateField object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TemplateFieldMutation) OldCurrencyCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCurrencyCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCurrencyCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCurrencyCode: %w", err)
+	}
+	return oldValue.CurrencyCode, nil
+}
+
+// ResetCurrencyCode resets all changes to the "currency_code" field.
+func (m *TemplateFieldMutation) ResetCurrencyCode() {
+	m.currency_code = nil
+}
+
+// SetTimezone sets the "timezone" field.
+func (m *TemplateFieldMutation) SetTimezone(s string) {
+	m.timezone = &s
+}
+
+// Timezone returns the value of the "timezone" field in the mutation.
+func (m *TemplateFieldMutation) Timezone() (r string, exists bool) {
+	v := m.timezone
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTimezone returns the old "timezone" field's value of the TemplateField entity.
+// If the TemplateField object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TemplateFieldMutation) OldTimezone(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTimezone is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTimezone requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTimezone: %w", err)
+	}
+	return oldValue.Timezone, nil
+}
+
+// ResetTimezone resets all changes to the "timezone" field.
+func (m *TemplateFieldMutation) ResetTimezone() {
+	m.timezone = nil
+}
+
+// SetChoices sets the "choices" field.
+func (m *TemplateFieldMutation) SetChoices(s []string) {
+	m.choices = &s
+	m.appendchoices = nil
+}
+
+// Choices returns the value of the "choices" field in the mutation.
+func (m *TemplateFieldMutation) Choices() (r []string, exists bool) {
+	v := m.choices
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldChoices returns the old "choices" field's value of the TemplateField entity.
+// If the TemplateField object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TemplateFieldMutation) OldChoices(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldChoices is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldChoices requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldChoices: %w", err)
+	}
+	return oldValue.Choices, nil
+}
+
+// AppendChoices adds s to the "choices" field.
+func (m *TemplateFieldMutation) AppendChoices(s []string) {
+	m.appendchoices = append(m.appendchoices, s...)
+}
+
+// AppendedChoices returns the list of values that were appended to the "choices" field in this mutation.
+func (m *TemplateFieldMutation) AppendedChoices() ([]string, bool) {
+	if len(m.appendchoices) == 0 {
+		return nil, false
+	}
+	return m.appendchoices, true
+}
+
+// ClearChoices clears the value of the "choices" field.
+func (m *TemplateFieldMutation) ClearChoices() {
+	m.choices = nil
+	m.appendchoices = nil
+	m.clearedFields[templatefield.FieldChoices] = struct{}{}
+}
+
+// ChoicesCleared returns if the "choices" field was cleared in this mutation.
+func (m *TemplateFieldMutation) ChoicesCleared() bool {
+	_, ok := m.clearedFields[templatefield.FieldChoices]
+	return ok
+}
+
+// ResetChoices resets all changes to the "choices" field.
+func (m *TemplateFieldMutation) ResetChoices() {
+	m.choices = nil
+	m.appendchoices = nil
+	delete(m.clearedFields, templatefield.FieldChoices)
+}
+
 // SetEntityTemplateID sets the "entity_template" edge to the EntityTemplate entity by id.
 func (m *TemplateFieldMutation) SetEntityTemplateID(id uuid.UUID) {
 	m.entity_template = &id
@@ -22399,7 +22917,7 @@ func (m *TemplateFieldMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TemplateFieldMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, templatefield.FieldCreatedAt)
 	}
@@ -22427,6 +22945,18 @@ func (m *TemplateFieldMutation) Fields() []string {
 	if m.time_value != nil {
 		fields = append(fields, templatefield.FieldTimeValue)
 	}
+	if m.decimal_value != nil {
+		fields = append(fields, templatefield.FieldDecimalValue)
+	}
+	if m.currency_code != nil {
+		fields = append(fields, templatefield.FieldCurrencyCode)
+	}
+	if m.timezone != nil {
+		fields = append(fields, templatefield.FieldTimezone)
+	}
+	if m.choices != nil {
+		fields = append(fields, templatefield.FieldChoices)
+	}
 	return fields
 }
 
@@ -22453,6 +22983,14 @@ func (m *TemplateFieldMutation) Field(name string) (ent.Value, bool) {
 		return m.BooleanValue()
 	case templatefield.FieldTimeValue:
 		return m.TimeValue()
+	case templatefield.FieldDecimalValue:
+		return m.DecimalValue()
+	case templatefield.FieldCurrencyCode:
+		return m.CurrencyCode()
+	case templatefield.FieldTimezone:
+		return m.Timezone()
+	case templatefield.FieldChoices:
+		return m.Choices()
 	}
 	return nil, false
 }
@@ -22480,6 +23018,14 @@ func (m *TemplateFieldMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldBooleanValue(ctx)
 	case templatefield.FieldTimeValue:
 		return m.OldTimeValue(ctx)
+	case templatefield.FieldDecimalValue:
+		return m.OldDecimalValue(ctx)
+	case templatefield.FieldCurrencyCode:
+		return m.OldCurrencyCode(ctx)
+	case templatefield.FieldTimezone:
+		return m.OldTimezone(ctx)
+	case templatefield.FieldChoices:
+		return m.OldChoices(ctx)
 	}
 	return nil, fmt.Errorf("unknown TemplateField field %s", name)
 }
@@ -22552,6 +23098,34 @@ func (m *TemplateFieldMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetTimeValue(v)
 		return nil
+	case templatefield.FieldDecimalValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDecimalValue(v)
+		return nil
+	case templatefield.FieldCurrencyCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCurrencyCode(v)
+		return nil
+	case templatefield.FieldTimezone:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTimezone(v)
+		return nil
+	case templatefield.FieldChoices:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetChoices(v)
+		return nil
 	}
 	return fmt.Errorf("unknown TemplateField field %s", name)
 }
@@ -22563,6 +23137,9 @@ func (m *TemplateFieldMutation) AddedFields() []string {
 	if m.addnumber_value != nil {
 		fields = append(fields, templatefield.FieldNumberValue)
 	}
+	if m.adddecimal_value != nil {
+		fields = append(fields, templatefield.FieldDecimalValue)
+	}
 	return fields
 }
 
@@ -22573,6 +23150,8 @@ func (m *TemplateFieldMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case templatefield.FieldNumberValue:
 		return m.AddedNumberValue()
+	case templatefield.FieldDecimalValue:
+		return m.AddedDecimalValue()
 	}
 	return nil, false
 }
@@ -22588,6 +23167,13 @@ func (m *TemplateFieldMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddNumberValue(v)
+		return nil
+	case templatefield.FieldDecimalValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDecimalValue(v)
 		return nil
 	}
 	return fmt.Errorf("unknown TemplateField numeric field %s", name)
@@ -22605,6 +23191,12 @@ func (m *TemplateFieldMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(templatefield.FieldNumberValue) {
 		fields = append(fields, templatefield.FieldNumberValue)
+	}
+	if m.FieldCleared(templatefield.FieldDecimalValue) {
+		fields = append(fields, templatefield.FieldDecimalValue)
+	}
+	if m.FieldCleared(templatefield.FieldChoices) {
+		fields = append(fields, templatefield.FieldChoices)
 	}
 	return fields
 }
@@ -22628,6 +23220,12 @@ func (m *TemplateFieldMutation) ClearField(name string) error {
 		return nil
 	case templatefield.FieldNumberValue:
 		m.ClearNumberValue()
+		return nil
+	case templatefield.FieldDecimalValue:
+		m.ClearDecimalValue()
+		return nil
+	case templatefield.FieldChoices:
+		m.ClearChoices()
 		return nil
 	}
 	return fmt.Errorf("unknown TemplateField nullable field %s", name)
@@ -22663,6 +23261,18 @@ func (m *TemplateFieldMutation) ResetField(name string) error {
 		return nil
 	case templatefield.FieldTimeValue:
 		m.ResetTimeValue()
+		return nil
+	case templatefield.FieldDecimalValue:
+		m.ResetDecimalValue()
+		return nil
+	case templatefield.FieldCurrencyCode:
+		m.ResetCurrencyCode()
+		return nil
+	case templatefield.FieldTimezone:
+		m.ResetTimezone()
+		return nil
+	case templatefield.FieldChoices:
+		m.ResetChoices()
 		return nil
 	}
 	return fmt.Errorf("unknown TemplateField field %s", name)

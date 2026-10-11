@@ -22,6 +22,12 @@ export enum TemplatefieldType {
   TypeNumber = "number",
   TypeBoolean = "boolean",
   TypeTime = "time",
+  TypeDecimal = "decimal",
+  TypeCurrency = "currency",
+  TypeDate = "date",
+  TypeDatetime = "datetime",
+  TypeURL = "url",
+  TypeSelect = "select",
 }
 
 export enum MaintenanceFilterStatus {
@@ -66,6 +72,12 @@ export enum EntityfieldType {
   TypeNumber = "number",
   TypeBoolean = "boolean",
   TypeTime = "time",
+  TypeDecimal = "decimal",
+  TypeCurrency = "currency",
+  TypeDate = "date",
+  TypeDatetime = "datetime",
+  TypeURL = "url",
+  TypeSelect = "select",
 }
 
 export enum BackupdestinationType {
@@ -409,8 +421,14 @@ export interface EntEntityEdges {
 export interface EntEntityField {
   /** BooleanValue holds the value of the "boolean_value" field. */
   boolean_value: boolean;
+  /** Choices holds the value of the "choices" field. */
+  choices: string[];
   /** CreatedAt holds the value of the "created_at" field. */
   created_at: string;
+  /** CurrencyCode holds the value of the "currency_code" field. */
+  currency_code: string;
+  /** DecimalValue holds the value of the "decimal_value" field. */
+  decimal_value: number;
   /** Description holds the value of the "description" field. */
   description: string;
   /**
@@ -428,6 +446,8 @@ export interface EntEntityField {
   text_value: string;
   /** TimeValue holds the value of the "time_value" field. */
   time_value: string;
+  /** Timezone holds the value of the "timezone" field. */
+  timezone: string;
   /** Type holds the value of the "type" field. */
   type: EntityfieldType;
   /** UpdatedAt holds the value of the "updated_at" field. */
@@ -875,8 +895,14 @@ export interface EntTagEdges {
 export interface EntTemplateField {
   /** BooleanValue holds the value of the "boolean_value" field. */
   boolean_value: boolean;
+  /** Choices holds the value of the "choices" field. */
+  choices: string[];
   /** CreatedAt holds the value of the "created_at" field. */
   created_at: string;
+  /** CurrencyCode holds the value of the "currency_code" field. */
+  currency_code: string;
+  /** DecimalValue holds the value of the "decimal_value" field. */
+  decimal_value: number;
   /** Description holds the value of the "description" field. */
   description: string;
   /**
@@ -894,6 +920,8 @@ export interface EntTemplateField {
   text_value: string;
   /** TimeValue holds the value of the "time_value" field. */
   time_value: string;
+  /** Timezone holds the value of the "timezone" field. */
+  timezone: string;
   /** Type holds the value of the "type" field. */
   type: TemplatefieldType;
   /** UpdatedAt holds the value of the "updated_at" field. */
@@ -1347,10 +1375,25 @@ export interface EntityCreate {
 
 export interface EntityFieldData {
   booleanValue: boolean;
+  /** Choices lists the allowed values of a select field. */
+  choices: string[];
+  /**
+   * CurrencyCode is the ISO 4217 code of a currency field; NumberValue holds
+   * its amount in minor units.
+   */
+  currencyCode: string;
+  /**
+   * DecimalValue, TimeValue (a UTC instant) and the other typed values are
+   * derived from TextValue by the server.
+   */
+  decimalValue?: number | null;
   id: string;
   name: string;
   numberValue: number;
   textValue: string;
+  timeValue?: string | null;
+  /** Timezone is the IANA zone a datetime field was entered in. */
+  timezone: string;
   type: string;
 }
 
@@ -1868,11 +1911,19 @@ export interface TagUpdate {
 
 export interface TemplateField {
   booleanValue: boolean;
+  choices: string[];
+  currencyCode: string;
+  /**
+   * DecimalValue, TimeValue and the rest are derived from TextValue by the
+   * server; see EntityFieldData.
+   */
+  decimalValue?: number | null;
   id: string;
   name: string;
   numberValue: number;
   textValue: string;
-  timeValue: string;
+  timeValue?: string | null;
+  timezone: string;
   type: string;
 }
 

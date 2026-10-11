@@ -442,6 +442,18 @@ func init() {
 	entityfieldDescTimeValue := entityfieldFields[4].Descriptor()
 	// entityfield.DefaultTimeValue holds the default value on creation for the time_value field.
 	entityfield.DefaultTimeValue = entityfieldDescTimeValue.Default.(func() time.Time)
+	// entityfieldDescCurrencyCode is the schema descriptor for currency_code field.
+	entityfieldDescCurrencyCode := entityfieldFields[6].Descriptor()
+	// entityfield.DefaultCurrencyCode holds the default value on creation for the currency_code field.
+	entityfield.DefaultCurrencyCode = entityfieldDescCurrencyCode.Default.(string)
+	// entityfield.CurrencyCodeValidator is a validator for the "currency_code" field. It is called by the builders before save.
+	entityfield.CurrencyCodeValidator = entityfieldDescCurrencyCode.Validators[0].(func(string) error)
+	// entityfieldDescTimezone is the schema descriptor for timezone field.
+	entityfieldDescTimezone := entityfieldFields[7].Descriptor()
+	// entityfield.DefaultTimezone holds the default value on creation for the timezone field.
+	entityfield.DefaultTimezone = entityfieldDescTimezone.Default.(string)
+	// entityfield.TimezoneValidator is a validator for the "timezone" field. It is called by the builders before save.
+	entityfield.TimezoneValidator = entityfieldDescTimezone.Validators[0].(func(string) error)
 	// entityfieldDescID is the schema descriptor for id field.
 	entityfieldDescID := entityfieldMixinFields0[0].Descriptor()
 	// entityfield.DefaultID holds the default value on creation for the id field.
@@ -1090,6 +1102,18 @@ func init() {
 	templatefieldDescTimeValue := templatefieldFields[4].Descriptor()
 	// templatefield.DefaultTimeValue holds the default value on creation for the time_value field.
 	templatefield.DefaultTimeValue = templatefieldDescTimeValue.Default.(func() time.Time)
+	// templatefieldDescCurrencyCode is the schema descriptor for currency_code field.
+	templatefieldDescCurrencyCode := templatefieldFields[6].Descriptor()
+	// templatefield.DefaultCurrencyCode holds the default value on creation for the currency_code field.
+	templatefield.DefaultCurrencyCode = templatefieldDescCurrencyCode.Default.(string)
+	// templatefield.CurrencyCodeValidator is a validator for the "currency_code" field. It is called by the builders before save.
+	templatefield.CurrencyCodeValidator = templatefieldDescCurrencyCode.Validators[0].(func(string) error)
+	// templatefieldDescTimezone is the schema descriptor for timezone field.
+	templatefieldDescTimezone := templatefieldFields[7].Descriptor()
+	// templatefield.DefaultTimezone holds the default value on creation for the timezone field.
+	templatefield.DefaultTimezone = templatefieldDescTimezone.Default.(string)
+	// templatefield.TimezoneValidator is a validator for the "timezone" field. It is called by the builders before save.
+	templatefield.TimezoneValidator = templatefieldDescTimezone.Validators[0].(func(string) error)
 	// templatefieldDescID is the schema descriptor for id field.
 	templatefieldDescID := templatefieldMixinFields0[0].Descriptor()
 	// templatefield.DefaultID holds the default value on creation for the id field.

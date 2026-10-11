@@ -430,9 +430,7 @@ func toolCreateItemFromTemplate(c *call, in CreateFromTemplateIn) (ItemDetail, e
 	}
 	fields := make([]repo.EntityFieldData, 0, len(t.Fields))
 	for _, f := range t.Fields {
-		fields = append(fields, repo.EntityFieldData{
-			Type: f.Type, Name: f.Name, TextValue: f.TextValue, NumberValue: f.NumberValue, BooleanValue: f.BooleanValue,
-		})
+		fields = append(fields, f.ToEntityField())
 	}
 	out, err := c.repos().Entities.CreateFromTemplate(c, c.gid(), repo.EntityCreateFromTemplate{
 		Name: name, Description: in.Description, Quantity: qty, ParentID: parent, LocationID: loc,

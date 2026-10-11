@@ -141,13 +141,7 @@ func (ctrl *V1Controller) HandleEntityTemplatesCreateItem() errchain.HandlerFunc
 
 		// Build custom fields from template
 		fields := lo.Map(template.Fields, func(f repo.TemplateField, _ int) repo.EntityFieldData {
-			return repo.EntityFieldData{
-				Type:         f.Type,
-				Name:         f.Name,
-				TextValue:    f.TextValue,
-				NumberValue:  f.NumberValue,
-				BooleanValue: f.BooleanValue,
-			}
+			return f.ToEntityField()
 		})
 
 		// Create entity with all template data in a single transaction

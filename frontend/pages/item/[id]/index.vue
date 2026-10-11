@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { displayFieldValue, isFieldType } from "~/composables/use-custom-fields";
   import { useI18n } from "vue-i18n";
   import { toast } from "@/components/ui/sonner";
   import type { AnyDetail, Detail, Details } from "~~/components/global/DetailsSection/types";
@@ -46,7 +47,7 @@
   import ItemAttachmentsList from "~/components/Item/AttachmentsList.vue";
   import ItemViewSelectable from "~/components/Item/View/Selectable.vue";
 
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   const { openDialog, closeDialog } = useDialog();
 
@@ -254,22 +255,31 @@
       },
       ...assetID.value,
       ...item.value.fields.map(field => {
+        const type = isFieldType(field.type) ? field.type : "text";
+        const shown = displayFieldValue({ ...field, type }, locale.value, {
+          yes: t("global.yes"),
+          no: t("global.no"),
+        });
+
         /**
-         * Support Special URL Syntax
+         * Support Special URL Syntax. Only free text and links are scanned: a
+         * date or an amount is never a link.
          */
-        const url = maybeUrl(field.textValue);
-        if (url.isUrl) {
-          return {
-            type: "link",
-            name: field.name,
-            text: url.text,
-            href: url.url,
-          } as AnyDetail;
+        if (type === "url" || type === "text") {
+          const url = maybeUrl(field.textValue);
+          if (url.isUrl) {
+            return {
+              type: "link",
+              name: field.name,
+              text: url.text,
+              href: url.url,
+            } as AnyDetail;
+          }
         }
 
         return {
           name: field.name,
-          text: field.textValue,
+          text: shown,
         };
       }),
     ];
@@ -602,8 +612,13 @@
       fields: item.value.fields.map(field => ({
         id: NIL_UUID,
         name: field.name,
-        type: "text",
+        type: field.type,
         textValue: field.textValue || "",
+        numberValue: field.numberValue,
+        booleanValue: field.booleanValue,
+        currencyCode: field.currencyCode ?? "",
+        timezone: field.timezone ?? "",
+        choices: field.choices ?? [],
       })),
     };
 

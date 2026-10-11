@@ -84,6 +84,10 @@ type (
 		CopyPrefix       string `json:"copyPrefix"`
 	}
 
+	// EntityFieldData is a custom field. Fields of the newer types (decimal,
+	// currency, date, datetime, time, url, select) are sent as a type plus a
+	// canonical TextValue; the server validates it and fills in the typed
+	// values, which are read-only on input.
 	EntityFieldData struct {
 		ID           uuid.UUID `json:"id,omitempty"`
 		Type         string    `json:"type"`
@@ -91,6 +95,17 @@ type (
 		TextValue    string    `json:"textValue"`
 		NumberValue  int       `json:"numberValue"`
 		BooleanValue bool      `json:"booleanValue"`
+		// DecimalValue, TimeValue (a UTC instant) and the other typed values are
+		// derived from TextValue by the server.
+		DecimalValue *float64   `json:"decimalValue,omitempty" extensions:"x-nullable,x-omitempty"`
+		TimeValue    *time.Time `json:"timeValue,omitempty" extensions:"x-nullable,x-omitempty"`
+		// CurrencyCode is the ISO 4217 code of a currency field; NumberValue holds
+		// its amount in minor units.
+		CurrencyCode string `json:"currencyCode,omitempty"`
+		// Timezone is the IANA zone a datetime field was entered in.
+		Timezone string `json:"timezone,omitempty"`
+		// Choices lists the allowed values of a select field.
+		Choices []string `json:"choices,omitempty"`
 	}
 
 	EntityCreate struct {
@@ -312,6 +327,11 @@ func mapEntityFields(fields []*ent.EntityField) []EntityFieldData {
 			TextValue:    f.TextValue,
 			NumberValue:  f.NumberValue,
 			BooleanValue: f.BooleanValue,
+			DecimalValue: f.DecimalValue,
+			TimeValue:    timeValueFor(f.Type.String(), f.TimeValue),
+			CurrencyCode: f.CurrencyCode,
+			Timezone:     f.Timezone,
+			Choices:      f.Choices,
 		}
 	})
 }
@@ -1444,11 +1464,16 @@ func (r *EntityRepository) CreateFromTemplate(ctx context.Context, gid uuid.UUID
 		fieldsCtx, fieldsSpan := entityTracer().Start(ctx, "repo.EntityRepository.CreateFromTemplate.fields",
 			trace.WithAttributes(attribute.Int("fields.count", len(data.Fields))))
 		for _, field := range data.Fields {
-			_, err = tx.EntityField.Create().
+			val, verr := normalizeField(field)
+			if verr != nil {
+				recordSpanError(fieldsSpan, verr)
+				fieldsSpan.End()
+				recordSpanError(span, verr)
+				return EntityOut{}, verr
+			}
+			_, err = applyFieldCreate(tx.EntityField.Create().
 				SetEntityID(newEntityID).
-				SetType(entityfield.Type(field.Type)).
-				SetName(field.Name).
-				SetTextValue(field.TextValue).
+				SetName(field.Name), val).
 				Save(fieldsCtx)
 			if err != nil {
 				wrapped := fmt.Errorf("failed to create field %s: %w", field.Name, err)
@@ -1905,14 +1930,17 @@ func (r *EntityRepository) UpdateByGroup(ctx context.Context, gid uuid.UUID, dat
 	updatedFields := 0
 	// Update Existing Fields
 	for _, f := range data.Fields {
+		val, verr := normalizeField(f)
+		if verr != nil {
+			recordSpanError(fieldsSpan, verr)
+			fieldsSpan.End()
+			recordSpanError(span, verr)
+			return EntityOut{}, verr
+		}
 		if f.ID == uuid.Nil {
-			_, err = r.db.EntityField.Create().
+			_, err = applyFieldCreate(r.db.EntityField.Create().
 				SetEntityID(data.ID).
-				SetType(entityfield.Type(f.Type)).
-				SetName(f.Name).
-				SetTextValue(f.TextValue).
-				SetNumberValue(f.NumberValue).
-				SetBooleanValue(f.BooleanValue).
+				SetName(f.Name), val).
 				Save(fieldsCtx)
 			if err != nil {
 				recordSpanError(fieldsSpan, err)
@@ -1923,16 +1951,12 @@ func (r *EntityRepository) UpdateByGroup(ctx context.Context, gid uuid.UUID, dat
 			createdFields++
 		}
 
-		opt := r.db.EntityField.Update().
+		opt := applyFieldUpdate(r.db.EntityField.Update().
 			Where(
 				entityfield.ID(f.ID),
 				entityfield.HasEntityWith(entity.ID(data.ID), entity.HasGroupWith(group.ID(gid))),
 			).
-			SetType(entityfield.Type(f.Type)).
-			SetName(f.Name).
-			SetTextValue(f.TextValue).
-			SetNumberValue(f.NumberValue).
-			SetBooleanValue(f.BooleanValue)
+			SetName(f.Name), val)
 
 		_, err = opt.Save(fieldsCtx)
 		if err != nil {
@@ -2574,13 +2598,11 @@ func (r *EntityRepository) Duplicate(ctx context.Context, gid, id uuid.UUID, opt
 			trace.WithAttributes(attribute.Int("fields.count", len(originalEntity.Fields))))
 		copied := 0
 		for _, field := range originalEntity.Fields {
-			_, err = tx.EntityField.Create().
+			// The source field was validated when it was written, so it is copied
+			// as stored rather than re-parsed.
+			_, err = applyFieldCreate(tx.EntityField.Create().
 				SetEntityID(newEntityID).
-				SetType(entityfield.Type(field.Type)).
-				SetName(field.Name).
-				SetTextValue(field.TextValue).
-				SetNumberValue(field.NumberValue).
-				SetBooleanValue(field.BooleanValue).
+				SetName(field.Name), storedValue(field)).
 				Save(fieldsCtx)
 			if err != nil {
 				recordSpanError(fieldsSpan, err)
