@@ -60,7 +60,8 @@
     </div>
 
     <div v-else class="flex flex-col items-center justify-center py-12 text-center">
-      <p class="mb-4 text-muted-foreground">{{ $t("pages.templates.no_templates") }}</p>
+      <p class="text-muted-foreground">{{ $t("pages.templates.no_templates") }}</p>
+      <p class="mb-4 mt-1 max-w-md text-sm text-muted-foreground">{{ $t("hints.templates") }}</p>
       <Button @click="openDialog(DialogID.CreateTemplate)">
         <MdiPlus class="mr-2" />
         {{ $t("components.template.create_modal.title") }}

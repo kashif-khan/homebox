@@ -161,6 +161,8 @@
         "
         :max-length="255"
         :min-length="1"
+        required-mark
+        :error="nameError"
       />
       <FormTextField
         v-if="!selectedEntityType?.isLocation"
@@ -626,7 +628,24 @@
     onUnmounted(cleanup);
   });
 
+  // Shown under the name field when Create is pressed without one.
+  const nameError = ref("");
+  watch(
+    () => form.name,
+    v => {
+      if (v.trim()) nameError.value = "";
+    }
+  );
+
   async function create(close = true) {
+    if (!form.name.trim()) {
+      nameError.value = t("components.entity.create_modal.name_required");
+      toast.error(nameError.value);
+      // nameInput is the FormTextField component, so reach its input element.
+      (nameInput.value as unknown as { $el?: HTMLElement } | null)?.$el?.querySelector("input")?.focus();
+      return;
+    }
+
     // An empty entityTypeId serializes to "" and fails UUID unmarshalling on the
     // backend, so block creation up front rather than firing a doomed request.
     if (!selectedEntityType.value?.id) {

@@ -51,7 +51,10 @@
       <section>
         <Subtitle> {{ $t("home.recently_added") }} </Subtitle>
 
-        <p v-if="itemTable.items.length === 0" class="ml-2 text-sm">{{ $t("items.no_results") }}</p>
+        <div v-if="itemTable.items.length === 0" class="ml-2 text-sm">
+          <p>{{ $t("items.no_results") }}</p>
+          <p class="mt-1 max-w-xl text-muted-foreground">{{ $t("hints.items") }}</p>
+        </div>
         <BaseCard v-else-if="breakpoints.lg">
           <Table :items="itemTable.items" />
         </BaseCard>
@@ -62,7 +65,10 @@
 
       <section>
         <Subtitle> {{ $t("home.storage_locations") }} </Subtitle>
-        <p v-if="locations.length === 0" class="ml-2 text-sm">{{ $t("locations.no_results") }}</p>
+        <div v-if="locations.length === 0" class="ml-2 text-sm">
+          <p>{{ $t("locations.no_results") }}</p>
+          <p class="mt-1 max-w-xl text-muted-foreground">{{ $t("hints.locations") }}</p>
+        </div>
         <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
           <LocationCard v-for="location in locations" :key="location.id" :location="location" />
         </div>
@@ -70,7 +76,10 @@
 
       <section>
         <Subtitle> {{ $t("home.tags") }} </Subtitle>
-        <p v-if="tags.length === 0" class="ml-2 text-sm">{{ $t("tags.no_results") }}</p>
+        <div v-if="tags.length === 0" class="ml-2 text-sm">
+          <p>{{ $t("tags.no_results") }}</p>
+          <p class="mt-1 max-w-xl text-muted-foreground">{{ $t("hints.tags") }}</p>
+        </div>
         <div v-else class="flex flex-wrap gap-4">
           <TagChip v-for="tag in tags" :key="tag.id" size="lg" :tag="tag" class="shadow-md" />
         </div>

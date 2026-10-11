@@ -34,6 +34,7 @@
       <p class="mx-auto max-w-xs">
         {{ $t("components.location.tree.no_locations") }}
       </p>
+      <p class="mx-auto mt-1 max-w-sm text-xs">{{ $t("hints.locations") }}</p>
       <Button
         class="mt-3"
         variant="outline"

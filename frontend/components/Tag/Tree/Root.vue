@@ -33,6 +33,7 @@
       <p class="mx-auto max-w-xs">
         {{ $t("tags.no_results") }}
       </p>
+      <p class="mx-auto mt-1 max-w-sm text-xs">{{ $t("hints.tags") }}</p>
       <Button
         class="mt-3"
         variant="outline"
