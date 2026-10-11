@@ -45,6 +45,12 @@ type GroupInvitationToken func(*sql.Selector)
 // MaintenanceEntry is the predicate function for maintenanceentry builders.
 type MaintenanceEntry func(*sql.Selector)
 
+// NotificationLog is the predicate function for notificationlog builders.
+type NotificationLog func(*sql.Selector)
+
+// NotificationRule is the predicate function for notificationrule builders.
+type NotificationRule func(*sql.Selector)
+
 // Notifier is the predicate function for notifier builders.
 type Notifier func(*sql.Selector)
 
@@ -74,3 +80,9 @@ type User func(*sql.Selector)
 
 // UserGroup is the predicate function for usergroup builders.
 type UserGroup func(*sql.Selector)
+
+// WebhookDelivery is the predicate function for webhookdelivery builders.
+type WebhookDelivery func(*sql.Selector)
+
+// WebhookEndpoint is the predicate function for webhookendpoint builders.
+type WebhookEndpoint func(*sql.Selector)

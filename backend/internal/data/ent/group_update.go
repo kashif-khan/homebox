@@ -19,11 +19,13 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/export"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/group"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/groupinvitationtoken"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notificationrule"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notifier"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/oauthgrant"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/predicate"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/tag"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/user"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/webhookendpoint"
 )
 
 // GroupUpdate is the builder for updating Group entities.
@@ -83,6 +85,41 @@ func (_u *GroupUpdate) SetTimezone(v string) *GroupUpdate {
 func (_u *GroupUpdate) SetNillableTimezone(v *string) *GroupUpdate {
 	if v != nil {
 		_u.SetTimezone(*v)
+	}
+	return _u
+}
+
+// SetNotifyHour sets the "notify_hour" field.
+func (_u *GroupUpdate) SetNotifyHour(v int) *GroupUpdate {
+	_u.mutation.ResetNotifyHour()
+	_u.mutation.SetNotifyHour(v)
+	return _u
+}
+
+// SetNillableNotifyHour sets the "notify_hour" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableNotifyHour(v *int) *GroupUpdate {
+	if v != nil {
+		_u.SetNotifyHour(*v)
+	}
+	return _u
+}
+
+// AddNotifyHour adds value to the "notify_hour" field.
+func (_u *GroupUpdate) AddNotifyHour(v int) *GroupUpdate {
+	_u.mutation.AddNotifyHour(v)
+	return _u
+}
+
+// SetAlertRulesSeeded sets the "alert_rules_seeded" field.
+func (_u *GroupUpdate) SetAlertRulesSeeded(v bool) *GroupUpdate {
+	_u.mutation.SetAlertRulesSeeded(v)
+	return _u
+}
+
+// SetNillableAlertRulesSeeded sets the "alert_rules_seeded" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableAlertRulesSeeded(v *bool) *GroupUpdate {
+	if v != nil {
+		_u.SetAlertRulesSeeded(*v)
 	}
 	return _u
 }
@@ -249,6 +286,36 @@ func (_u *GroupUpdate) AddOauthGrants(v ...*OAuthGrant) *GroupUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddOauthGrantIDs(ids...)
+}
+
+// AddNotificationRuleIDs adds the "notification_rules" edge to the NotificationRule entity by IDs.
+func (_u *GroupUpdate) AddNotificationRuleIDs(ids ...uuid.UUID) *GroupUpdate {
+	_u.mutation.AddNotificationRuleIDs(ids...)
+	return _u
+}
+
+// AddNotificationRules adds the "notification_rules" edges to the NotificationRule entity.
+func (_u *GroupUpdate) AddNotificationRules(v ...*NotificationRule) *GroupUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddNotificationRuleIDs(ids...)
+}
+
+// AddWebhookEndpointIDs adds the "webhook_endpoints" edge to the WebhookEndpoint entity by IDs.
+func (_u *GroupUpdate) AddWebhookEndpointIDs(ids ...uuid.UUID) *GroupUpdate {
+	_u.mutation.AddWebhookEndpointIDs(ids...)
+	return _u
+}
+
+// AddWebhookEndpoints adds the "webhook_endpoints" edges to the WebhookEndpoint entity.
+func (_u *GroupUpdate) AddWebhookEndpoints(v ...*WebhookEndpoint) *GroupUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddWebhookEndpointIDs(ids...)
 }
 
 // Mutation returns the GroupMutation object of the builder.
@@ -466,6 +533,48 @@ func (_u *GroupUpdate) RemoveOauthGrants(v ...*OAuthGrant) *GroupUpdate {
 	return _u.RemoveOauthGrantIDs(ids...)
 }
 
+// ClearNotificationRules clears all "notification_rules" edges to the NotificationRule entity.
+func (_u *GroupUpdate) ClearNotificationRules() *GroupUpdate {
+	_u.mutation.ClearNotificationRules()
+	return _u
+}
+
+// RemoveNotificationRuleIDs removes the "notification_rules" edge to NotificationRule entities by IDs.
+func (_u *GroupUpdate) RemoveNotificationRuleIDs(ids ...uuid.UUID) *GroupUpdate {
+	_u.mutation.RemoveNotificationRuleIDs(ids...)
+	return _u
+}
+
+// RemoveNotificationRules removes "notification_rules" edges to NotificationRule entities.
+func (_u *GroupUpdate) RemoveNotificationRules(v ...*NotificationRule) *GroupUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveNotificationRuleIDs(ids...)
+}
+
+// ClearWebhookEndpoints clears all "webhook_endpoints" edges to the WebhookEndpoint entity.
+func (_u *GroupUpdate) ClearWebhookEndpoints() *GroupUpdate {
+	_u.mutation.ClearWebhookEndpoints()
+	return _u
+}
+
+// RemoveWebhookEndpointIDs removes the "webhook_endpoints" edge to WebhookEndpoint entities by IDs.
+func (_u *GroupUpdate) RemoveWebhookEndpointIDs(ids ...uuid.UUID) *GroupUpdate {
+	_u.mutation.RemoveWebhookEndpointIDs(ids...)
+	return _u
+}
+
+// RemoveWebhookEndpoints removes "webhook_endpoints" edges to WebhookEndpoint entities.
+func (_u *GroupUpdate) RemoveWebhookEndpoints(v ...*WebhookEndpoint) *GroupUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveWebhookEndpointIDs(ids...)
+}
+
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *GroupUpdate) Save(ctx context.Context) (int, error) {
 	_u.defaults()
@@ -540,6 +649,15 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Timezone(); ok {
 		_spec.SetField(group.FieldTimezone, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.NotifyHour(); ok {
+		_spec.SetField(group.FieldNotifyHour, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedNotifyHour(); ok {
+		_spec.AddField(group.FieldNotifyHour, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AlertRulesSeeded(); ok {
+		_spec.SetField(group.FieldAlertRulesSeeded, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.McpAccess(); ok {
 		_spec.SetField(group.FieldMcpAccess, field.TypeString, value)
@@ -1006,6 +1124,96 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.NotificationRulesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.NotificationRulesTable,
+			Columns: []string{group.NotificationRulesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(notificationrule.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedNotificationRulesIDs(); len(nodes) > 0 && !_u.mutation.NotificationRulesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.NotificationRulesTable,
+			Columns: []string{group.NotificationRulesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(notificationrule.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.NotificationRulesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.NotificationRulesTable,
+			Columns: []string{group.NotificationRulesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(notificationrule.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.WebhookEndpointsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.WebhookEndpointsTable,
+			Columns: []string{group.WebhookEndpointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(webhookendpoint.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedWebhookEndpointsIDs(); len(nodes) > 0 && !_u.mutation.WebhookEndpointsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.WebhookEndpointsTable,
+			Columns: []string{group.WebhookEndpointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(webhookendpoint.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.WebhookEndpointsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.WebhookEndpointsTable,
+			Columns: []string{group.WebhookEndpointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(webhookendpoint.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{group.Label}
@@ -1070,6 +1278,41 @@ func (_u *GroupUpdateOne) SetTimezone(v string) *GroupUpdateOne {
 func (_u *GroupUpdateOne) SetNillableTimezone(v *string) *GroupUpdateOne {
 	if v != nil {
 		_u.SetTimezone(*v)
+	}
+	return _u
+}
+
+// SetNotifyHour sets the "notify_hour" field.
+func (_u *GroupUpdateOne) SetNotifyHour(v int) *GroupUpdateOne {
+	_u.mutation.ResetNotifyHour()
+	_u.mutation.SetNotifyHour(v)
+	return _u
+}
+
+// SetNillableNotifyHour sets the "notify_hour" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableNotifyHour(v *int) *GroupUpdateOne {
+	if v != nil {
+		_u.SetNotifyHour(*v)
+	}
+	return _u
+}
+
+// AddNotifyHour adds value to the "notify_hour" field.
+func (_u *GroupUpdateOne) AddNotifyHour(v int) *GroupUpdateOne {
+	_u.mutation.AddNotifyHour(v)
+	return _u
+}
+
+// SetAlertRulesSeeded sets the "alert_rules_seeded" field.
+func (_u *GroupUpdateOne) SetAlertRulesSeeded(v bool) *GroupUpdateOne {
+	_u.mutation.SetAlertRulesSeeded(v)
+	return _u
+}
+
+// SetNillableAlertRulesSeeded sets the "alert_rules_seeded" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableAlertRulesSeeded(v *bool) *GroupUpdateOne {
+	if v != nil {
+		_u.SetAlertRulesSeeded(*v)
 	}
 	return _u
 }
@@ -1236,6 +1479,36 @@ func (_u *GroupUpdateOne) AddOauthGrants(v ...*OAuthGrant) *GroupUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.AddOauthGrantIDs(ids...)
+}
+
+// AddNotificationRuleIDs adds the "notification_rules" edge to the NotificationRule entity by IDs.
+func (_u *GroupUpdateOne) AddNotificationRuleIDs(ids ...uuid.UUID) *GroupUpdateOne {
+	_u.mutation.AddNotificationRuleIDs(ids...)
+	return _u
+}
+
+// AddNotificationRules adds the "notification_rules" edges to the NotificationRule entity.
+func (_u *GroupUpdateOne) AddNotificationRules(v ...*NotificationRule) *GroupUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddNotificationRuleIDs(ids...)
+}
+
+// AddWebhookEndpointIDs adds the "webhook_endpoints" edge to the WebhookEndpoint entity by IDs.
+func (_u *GroupUpdateOne) AddWebhookEndpointIDs(ids ...uuid.UUID) *GroupUpdateOne {
+	_u.mutation.AddWebhookEndpointIDs(ids...)
+	return _u
+}
+
+// AddWebhookEndpoints adds the "webhook_endpoints" edges to the WebhookEndpoint entity.
+func (_u *GroupUpdateOne) AddWebhookEndpoints(v ...*WebhookEndpoint) *GroupUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddWebhookEndpointIDs(ids...)
 }
 
 // Mutation returns the GroupMutation object of the builder.
@@ -1453,6 +1726,48 @@ func (_u *GroupUpdateOne) RemoveOauthGrants(v ...*OAuthGrant) *GroupUpdateOne {
 	return _u.RemoveOauthGrantIDs(ids...)
 }
 
+// ClearNotificationRules clears all "notification_rules" edges to the NotificationRule entity.
+func (_u *GroupUpdateOne) ClearNotificationRules() *GroupUpdateOne {
+	_u.mutation.ClearNotificationRules()
+	return _u
+}
+
+// RemoveNotificationRuleIDs removes the "notification_rules" edge to NotificationRule entities by IDs.
+func (_u *GroupUpdateOne) RemoveNotificationRuleIDs(ids ...uuid.UUID) *GroupUpdateOne {
+	_u.mutation.RemoveNotificationRuleIDs(ids...)
+	return _u
+}
+
+// RemoveNotificationRules removes "notification_rules" edges to NotificationRule entities.
+func (_u *GroupUpdateOne) RemoveNotificationRules(v ...*NotificationRule) *GroupUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveNotificationRuleIDs(ids...)
+}
+
+// ClearWebhookEndpoints clears all "webhook_endpoints" edges to the WebhookEndpoint entity.
+func (_u *GroupUpdateOne) ClearWebhookEndpoints() *GroupUpdateOne {
+	_u.mutation.ClearWebhookEndpoints()
+	return _u
+}
+
+// RemoveWebhookEndpointIDs removes the "webhook_endpoints" edge to WebhookEndpoint entities by IDs.
+func (_u *GroupUpdateOne) RemoveWebhookEndpointIDs(ids ...uuid.UUID) *GroupUpdateOne {
+	_u.mutation.RemoveWebhookEndpointIDs(ids...)
+	return _u
+}
+
+// RemoveWebhookEndpoints removes "webhook_endpoints" edges to WebhookEndpoint entities.
+func (_u *GroupUpdateOne) RemoveWebhookEndpoints(v ...*WebhookEndpoint) *GroupUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveWebhookEndpointIDs(ids...)
+}
+
 // Where appends a list predicates to the GroupUpdate builder.
 func (_u *GroupUpdateOne) Where(ps ...predicate.Group) *GroupUpdateOne {
 	_u.mutation.Where(ps...)
@@ -1557,6 +1872,15 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if value, ok := _u.mutation.Timezone(); ok {
 		_spec.SetField(group.FieldTimezone, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.NotifyHour(); ok {
+		_spec.SetField(group.FieldNotifyHour, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedNotifyHour(); ok {
+		_spec.AddField(group.FieldNotifyHour, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AlertRulesSeeded(); ok {
+		_spec.SetField(group.FieldAlertRulesSeeded, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.McpAccess(); ok {
 		_spec.SetField(group.FieldMcpAccess, field.TypeString, value)
@@ -2016,6 +2340,96 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(oauthgrant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.NotificationRulesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.NotificationRulesTable,
+			Columns: []string{group.NotificationRulesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(notificationrule.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedNotificationRulesIDs(); len(nodes) > 0 && !_u.mutation.NotificationRulesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.NotificationRulesTable,
+			Columns: []string{group.NotificationRulesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(notificationrule.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.NotificationRulesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.NotificationRulesTable,
+			Columns: []string{group.NotificationRulesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(notificationrule.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.WebhookEndpointsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.WebhookEndpointsTable,
+			Columns: []string{group.WebhookEndpointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(webhookendpoint.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedWebhookEndpointsIDs(); len(nodes) > 0 && !_u.mutation.WebhookEndpointsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.WebhookEndpointsTable,
+			Columns: []string{group.WebhookEndpointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(webhookendpoint.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.WebhookEndpointsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.WebhookEndpointsTable,
+			Columns: []string{group.WebhookEndpointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(webhookendpoint.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

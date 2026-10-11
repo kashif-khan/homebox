@@ -35,6 +35,13 @@ func (Group) Fields() []ent.Field {
 		field.String("timezone").
 			MaxLen(64).
 			Default("UTC"),
+		// notify_hour is the local hour (0-23, in timezone) from which a day's
+		// alerts may be sent. alert_rules_seeded marks that the default
+		// maintenance rule has been created, so deleting it sticks.
+		field.Int("notify_hour").
+			Default(8),
+		field.Bool("alert_rules_seeded").
+			Default(false),
 		// mcp_access is the ceiling a collection owner sets for AI assistants
 		// connected over MCP: off (default), read, write or full. See
 		// scopes.Ceiling.
@@ -66,6 +73,8 @@ func (Group) Edges() []ent.Edge {
 		owned("exports", Export.Type),
 		owned("backup_destinations", BackupDestination.Type),
 		owned("oauth_grants", OAuthGrant.Type),
+		owned("notification_rules", NotificationRule.Type),
+		owned("webhook_endpoints", WebhookEndpoint.Type),
 		// $scaffold_edge
 	}
 }

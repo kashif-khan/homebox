@@ -25,6 +25,8 @@ type AllRepos struct {
 	Exports             *ExportRepository
 	BackupDestinations  *BackupDestinationRepository
 	OAuth               *OAuthRepository
+	NotificationRules   *NotificationRuleRepository
+	Webhooks            *WebhookRepository
 }
 
 // New constructs the repository container. searchEngine selects the free-text
@@ -33,14 +35,14 @@ func New(db *ent.Client, bus *eventbus.EventBus, storage config.Storage, pubSubC
 	if searchEngine == nil {
 		searchEngine = search.NewDatabaseEngine(db)
 	}
-	attachments := &AttachmentRepo{db, storage, pubSubConn, thumbnail}
+	attachments := &AttachmentRepo{db: db, storage: storage, pubSubConn: pubSubConn, thumbnail: thumbnail}
 	return &AllRepos{
 		Users:               &UserRepository{db},
 		AuthTokens:          &TokenRepository{db},
 		PasswordResetTokens: &PasswordResetTokenRepository{db},
 		APIKeys:             NewAPIKeyRepository(db),
 		Groups:              NewGroupRepository(db, attachments),
-		Entities:            &EntityRepository{db, bus, attachments, searchEngine},
+		Entities:            &EntityRepository{db: db, bus: bus, attachments: attachments, search: searchEngine},
 		EntityTypes:         &EntityTypeRepository{db, bus},
 		EntityTemplates:     &EntityTemplatesRepository{db, bus},
 		Tags:                &TagRepository{db, bus},
@@ -50,5 +52,7 @@ func New(db *ent.Client, bus *eventbus.EventBus, storage config.Storage, pubSubC
 		Exports:             &ExportRepository{db},
 		BackupDestinations:  &BackupDestinationRepository{db},
 		OAuth:               &OAuthRepository{db},
+		NotificationRules:   &NotificationRuleRepository{db},
+		Webhooks:            &WebhookRepository{db},
 	}
 }

@@ -473,6 +473,8 @@ var (
 		{Name: "name", Type: field.TypeString, Size: 255},
 		{Name: "currency", Type: field.TypeString, Default: "usd"},
 		{Name: "timezone", Type: field.TypeString, Size: 64, Default: "UTC"},
+		{Name: "notify_hour", Type: field.TypeInt, Default: 8},
+		{Name: "alert_rules_seeded", Type: field.TypeBool, Default: false},
 		{Name: "mcp_access", Type: field.TypeString, Default: "off"},
 	}
 	// GroupsTable holds the schema information for the "groups" table.
@@ -528,6 +530,85 @@ var (
 				Columns:    []*schema.Column{MaintenanceEntriesColumns[8]},
 				RefColumns: []*schema.Column{EntitiesColumns[0]},
 				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// NotificationLogsColumns holds the columns for the "notification_logs" table.
+	NotificationLogsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "notifier_id", Type: field.TypeUUID},
+		{Name: "subject_id", Type: field.TypeUUID},
+		{Name: "offset_days", Type: field.TypeInt},
+		{Name: "anchor_date", Type: field.TypeTime},
+		{Name: "due_on", Type: field.TypeTime},
+		{Name: "sent_at", Type: field.TypeTime},
+		{Name: "notification_rule_logs", Type: field.TypeUUID},
+	}
+	// NotificationLogsTable holds the schema information for the "notification_logs" table.
+	NotificationLogsTable = &schema.Table{
+		Name:       "notification_logs",
+		Columns:    NotificationLogsColumns,
+		PrimaryKey: []*schema.Column{NotificationLogsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "notification_logs_notification_rules_logs",
+				Columns:    []*schema.Column{NotificationLogsColumns[9]},
+				RefColumns: []*schema.Column{NotificationRulesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "notificationlog_once",
+				Unique:  true,
+				Columns: []*schema.Column{NotificationLogsColumns[3], NotificationLogsColumns[4], NotificationLogsColumns[5], NotificationLogsColumns[6], NotificationLogsColumns[9]},
+			},
+			{
+				Name:    "notificationlog_sent_at",
+				Unique:  false,
+				Columns: []*schema.Column{NotificationLogsColumns[8]},
+			},
+		},
+	}
+	// NotificationRulesColumns holds the columns for the "notification_rules" table.
+	NotificationRulesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "name", Type: field.TypeString, Size: 255},
+		{Name: "trigger", Type: field.TypeEnum, Enums: []string{"expires_at", "warranty_expires", "maintenance_due"}},
+		{Name: "offsets_days", Type: field.TypeJSON},
+		{Name: "entity_type_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "tag_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "notifier_ids", Type: field.TypeJSON, Nullable: true},
+		{Name: "is_active", Type: field.TypeBool, Default: true},
+		{Name: "group_id", Type: field.TypeUUID},
+	}
+	// NotificationRulesTable holds the schema information for the "notification_rules" table.
+	NotificationRulesTable = &schema.Table{
+		Name:       "notification_rules",
+		Columns:    NotificationRulesColumns,
+		PrimaryKey: []*schema.Column{NotificationRulesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "notification_rules_groups_notification_rules",
+				Columns:    []*schema.Column{NotificationRulesColumns[10]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "notificationrule_group_id",
+				Unique:  false,
+				Columns: []*schema.Column{NotificationRulesColumns[10]},
+			},
+			{
+				Name:    "notificationrule_group_id_is_active",
+				Unique:  false,
+				Columns: []*schema.Column{NotificationRulesColumns[10], NotificationRulesColumns[9]},
 			},
 		},
 	}
@@ -869,6 +950,98 @@ var (
 			},
 		},
 	}
+	// WebhookDeliveriesColumns holds the columns for the "webhook_deliveries" table.
+	WebhookDeliveriesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "event_type", Type: field.TypeString, Size: 64},
+		{Name: "event_id", Type: field.TypeUUID},
+		{Name: "occurred_at", Type: field.TypeTime},
+		{Name: "scheduled_for", Type: field.TypeTime, Nullable: true},
+		{Name: "data", Type: field.TypeJSON},
+		{Name: "dedupe_key", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "delivered", "failed"}, Default: "pending"},
+		{Name: "attempts", Type: field.TypeInt, Default: 0},
+		{Name: "next_attempt_at", Type: field.TypeTime},
+		{Name: "delivered_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_status_code", Type: field.TypeInt, Default: 0},
+		{Name: "last_error", Type: field.TypeString, Size: 500, Default: ""},
+		{Name: "last_duration_ms", Type: field.TypeInt, Default: 0},
+		{Name: "response_snippet", Type: field.TypeString, Size: 500, Default: ""},
+		{Name: "webhook_endpoint_deliveries", Type: field.TypeUUID},
+	}
+	// WebhookDeliveriesTable holds the schema information for the "webhook_deliveries" table.
+	WebhookDeliveriesTable = &schema.Table{
+		Name:       "webhook_deliveries",
+		Columns:    WebhookDeliveriesColumns,
+		PrimaryKey: []*schema.Column{WebhookDeliveriesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "webhook_deliveries_webhook_endpoints_deliveries",
+				Columns:    []*schema.Column{WebhookDeliveriesColumns[17]},
+				RefColumns: []*schema.Column{WebhookEndpointsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "webhookdelivery_status_next_attempt_at",
+				Unique:  false,
+				Columns: []*schema.Column{WebhookDeliveriesColumns[9], WebhookDeliveriesColumns[11]},
+			},
+			{
+				Name:    "webhookdelivery_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{WebhookDeliveriesColumns[1]},
+			},
+			{
+				Name:    "webhookdelivery_dedupe",
+				Unique:  true,
+				Columns: []*schema.Column{WebhookDeliveriesColumns[8], WebhookDeliveriesColumns[17]},
+			},
+		},
+	}
+	// WebhookEndpointsColumns holds the columns for the "webhook_endpoints" table.
+	WebhookEndpointsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "name", Type: field.TypeString, Size: 255},
+		{Name: "url", Type: field.TypeString, Size: 2083},
+		{Name: "secret", Type: field.TypeString, Size: 128},
+		{Name: "events", Type: field.TypeJSON},
+		{Name: "entity_type_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "tag_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "is_active", Type: field.TypeBool, Default: true},
+		{Name: "group_id", Type: field.TypeUUID},
+	}
+	// WebhookEndpointsTable holds the schema information for the "webhook_endpoints" table.
+	WebhookEndpointsTable = &schema.Table{
+		Name:       "webhook_endpoints",
+		Columns:    WebhookEndpointsColumns,
+		PrimaryKey: []*schema.Column{WebhookEndpointsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "webhook_endpoints_groups_webhook_endpoints",
+				Columns:    []*schema.Column{WebhookEndpointsColumns[10]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "webhookendpoint_group_id",
+				Unique:  false,
+				Columns: []*schema.Column{WebhookEndpointsColumns[10]},
+			},
+			{
+				Name:    "webhookendpoint_group_id_is_active",
+				Unique:  false,
+				Columns: []*schema.Column{WebhookEndpointsColumns[10], WebhookEndpointsColumns[9]},
+			},
+		},
+	}
 	// TagEntitiesColumns holds the columns for the "tag_entities" table.
 	TagEntitiesColumns = []*schema.Column{
 		{Name: "tag_id", Type: field.TypeUUID},
@@ -909,6 +1082,8 @@ var (
 		GroupsTable,
 		GroupInvitationTokensTable,
 		MaintenanceEntriesTable,
+		NotificationLogsTable,
+		NotificationRulesTable,
 		NotifiersTable,
 		OauthClientsTable,
 		OauthGrantsTable,
@@ -919,6 +1094,8 @@ var (
 		TemplateFieldsTable,
 		UsersTable,
 		UserGroupsTable,
+		WebhookDeliveriesTable,
+		WebhookEndpointsTable,
 		TagEntitiesTable,
 	}
 )
@@ -943,6 +1120,8 @@ func init() {
 	ExportsTable.ForeignKeys[0].RefTable = GroupsTable
 	GroupInvitationTokensTable.ForeignKeys[0].RefTable = GroupsTable
 	MaintenanceEntriesTable.ForeignKeys[0].RefTable = EntitiesTable
+	NotificationLogsTable.ForeignKeys[0].RefTable = NotificationRulesTable
+	NotificationRulesTable.ForeignKeys[0].RefTable = GroupsTable
 	NotifiersTable.ForeignKeys[0].RefTable = GroupsTable
 	NotifiersTable.ForeignKeys[1].RefTable = UsersTable
 	OauthGrantsTable.ForeignKeys[0].RefTable = GroupsTable
@@ -959,6 +1138,8 @@ func init() {
 	UserGroupsTable.Annotation = &entsql.Annotation{
 		Table: "user_groups",
 	}
+	WebhookDeliveriesTable.ForeignKeys[0].RefTable = WebhookEndpointsTable
+	WebhookEndpointsTable.ForeignKeys[0].RefTable = GroupsTable
 	TagEntitiesTable.ForeignKeys[0].RefTable = TagsTable
 	TagEntitiesTable.ForeignKeys[1].RefTable = EntitiesTable
 }

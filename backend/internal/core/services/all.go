@@ -19,11 +19,13 @@ type AllServices struct {
 	Exports           *ExportService
 	Backups           *BackupService
 	Currencies        *currencies.CurrencyRegistry
+	Webhooks          *WebhookService
 }
 
 type OptionsFunc func(*options)
 
 type options struct {
+	webhooks             config.WebhooksConf
 	autoIncrementAssetID bool
 	currencies           []currencies.Currency
 	notifierConfig       *config.NotifierConf
@@ -73,6 +75,13 @@ func WithExportPlumbing(bus *eventbus.EventBus, db *ent.Client, storage config.S
 func WithBackupConfig(v config.BackupConf) func(*options) {
 	return func(o *options) {
 		o.backup = v
+	}
+}
+
+// WithWebhooks supplies the outbound webhook settings. Without it webhooks are off.
+func WithWebhooks(v config.WebhooksConf) func(*options) {
+	return func(o *options) {
+		o.webhooks = v
 	}
 }
 
@@ -144,6 +153,9 @@ func New(repos *repo.AllRepos, opts ...OptionsFunc) *AllServices {
 	currencyRegistry := currencies.NewCurrencyService(options.currencies)
 	fieldtypes.UseCurrencies(options.currencies)
 
+	webhookSvc := NewWebhookService(repos, options.webhooks, options.notifierConfig)
+	backupSvc.events = webhookSvc
+
 	return &AllServices{
 		User:  &UserService{repos: repos, mailer: options.mailer, isCurrency: currencyRegistry.IsSupported},
 		Group: &GroupService{repos},
@@ -159,5 +171,6 @@ func New(repos *repo.AllRepos, opts ...OptionsFunc) *AllServices {
 		Exports:    exportSvc,
 		Backups:    backupSvc,
 		Currencies: currencyRegistry,
+		Webhooks:   webhookSvc,
 	}
 }

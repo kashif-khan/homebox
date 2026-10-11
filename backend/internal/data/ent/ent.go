@@ -25,6 +25,8 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/group"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/groupinvitationtoken"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/maintenanceentry"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notificationlog"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notificationrule"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notifier"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/oauthclient"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/oauthgrant"
@@ -35,6 +37,8 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/templatefield"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/user"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/usergroup"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/webhookdelivery"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/webhookendpoint"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -108,6 +112,8 @@ func checkColumn(t, c string) error {
 			group.Table:                group.ValidColumn,
 			groupinvitationtoken.Table: groupinvitationtoken.ValidColumn,
 			maintenanceentry.Table:     maintenanceentry.ValidColumn,
+			notificationlog.Table:      notificationlog.ValidColumn,
+			notificationrule.Table:     notificationrule.ValidColumn,
 			notifier.Table:             notifier.ValidColumn,
 			oauthclient.Table:          oauthclient.ValidColumn,
 			oauthgrant.Table:           oauthgrant.ValidColumn,
@@ -118,6 +124,8 @@ func checkColumn(t, c string) error {
 			templatefield.Table:        templatefield.ValidColumn,
 			user.Table:                 user.ValidColumn,
 			usergroup.Table:            usergroup.ValidColumn,
+			webhookdelivery.Table:      webhookdelivery.ValidColumn,
+			webhookendpoint.Table:      webhookendpoint.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

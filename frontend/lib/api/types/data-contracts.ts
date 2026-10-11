@@ -11,6 +11,13 @@
  * ---------------------------------------------------------------
  */
 
+export enum WebhookdeliveryStatus {
+  DefaultStatus = "pending",
+  StatusPending = "pending",
+  StatusDelivered = "delivered",
+  StatusFailed = "failed",
+}
+
 export enum UsergroupRole {
   DefaultRole = "user",
   RoleUser = "user",
@@ -45,6 +52,12 @@ export enum OauthtokenKind {
   KindCode = "code",
   KindAccess = "access",
   KindRefresh = "refresh",
+}
+
+export enum NotificationruleTrigger {
+  TriggerExpiresAt = "expires_at",
+  TriggerWarrantyExpires = "warranty_expires",
+  TriggerMaintenanceDue = "maintenance_due",
 }
 
 export enum ExportStatus {
@@ -607,6 +620,8 @@ export interface EntExportEdges {
 }
 
 export interface EntGroup {
+  /** AlertRulesSeeded holds the value of the "alert_rules_seeded" field. */
+  alert_rules_seeded: boolean;
   /** CreatedAt holds the value of the "created_at" field. */
   created_at: string;
   /** Currency holds the value of the "currency" field. */
@@ -622,6 +637,8 @@ export interface EntGroup {
   mcp_access: string;
   /** Name holds the value of the "name" field. */
   name: string;
+  /** NotifyHour holds the value of the "notify_hour" field. */
+  notify_hour: number;
   /** Timezone holds the value of the "timezone" field. */
   timezone: string;
   /** UpdatedAt holds the value of the "updated_at" field. */
@@ -641,6 +658,8 @@ export interface EntGroupEdges {
   exports: EntExport[];
   /** InvitationTokens holds the value of the invitation_tokens edge. */
   invitation_tokens: EntGroupInvitationToken[];
+  /** NotificationRules holds the value of the notification_rules edge. */
+  notification_rules: EntNotificationRule[];
   /** Notifiers holds the value of the notifiers edge. */
   notifiers: EntNotifier[];
   /** OauthGrants holds the value of the oauth_grants edge. */
@@ -651,6 +670,8 @@ export interface EntGroupEdges {
   user_groups: EntUserGroup[];
   /** Users holds the value of the users edge. */
   users: EntUser[];
+  /** WebhookEndpoints holds the value of the webhook_endpoints edge. */
+  webhook_endpoints: EntWebhookEndpoint[];
 }
 
 export interface EntGroupInvitationToken {
@@ -707,6 +728,74 @@ export interface EntMaintenanceEntry {
 export interface EntMaintenanceEntryEdges {
   /** Entity holds the value of the entity edge. */
   entity: EntEntity;
+}
+
+export interface EntNotificationLog {
+  /** AnchorDate holds the value of the "anchor_date" field. */
+  anchor_date: Date | string;
+  /** CreatedAt holds the value of the "created_at" field. */
+  created_at: string;
+  /** DueOn holds the value of the "due_on" field. */
+  due_on: string;
+  /**
+   * Edges holds the relations/edges for other nodes in the graph.
+   * The values are being populated by the NotificationLogQuery when eager-loading is set.
+   */
+  edges: EntNotificationLogEdges;
+  /** ID of the ent. */
+  id: string;
+  /** NotifierID holds the value of the "notifier_id" field. */
+  notifier_id: string;
+  /** OffsetDays holds the value of the "offset_days" field. */
+  offset_days: number;
+  /** SentAt holds the value of the "sent_at" field. */
+  sent_at: string;
+  /** SubjectID holds the value of the "subject_id" field. */
+  subject_id: string;
+  /** UpdatedAt holds the value of the "updated_at" field. */
+  updated_at: string;
+}
+
+export interface EntNotificationLogEdges {
+  /** Rule holds the value of the rule edge. */
+  rule: EntNotificationRule;
+}
+
+export interface EntNotificationRule {
+  /** CreatedAt holds the value of the "created_at" field. */
+  created_at: string;
+  /**
+   * Edges holds the relations/edges for other nodes in the graph.
+   * The values are being populated by the NotificationRuleQuery when eager-loading is set.
+   */
+  edges: EntNotificationRuleEdges;
+  /** EntityTypeID holds the value of the "entity_type_id" field. */
+  entity_type_id: string;
+  /** GroupID holds the value of the "group_id" field. */
+  group_id: string;
+  /** ID of the ent. */
+  id: string;
+  /** IsActive holds the value of the "is_active" field. */
+  is_active: boolean;
+  /** Name holds the value of the "name" field. */
+  name: string;
+  /** NotifierIds holds the value of the "notifier_ids" field. */
+  notifier_ids: string[];
+  /** OffsetsDays holds the value of the "offsets_days" field. */
+  offsets_days: number[];
+  /** TagID holds the value of the "tag_id" field. */
+  tag_id: string;
+  /** Trigger holds the value of the "trigger" field. */
+  trigger: NotificationruleTrigger;
+  /** UpdatedAt holds the value of the "updated_at" field. */
+  updated_at: string;
+}
+
+export interface EntNotificationRuleEdges {
+  /** Group holds the value of the group edge. */
+  group: EntGroup;
+  /** Logs holds the value of the logs edge. */
+  logs: EntNotificationLog[];
 }
 
 export interface EntNotifier {
@@ -1033,6 +1122,86 @@ export interface EntUserGroupEdges {
   group: EntGroup;
   /** User holds the value of the user edge. */
   user: EntUser;
+}
+
+export interface EntWebhookDelivery {
+  /** Attempts holds the value of the "attempts" field. */
+  attempts: number;
+  /** CreatedAt holds the value of the "created_at" field. */
+  created_at: string;
+  /** Data holds the value of the "data" field. */
+  data: Record<string, any>;
+  /** DedupeKey holds the value of the "dedupe_key" field. */
+  dedupe_key: string;
+  /** DeliveredAt holds the value of the "delivered_at" field. */
+  delivered_at: string;
+  /**
+   * Edges holds the relations/edges for other nodes in the graph.
+   * The values are being populated by the WebhookDeliveryQuery when eager-loading is set.
+   */
+  edges: EntWebhookDeliveryEdges;
+  /** EventID holds the value of the "event_id" field. */
+  event_id: string;
+  /** EventType holds the value of the "event_type" field. */
+  event_type: string;
+  /** ID of the ent. */
+  id: string;
+  /** LastDurationMs holds the value of the "last_duration_ms" field. */
+  last_duration_ms: number;
+  /** LastError holds the value of the "last_error" field. */
+  last_error: string;
+  /** LastStatusCode holds the value of the "last_status_code" field. */
+  last_status_code: number;
+  /** NextAttemptAt holds the value of the "next_attempt_at" field. */
+  next_attempt_at: string;
+  /** OccurredAt holds the value of the "occurred_at" field. */
+  occurred_at: string;
+  /** ResponseSnippet holds the value of the "response_snippet" field. */
+  response_snippet: string;
+  /** ScheduledFor holds the value of the "scheduled_for" field. */
+  scheduled_for: string;
+  /** Status holds the value of the "status" field. */
+  status: WebhookdeliveryStatus;
+  /** UpdatedAt holds the value of the "updated_at" field. */
+  updated_at: string;
+}
+
+export interface EntWebhookDeliveryEdges {
+  /** Endpoint holds the value of the endpoint edge. */
+  endpoint: EntWebhookEndpoint;
+}
+
+export interface EntWebhookEndpoint {
+  /** CreatedAt holds the value of the "created_at" field. */
+  created_at: string;
+  /**
+   * Edges holds the relations/edges for other nodes in the graph.
+   * The values are being populated by the WebhookEndpointQuery when eager-loading is set.
+   */
+  edges: EntWebhookEndpointEdges;
+  /** EntityTypeID holds the value of the "entity_type_id" field. */
+  entity_type_id: string;
+  /** Events holds the value of the "events" field. */
+  events: string[];
+  /** GroupID holds the value of the "group_id" field. */
+  group_id: string;
+  /** ID of the ent. */
+  id: string;
+  /** IsActive holds the value of the "is_active" field. */
+  is_active: boolean;
+  /** Name holds the value of the "name" field. */
+  name: string;
+  /** TagID holds the value of the "tag_id" field. */
+  tag_id: string;
+  /** UpdatedAt holds the value of the "updated_at" field. */
+  updated_at: string;
+}
+
+export interface EntWebhookEndpointEdges {
+  /** Deliveries holds the value of the deliveries edge. */
+  deliveries: EntWebhookDelivery[];
+  /** Group holds the value of the group edge. */
+  group: EntGroup;
 }
 
 export interface OauthserverConsentCollection {
@@ -1833,6 +2002,8 @@ export interface Group {
    */
   mcpAccess: string;
   name: string;
+  /** NotifyHour is the local hour (0-23) from which a day's alerts go out. */
+  notifyHour: number;
   /** Timezone is the IANA zone the collection's alerts are scheduled in. */
   timezone: string;
   updatedAt: Date | string;
@@ -1859,6 +2030,8 @@ export interface GroupUpdate {
   /** MCPAccess is left unchanged when nil. */
   mcpAccess?: string | null;
   name: string;
+  /** NotifyHour is left unchanged when nil. */
+  notifyHour?: number | null;
   /** Timezone is left unchanged when nil. */
   timezone?: string | null;
 }
@@ -1919,6 +2092,36 @@ export interface MaintenanceEntryWithDetails {
   itemName: string;
   name: string;
   scheduledDate: Date | string;
+}
+
+export interface NotificationRuleIn {
+  /** EntityTypeID and TagID narrow the rule to matching items. */
+  entityTypeId?: string | null;
+  isActive: boolean;
+  name: string;
+  /** NotifierIDs picks the notifiers; empty means every active one. */
+  notifierIds: string[];
+  /**
+   * OffsetsDays: positive fires that many days before the date, zero on
+   * the day, negative that many days after. For example [30, 7, 1, 0, -7].
+   */
+  offsetsDays: number[];
+  tagId?: string | null;
+  /** Trigger is expires_at, warranty_expires or maintenance_due. */
+  trigger: string;
+}
+
+export interface NotificationRuleOut {
+  createdAt: Date | string;
+  entityTypeId?: string | null;
+  id: string;
+  isActive: boolean;
+  name: string;
+  notifierIds: string[];
+  offsetsDays: number[];
+  tagId?: string | null;
+  trigger: string;
+  updatedAt: Date | string;
 }
 
 export interface NotifierCreate {
@@ -2111,6 +2314,63 @@ export interface ValueOverTimeEntry {
   value: number;
 }
 
+export interface WebhookDeliveryOut {
+  attempts: number;
+  createdAt: Date | string;
+  deliveredAt?: string | null;
+  eventId: string;
+  eventType: string;
+  id: string;
+  lastDurationMs: number;
+  lastError: string;
+  lastStatusCode: number;
+  nextAttemptAt?: string | null;
+  occurredAt: string;
+  response: string;
+  scheduledFor?: string | null;
+  status: string;
+}
+
+export interface WebhookEndpointCreated {
+  createdAt: Date | string;
+  entityTypeId?: string | null;
+  events: string[];
+  id: string;
+  isActive: boolean;
+  name: string;
+  secret: string;
+  tagId?: string | null;
+  updatedAt: Date | string;
+  urlHost: string;
+}
+
+export interface WebhookEndpointIn {
+  /** EntityTypeID and TagID narrow item events to matching items. */
+  entityTypeId?: string | null;
+  /** Events lists the event names to subscribe to. */
+  events: string[];
+  isActive: boolean;
+  name: string;
+  tagId?: string | null;
+  /**
+   * URL receives the events. On update, omit it (or send null) to keep the
+   * stored one; it is never returned by the API.
+   */
+  url?: string | null;
+}
+
+export interface WebhookEndpointOut {
+  createdAt: Date | string;
+  entityTypeId?: string | null;
+  events: string[];
+  id: string;
+  isActive: boolean;
+  name: string;
+  tagId?: string | null;
+  updatedAt: Date | string;
+  urlHost: string;
+}
+
 export interface Latest {
   date: Date | string;
   version: string;
@@ -2149,6 +2409,13 @@ export interface UserRegistration {
   token: string;
 }
 
+export interface WebhookResult {
+  durationMs: number;
+  error: string;
+  ok: boolean;
+  statusCode: number;
+}
+
 export interface APISummary {
   allowRegistration: boolean;
   build: Build;
@@ -2162,6 +2429,7 @@ export interface APISummary {
   telemetry: TelemetryStatus;
   title: string;
   versions: string[];
+  webhooks: WebhooksStatus;
 }
 
 export interface ActionAmountResult {
@@ -2316,6 +2584,15 @@ export interface TokenResponse {
   token: string;
 }
 
+export interface WebhookDeliveriesPage {
+  items: WebhookDeliveryOut[];
+  total: number;
+}
+
+export interface WebhooksStatus {
+  enabled: boolean;
+}
+
 export interface WipeInventoryOptions {
   wipeLocations: boolean;
   wipeMaintenance: boolean;
@@ -2336,4 +2613,14 @@ export interface ExternalAttachmentRequest {
 export interface ValidateErrorResponse {
   error: string;
   fields: string;
+}
+
+export interface WebhooksEvent {
+  /**
+   * Dated events come from alert rules: they fire for the rule's offsets
+   * rather than at the moment something is edited.
+   */
+  dated: boolean;
+  description: string;
+  name: string;
 }

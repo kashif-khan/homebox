@@ -33,6 +33,7 @@
   const currencyExample = ref("$1,000.00");
   const mcpAccess = ref<AIAccessLevel>("off");
   const timezone = ref("UTC");
+  const notifyHour = ref(8);
 
   const pubApi = usePublicApi();
   const { data: status } = useAsyncData("collection-settings-status", async () => {
@@ -73,6 +74,7 @@
       name.value = res.data.name;
       currencyCode.value = res.data.currency;
       timezone.value = res.data.timezone || "UTC";
+      notifyHour.value = res.data.notifyHour ?? 8;
       mcpAccess.value = (AI_ACCESS_LEVELS as readonly string[]).includes(res.data.mcpAccess)
         ? (res.data.mcpAccess as AIAccessLevel)
         : "off";
@@ -118,6 +120,7 @@
           name: name.value,
           currency: currencyCode.value,
           timezone: timezone.value,
+          notifyHour: notifyHour.value,
           mcpAccess: mcpAccess.value,
         },
         selectedCollection.value.id
@@ -179,6 +182,25 @@
         </div>
 
         <FormRegionalFields v-model:timezone="timezone" :show-country="false" />
+
+        <div>
+          <Label for="notify-hour"> {{ $t("collection.notify_hour") }} </Label>
+          <Select
+            id="notify-hour"
+            :model-value="String(notifyHour)"
+            @update:model-value="val => (notifyHour = Number(val))"
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="h in 24" :key="h - 1" :value="String(h - 1)">
+                {{ String(h - 1).padStart(2, "0") }}:00
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <p class="mt-1 text-xs text-muted-foreground">{{ $t("collection.notify_hour_hint") }}</p>
+        </div>
 
         <div v-if="mcpEnabled">
           <Label for="mcp-access"> {{ $t("collection.ai_access.label") }} </Label>

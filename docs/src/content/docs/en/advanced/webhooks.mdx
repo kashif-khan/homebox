@@ -1,0 +1,162 @@
+---
+title: Webhooks
+description: Signed, retried HTTP callbacks so n8n, Home Assistant, Node-RED and your own code can react to what happens in Homebox.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Webhooks tell another system *when something happens*, as it happens, with a structured JSON body. Where a notifier sends a
+human-readable message, a webhook sends data for automation: "an item's quantity dropped", "the medicine cabinet's paracetamol
+expires in 7 days", "the backup failed".
+
+They are **off by default**:
+
+```bash
+HBOX_WEBHOOKS_ENABLED=true
+```
+
+Then add them under *Collection → Webhooks*. See the [configuration reference](/en/quick-start/configure) for the other
+`HBOX_WEBHOOKS_*` settings.
+
+## Events
+
+| Event | Fires when |
+| --- | --- |
+| `item.created` | An item or location is created (also by import, duplicate and templates) |
+| `item.updated` | One is changed. The body lists exactly what changed, field by field. Saving with no change sends nothing |
+| `item.moved` | An item changes parent / location |
+| `item.quantity_changed` | An item's quantity changes (low-stock automations) |
+| `item.deleted` | One is deleted |
+| `attachment.added` | A photo, manual, receipt or file is attached |
+| `expiry.upcoming` / `expiry.expired` | An item's expiry date alert comes due, before / after the date |
+| `warranty.upcoming` / `warranty.expired` | The same for warranty end dates |
+| `maintenance.due` / `maintenance.overdue` | The same for maintenance due dates |
+| `backup.completed` / `backup.failed` | A backup finishes or fails |
+
+The date events come from your [alert rules](/en/user-guide/expiry-and-alerts): a rule with offsets `30, 7, 1, 0, -7` sends
+an event at each of them, and the body says which. Create the rules first.
+
+A webhook can be narrowed to one entity type and/or tag for item events.
+
+## What a delivery looks like
+
+```http
+POST /your/path HTTP/1.1
+Content-Type: application/json
+User-Agent: Homebox-Webhooks/1
+X-Homebox-Event: expiry.upcoming
+X-Homebox-Delivery: 7c0e3f0e-6f35-4b8e-9a54-3f8b0e6c9f21
+X-Homebox-Attempt: 3
+X-Homebox-Delay-Seconds: 18000
+X-Homebox-Timestamp: 1907843200
+X-Homebox-Signature: sha256=4c1b5f...
+```
+
+```json
+{
+  "id": "7c0e3f0e-6f35-4b8e-9a54-3f8b0e6c9f21",
+  "event_id": "0b0f1c1e-3a52-4c59-8f7e-6d3f6c2f1b7a",
+  "type": "expiry.upcoming",
+  "collection_id": "…",
+  "collection_timezone": "Asia/Karachi",
+  "created_at": "2030-06-10T08:00:04+05:00",
+  "occurred_at": "2030-06-10T08:00:00+05:00",
+  "scheduled_for": "2030-06-10T08:00:00+05:00",
+  "delivered_at": "2030-06-10T13:00:07+05:00",
+  "attempt": 3,
+  "delayed": true,
+  "delay_seconds": 18007,
+  "data": {
+    "trigger": "expires_at",
+    "item": { "id": "…", "name": "Aspirin", "path": "/item/…" },
+    "date": "2030-06-17",
+    "offset": 7,
+    "days_until": 7,
+    "expiry_kind": "best_before",
+    "rule": { "id": "…", "name": "A week before" }
+  }
+}
+```
+
+### Late deliveries
+
+If Homebox or your receiver was down, the delivery is **not lost**: events are written to the database when they happen and
+retried until they are delivered or too old. The body then tells you it is late, so your automation can decide what to do:
+
+- `occurred_at` is when the thing happened. For a date event, `scheduled_for` is the moment the alert was *meant* to go out
+  (the day's send hour in the collection's time zone).
+- `delivered_at` is when *this attempt* was made, `attempt` is which try it is, and `delayed` / `delay_seconds` say how late
+  it is against `scheduled_for` (or `occurred_at`). A delivery is flagged `delayed` once it is five minutes or more late.
+- All timestamps are RFC 3339 **with an explicit offset** in the collection's time zone, so `08:00+05:00` is unambiguous and
+  comparable in any zone. `collection_timezone` is the IANA name.
+
+If Homebox itself was down when a date alert was due, it is sent after startup (within 7 days of the due date), with
+`delayed: true`.
+
+### Retries
+
+A failed delivery (a non-2xx answer, a timeout, a connection error) is retried with growing waits: 30 seconds, 2 minutes, 10
+minutes, 30 minutes, then 1, 2, 4 and 8 hours, until `HBOX_WEBHOOKS_MAX_AGE` (24 hours by default) since it was queued.
+`410 Gone` ends it at once. Each retry has the **same** `X-Homebox-Delivery` id, and delivery is *at least once*:
+de-duplicate on that id. The delivery log (*Deliveries* on each webhook) shows every attempt, and **Send again** queues a fresh
+copy with a new delivery id and the same `event_id`.
+
+Redirects are never followed. Each webhook is limited to `HBOX_WEBHOOKS_RATE_PER_MINUTE` deliveries a minute; a burst such as
+a CSV import is spread out, not dropped.
+
+## Verifying a signature
+
+Each webhook has a **secret**, shown once when you create it (or rotate it). Every delivery is signed with it:
+
+```
+X-Homebox-Signature = "sha256=" + hex( HMAC_SHA256( secret, timestamp + "." + raw_body ) )
+```
+
+where `timestamp` is the `X-Homebox-Timestamp` header (seconds since 1970) and `raw_body` is the exact bytes received.
+Reject a delivery whose signature does not match, or whose timestamp is more than a few minutes old to prevent replays. The
+timestamp is that of the *attempt*, so a legitimately late delivery has a fresh timestamp.
+
+```python
+import hmac, hashlib, time
+
+def valid(secret: str, headers, raw_body: bytes, tolerance=300) -> bool:
+    ts = headers["X-Homebox-Timestamp"]
+    if abs(time.time() - int(ts)) > tolerance:
+        return False
+    expected = "sha256=" + hmac.new(secret.encode(), f"{ts}.".encode() + raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, headers["X-Homebox-Signature"])
+```
+
+```js
+import { createHmac, timingSafeEqual } from "node:crypto";
+
+export function valid(secret, headers, rawBody, tolerance = 300) {
+  const ts = headers["x-homebox-timestamp"];
+  if (Math.abs(Date.now() / 1000 - Number(ts)) > tolerance) return false;
+  const expected = "sha256=" + createHmac("sha256", secret).update(`${ts}.`).update(rawBody).digest("hex");
+  const got = headers["x-homebox-signature"] ?? "";
+  return got.length === expected.length && timingSafeEqual(Buffer.from(got), Buffer.from(expected));
+}
+```
+
+## Security
+
+- The destination URL (often containing a token) and the secret are **write-only**: after saving, Homebox shows only the host.
+  Leave the URL blank when editing to keep it.
+- Destinations follow the same network rules as notifiers (`HBOX_NOTIFIER_BLOCK_*`): loopback, link-local and cloud-metadata
+  addresses are refused by default, and addresses are re-checked when connecting. Private LAN addresses are allowed by
+  default so Home Assistant and n8n on your network work; set `HBOX_NOTIFIER_BLOCK_LOCAL_NETS=true` to forbid that.
+- Bodies hold ids, names and dates. They never contain attachment contents, tokens or other users' details.
+- Webhook management needs a full-access login or API key; restricted keys and AI assistants cannot create or read webhooks.
+
+<Aside type="tip">
+In n8n or Home Assistant, a **Webhook** trigger node/automation gives you the URL to paste. Use *Send test* to see the shape of
+a delivery before you build on it.
+</Aside>
+
+## REST API
+
+`GET/POST /api/v1/webhooks`, `PUT/DELETE /api/v1/webhooks/{id}`, `POST /api/v1/webhooks/{id}/test`,
+`POST /api/v1/webhooks/{id}/rotate-secret`, `GET /api/v1/webhooks/{id}/deliveries`,
+`POST /api/v1/webhooks/{id}/deliveries/{deliveryId}/redeliver` and `GET /api/v1/webhooks/events` (the event catalogue). See
+the API reference.

@@ -67,6 +67,11 @@ const (
 // building and upload is still ExportService's job; scheduled runs are just
 // export rows bound to a destination.
 type BackupService struct {
+	// events, when set, is told how backups end (for outbound webhooks).
+	events interface {
+		Enabled() bool
+		EmitBackup(ctx context.Context, gid uuid.UUID, ok bool, data map[string]any)
+	}
 	repos          *repo.AllRepos
 	db             *ent.Client
 	exports        *ExportService
@@ -1121,6 +1126,7 @@ func (s *BackupService) afterRun(ctx context.Context, gid uuid.UUID, exp repo.Ex
 	}
 	if runErr != nil {
 		s.recordFailure(ctx, d, runErr.Error())
+		s.emitBackup(ctx, gid, d, exp, false, s.redact(runErr.Error()))
 		return
 	}
 
@@ -1137,6 +1143,22 @@ func (s *BackupService) afterRun(ctx context.Context, gid uuid.UUID, exp repo.Ex
 	// MarkRunSucceeded already cleared the failure and stale flags.
 	s.Prune(ctx, d)
 	s.publishMutation(gid)
+	s.emitBackup(ctx, gid, d, exp, true, "")
+}
+
+// emitBackup tells webhook subscribers how a backup ended.
+func (s *BackupService) emitBackup(ctx context.Context, gid uuid.UUID, d repo.BackupDestinationOut, exp repo.ExportOut, ok bool, errMsg string) {
+	if s.events == nil || !s.events.Enabled() {
+		return
+	}
+	data := map[string]any{
+		"destination": map[string]any{"id": d.ID, "name": d.Name, "type": string(d.Type)},
+		"export_id":   exp.ID,
+	}
+	if errMsg != "" {
+		data["error"] = errMsg
+	}
+	s.events.EmitBackup(ctx, gid, ok, data)
 }
 
 // recordFailure stores a failed run and sends the failure alert once per streak.

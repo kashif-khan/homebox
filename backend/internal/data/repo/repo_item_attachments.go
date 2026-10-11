@@ -56,6 +56,7 @@ type AttachmentRepo struct {
 	storage    config.Storage
 	pubSubConn string
 	thumbnail  config.Thumbnail
+	events     EventSink
 }
 
 type (
@@ -291,7 +292,7 @@ func (r *AttachmentRepo) GetConnString() string {
 	return r.storage.ConnString
 }
 
-func (r *AttachmentRepo) Create(ctx context.Context, itemID uuid.UUID, doc ItemCreateAttachment, typ attachment.Type, primary bool) (*ent.Attachment, error) {
+func (r *AttachmentRepo) create(ctx context.Context, itemID uuid.UUID, doc ItemCreateAttachment, typ attachment.Type, primary bool) (*ent.Attachment, error) {
 	ctx, span := otel.Tracer("data").Start(ctx, "repo.AttachmentRepo.Create")
 	defer span.End()
 
@@ -428,7 +429,7 @@ func (r *AttachmentRepo) Create(ctx context.Context, itemID uuid.UUID, doc ItemC
 	return attachmentDb, nil
 }
 
-func (r *AttachmentRepo) CreateExternalLink(ctx context.Context, entityID uuid.UUID, externalID string, title string, mimeType string, attType attachment.Type) (*ent.Attachment, error) {
+func (r *AttachmentRepo) createExternalLink(ctx context.Context, entityID uuid.UUID, externalID string, title string, mimeType string, attType attachment.Type) (*ent.Attachment, error) {
 	ctx, span := otel.Tracer("data").Start(ctx, "repo.AttachmentRepo.CreateExternalLink")
 	defer span.End()
 

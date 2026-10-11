@@ -23,8 +23,9 @@ export function daysBetween(from: string, to: string): number {
 }
 
 /** True for a usable date string; the API sends "" or a 0001 date for "not set". */
-export function hasExpiry(expiresAt: string | null | undefined): expiresAt is string {
-  return !!expiresAt && !expiresAt.startsWith("0001") && !isNaN(Date.parse(`${expiresAt.slice(0, 10)}T00:00:00Z`));
+export function hasExpiry(expiresAt: string | Date | null | undefined): expiresAt is string {
+  if (!expiresAt || typeof expiresAt !== "string") return false;
+  return !expiresAt.startsWith("0001") && !isNaN(Date.parse(`${expiresAt.slice(0, 10)}T00:00:00Z`));
 }
 
 export function expiryStatus(expiresAt: string | null | undefined, today: string, soonDays = 30): ExpiryStatus {

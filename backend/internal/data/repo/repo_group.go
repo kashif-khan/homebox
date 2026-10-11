@@ -31,13 +31,14 @@ type GroupRepository struct {
 func NewGroupRepository(db *ent.Client, attachments *AttachmentRepo) *GroupRepository {
 	gmap := func(g *ent.Group) Group {
 		return Group{
-			ID:        g.ID,
-			Name:      g.Name,
-			CreatedAt: g.CreatedAt,
-			UpdatedAt: g.UpdatedAt,
-			Currency:  strings.ToUpper(g.Currency),
-			Timezone:  g.Timezone,
-			MCPAccess: g.McpAccess,
+			ID:         g.ID,
+			Name:       g.Name,
+			CreatedAt:  g.CreatedAt,
+			UpdatedAt:  g.UpdatedAt,
+			Currency:   strings.ToUpper(g.Currency),
+			Timezone:   g.Timezone,
+			NotifyHour: g.NotifyHour,
+			MCPAccess:  g.McpAccess,
 		}
 	}
 
@@ -67,6 +68,8 @@ type (
 		Currency  string    `json:"currency,omitempty"`
 		// Timezone is the IANA zone the collection's alerts are scheduled in.
 		Timezone string `json:"timezone,omitempty"`
+		// NotifyHour is the local hour (0-23) from which a day's alerts go out.
+		NotifyHour int `json:"notifyHour"`
 		// MCPAccess is the ceiling for AI assistants connected over MCP:
 		// off, read, write or full.
 		MCPAccess string `json:"mcpAccess,omitempty"`
@@ -77,6 +80,8 @@ type (
 		Currency string `json:"currency"`
 		// Timezone is left unchanged when nil.
 		Timezone *string `json:"timezone,omitempty" extensions:"x-nullable,x-omitempty"`
+		// NotifyHour is left unchanged when nil.
+		NotifyHour *int `json:"notifyHour,omitempty" extensions:"x-nullable,x-omitempty"`
 		// MCPAccess is left unchanged when nil.
 		MCPAccess *string `json:"mcpAccess,omitempty" extensions:"x-nullable,x-omitempty"`
 	}
@@ -329,6 +334,9 @@ func (r *GroupRepository) GroupUpdate(ctx context.Context, id uuid.UUID, data Gr
 		SetCurrency(strings.ToLower(data.Currency))
 	if data.Timezone != nil {
 		q.SetTimezone(*data.Timezone)
+	}
+	if data.NotifyHour != nil {
+		q.SetNotifyHour(*data.NotifyHour)
 	}
 	if data.MCPAccess != nil {
 		q.SetMcpAccess(*data.MCPAccess)

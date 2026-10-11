@@ -1,0 +1,67 @@
+---
+title: Custom Fields
+description: Add typed fields to items - dates, amounts, links, choices and more - instead of plain text.
+---
+
+Every item can carry custom fields for things the built-in ones do not cover: a medicine's dosage, a paint colour code, the
+date a filter was last changed. Each field has a **type**, so Homebox can check what you enter and show it properly.
+
+Add them on an item's edit page (turn on *Advanced view* to see the Custom Fields card), or define them once on a
+[template](/en/user-guide/items) so every item made from it starts with the right fields.
+
+## Types
+
+| Type | What you enter | Stored and shown as |
+| --- | --- | --- |
+| **Text** | Up to 500 characters | As typed |
+| **Whole number** | An integer | The number |
+| **Decimal** | A number such as `12.5` | `12.5` |
+| **Currency** | An amount and a currency such as `GBP` | Formatted for the currency, `£19.90` |
+| **Yes / no** | A checkbox | Yes or No |
+| **Date** | A calendar day | `1 Mar 2027`, never moved by anyone's time zone |
+| **Time** | A time of day such as `14:30` | `14:30` |
+| **Date and time** | A moment and the time zone it was entered in | Shown in that zone, for example `10 Oct 2026, 08:00 GMT+5` |
+| **Link** | A web address starting with `http://` or `https://` | A clickable link |
+| **Choice list** | One of a list of choices you define | The chosen value |
+
+Homebox rejects a value that does not fit its type (a date such as `31/12/2026`, an amount with too many decimal places for
+its currency, a choice that is not on the list) and tells you which field was wrong. Nothing else on the item is changed when
+that happens.
+
+### Currency amounts
+
+Amounts are kept exactly, in the currency's smallest unit (pence, cents), so there is no rounding drift. The number of
+decimal places comes from the currency: `JPY` has none, `USD` and `GBP` two, `KWD` three. An amount with more places than the
+currency allows (such as `12.345 USD`) is refused rather than silently rounded.
+
+### Dates and time zones
+
+A **Date** field is a calendar day with no time zone: "expires 1 March" means that day wherever you are. A **Date and time**
+field is an exact moment. It remembers the zone you entered it in (defaulting to the collection's time zone), so a reminder
+set for 08:00 in Karachi reads `08:00` there and the same instant in anyone else's zone. Under the hood the moment is stored
+in UTC.
+
+## Changing a field's type
+
+Changing the type clears the value, because a date cannot be turned into an amount. Choose the type first, then the value.
+
+## Import and export
+
+CSV export writes every field as text (`HB.field.<name>`). When you import a CSV over existing items, a field that already has
+a type keeps it as long as the value fits; a value that does not fit becomes plain text rather than failing the import.
+New fields in a CSV are always created as text.
+
+## For API users
+
+A typed field is sent as `type` plus one canonical string in `textValue`; the server validates it and fills in the rest.
+
+```json
+{ "name": "Opened", "type": "date",     "textValue": "2026-10-10" }
+{ "name": "Price",  "type": "currency", "textValue": "19.90", "currencyCode": "GBP" }
+{ "name": "Reminder", "type": "datetime", "textValue": "2026-10-10T08:00", "timezone": "Asia/Karachi" }
+{ "name": "Grade",  "type": "select",   "textValue": "b", "choices": ["a", "b", "c"] }
+```
+
+Responses add the derived values (`decimalValue`, `timeValue` as a UTC instant, and for currency the amount in minor units in
+`numberValue`). Those are read-only: send them or not, they are recomputed. Existing `text`, `number` and `boolean` fields
+behave exactly as before.
