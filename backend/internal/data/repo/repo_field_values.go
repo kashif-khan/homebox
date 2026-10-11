@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -143,4 +144,39 @@ func applyTemplateFieldUpdate(u *ent.TemplateFieldUpdate, v fieldtypes.Value) *e
 		u.ClearChoices()
 	}
 	return u
+}
+
+// The derived values on a custom field (decimalValue, timeValue) are output
+// only: the server recomputes them from the canonical text. Older clients sent
+// back whatever they held for them, including "" and null, so the decoders
+// below accept and ignore any value rather than failing the whole request.
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (f *EntityFieldData) UnmarshalJSON(b []byte) error {
+	type plain EntityFieldData
+	aux := struct {
+		*plain
+		DecimalValue json.RawMessage `json:"decimalValue"`
+		TimeValue    json.RawMessage `json:"timeValue"`
+	}{plain: (*plain)(f)}
+	if err := json.Unmarshal(b, &aux); err != nil {
+		return err
+	}
+	f.DecimalValue, f.TimeValue = nil, nil
+	return nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (f *TemplateField) UnmarshalJSON(b []byte) error {
+	type plain TemplateField
+	aux := struct {
+		*plain
+		DecimalValue json.RawMessage `json:"decimalValue"`
+		TimeValue    json.RawMessage `json:"timeValue"`
+	}{plain: (*plain)(f)}
+	if err := json.Unmarshal(b, &aux); err != nil {
+		return err
+	}
+	f.DecimalValue, f.TimeValue = nil, nil
+	return nil
 }

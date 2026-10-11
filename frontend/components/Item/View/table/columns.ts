@@ -7,6 +7,8 @@ import Checkbox from "~/components/Form/Checkbox.vue";
 import type { EntitySummary } from "~/lib/api/types/data-contracts";
 
 import Currency from "~/components/global/Currency.vue";
+import ExpiryBadge from "~/components/Item/ExpiryBadge.vue";
+import { hasExpiry } from "~/lib/expiry";
 import DateTime from "~/components/global/DateTime.vue";
 import { cn } from "~/lib/utils";
 
@@ -160,6 +162,26 @@ export function makeColumns({
           return h("a", { href: `/location/${loc.id}`, class: "hover:underline text-sm" }, loc.name);
         }
         return h("div", { class: "text-sm text-muted-foreground" }, "");
+      },
+    },
+    {
+      id: "expiresAt",
+      accessorKey: "expiresAt",
+      header: ({ column }) =>
+        h(
+          Button,
+          {
+            variant: "ghost",
+            onClick: () => !disableSort && column.toggleSorting(column.getIsSorted() === "asc"),
+          },
+          () => sortable(column, "items.expires_at")
+        ),
+      cell: ({ row }) => {
+        const item = row.original as EntitySummary;
+        if (!hasExpiry(item.expiresAt as string)) {
+          return h("div", { class: "text-sm text-muted-foreground" }, "");
+        }
+        return h(ExpiryBadge, { expiresAt: item.expiresAt as string, kind: item.expiryKind });
       },
     },
     {

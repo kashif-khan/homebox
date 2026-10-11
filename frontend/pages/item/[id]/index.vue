@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { displayFieldValue, isFieldType } from "~/composables/use-custom-fields";
+  import { expiryLabel, hasExpiry, todayString } from "~/lib/expiry";
   import { useI18n } from "vue-i18n";
   import { toast } from "@/components/ui/sonner";
   import type { AnyDetail, Detail, Details } from "~~/components/global/DetailsSection/types";
@@ -214,6 +215,25 @@
     ];
   });
 
+  // The expiry date with how far away it is, e.g. "1 Mar 2027 · Best before · Expires in 4 days".
+  const expiryDetail = computed<Details>(() => {
+    const at = item.value?.expiresAt;
+    if (!hasExpiry(at)) {
+      return [];
+    }
+    const date = displayFieldValue(
+      { type: "date", textValue: at.slice(0, 10), numberValue: 0, booleanValue: false },
+      locale.value,
+      { yes: "", no: "" }
+    );
+    const kind =
+      item.value?.expiryKind && item.value.expiryKind !== "expires"
+        ? t(`items.expiry_kinds.${item.value.expiryKind}`)
+        : "";
+    const status = expiryLabel(at, todayString(), t);
+    return [{ name: "items.expires_at", text: [date, kind, status].filter(Boolean).join(" · ") }];
+  });
+
   const itemDetails = computed<Details>(() => {
     if (!item.value) {
       return [];
@@ -244,6 +264,7 @@
         name: "items.insured",
         text: item.value?.insured ? "Yes" : "No",
       },
+      ...expiryDetail.value,
       {
         name: "items.archived",
         text: item.value?.archived ? "Yes" : "No",

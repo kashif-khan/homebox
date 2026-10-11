@@ -48,6 +48,10 @@ type Entity struct {
 	ModelNumber string `json:"model_number,omitempty"`
 	// Manufacturer holds the value of the "manufacturer" field.
 	Manufacturer string `json:"manufacturer,omitempty"`
+	// ExpiresAt holds the value of the "expires_at" field.
+	ExpiresAt time.Time `json:"expires_at,omitempty"`
+	// ExpiryKind holds the value of the "expiry_kind" field.
+	ExpiryKind entity.ExpiryKind `json:"expiry_kind,omitempty"`
 	// LifetimeWarranty holds the value of the "lifetime_warranty" field.
 	LifetimeWarranty bool `json:"lifetime_warranty,omitempty"`
 	// WarrantyExpires holds the value of the "warranty_expires" field.
@@ -214,9 +218,9 @@ func (*Entity) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case entity.FieldAssetID:
 			values[i] = new(sql.NullInt64)
-		case entity.FieldName, entity.FieldDescription, entity.FieldImportRef, entity.FieldNotes, entity.FieldSerialNumber, entity.FieldModelNumber, entity.FieldManufacturer, entity.FieldWarrantyDetails, entity.FieldPurchaseFrom, entity.FieldSoldTo, entity.FieldSoldNotes:
+		case entity.FieldName, entity.FieldDescription, entity.FieldImportRef, entity.FieldNotes, entity.FieldSerialNumber, entity.FieldModelNumber, entity.FieldManufacturer, entity.FieldExpiryKind, entity.FieldWarrantyDetails, entity.FieldPurchaseFrom, entity.FieldSoldTo, entity.FieldSoldNotes:
 			values[i] = new(sql.NullString)
-		case entity.FieldCreatedAt, entity.FieldUpdatedAt, entity.FieldWarrantyExpires, entity.FieldPurchaseDate, entity.FieldSoldDate:
+		case entity.FieldCreatedAt, entity.FieldUpdatedAt, entity.FieldExpiresAt, entity.FieldWarrantyExpires, entity.FieldPurchaseDate, entity.FieldSoldDate:
 			values[i] = new(sql.NullTime)
 		case entity.FieldID:
 			values[i] = new(uuid.UUID)
@@ -332,6 +336,18 @@ func (_m *Entity) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field manufacturer", values[i])
 			} else if value.Valid {
 				_m.Manufacturer = value.String
+			}
+		case entity.FieldExpiresAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field expires_at", values[i])
+			} else if value.Valid {
+				_m.ExpiresAt = value.Time
+			}
+		case entity.FieldExpiryKind:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field expiry_kind", values[i])
+			} else if value.Valid {
+				_m.ExpiryKind = entity.ExpiryKind(value.String)
 			}
 		case entity.FieldLifetimeWarranty:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -548,6 +564,12 @@ func (_m *Entity) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("manufacturer=")
 	builder.WriteString(_m.Manufacturer)
+	builder.WriteString(", ")
+	builder.WriteString("expires_at=")
+	builder.WriteString(_m.ExpiresAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("expiry_kind=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ExpiryKind))
 	builder.WriteString(", ")
 	builder.WriteString("lifetime_warranty=")
 	builder.WriteString(fmt.Sprintf("%v", _m.LifetimeWarranty))

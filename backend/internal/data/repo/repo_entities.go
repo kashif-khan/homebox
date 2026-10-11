@@ -3,6 +3,7 @@ package repo
 import (
 	"context"
 	"fmt"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/fieldtypes"
 	"math"
 	"strings"
 	"time"
@@ -75,6 +76,10 @@ type (
 		OnlyWithPhoto    bool    `json:"onlyWithPhoto"`
 		IncludeArchived  bool    `json:"includeArchived"`
 		FilterChildren   bool    `json:"filterChildren"` // when true, only return root entities (no parent)
+		// ExpiresBefore and ExpiresAfter keep entities whose expiry date falls on
+		// or before / on or after the given day. Entities without one never match.
+		ExpiresBefore *time.Time `json:"expiresBefore"`
+		ExpiresAfter  *time.Time `json:"expiresAfter"`
 	}
 
 	DuplicateOptions struct {
@@ -130,6 +135,10 @@ type (
 
 	EntityUpdate struct {
 		WarrantyExpires types.Date `json:"warrantyExpires"`
+		// ExpiresAt is the consumable expiry date; leave it empty to clear it.
+		// ExpiryKind is expires, use_by or best_before; empty means expires.
+		ExpiresAt  types.Date `json:"expiresAt"`
+		ExpiryKind string     `json:"expiryKind"`
 		// Purchase
 		PurchaseDate types.Date `json:"purchaseDate"`
 		// Sold
@@ -174,6 +183,10 @@ type (
 		LocationID   uuid.UUID   `json:"locationId"         extensions:"x-nullable,x-omitempty"`
 		EntityTypeID uuid.UUID   `json:"entityTypeId"       extensions:"x-nullable,x-omitempty"`
 		TagIDs       []uuid.UUID `json:"tagIds"             extensions:"x-nullable,x-omitempty"`
+		// ExpiresAt sets the expiry date; an empty date clears it. ExpiryKind is
+		// expires, use_by or best_before. Both are left alone when nil.
+		ExpiresAt  *types.Date `json:"expiresAt,omitempty"  extensions:"x-nullable,x-omitempty"`
+		ExpiryKind *string     `json:"expiryKind,omitempty" extensions:"x-nullable,x-omitempty"`
 	}
 
 	EntitySummary struct {
@@ -200,6 +213,11 @@ type (
 
 		// Sale details
 		SoldDate types.Date `json:"soldDate"`
+
+		// ExpiresAt is when a consumable (medicine, food) expires, and ExpiryKind
+		// says whether that is a use-by, best-before or plain expiry date.
+		ExpiresAt  types.Date `json:"expiresAt"`
+		ExpiryKind string     `json:"expiryKind"`
 
 		// Container-specific (populated when querying locations)
 		ItemCount float64 `json:"itemCount,omitempty"`
@@ -310,6 +328,10 @@ func mapEntitySummary(e *ent.Entity) EntitySummary {
 
 		// Sale
 		SoldDate: types.DateFromDBTime(e.SoldDate),
+
+		// Expiry
+		ExpiresAt:  types.DateFromDBTime(e.ExpiresAt),
+		ExpiryKind: string(e.ExpiryKind),
 	}
 }
 
@@ -810,6 +832,9 @@ func applyEntityOrder(qb *ent.EntityQuery, gid uuid.UUID, q EntityQuery) (*ent.E
 		orderBy = entity.FieldArchived
 	case "purchasePrice":
 		orderBy = entity.FieldPurchasePrice
+	case "expiresAt":
+		// Items without an expiry date always sort last, in both directions.
+		return qb.Order(orderByNullsLast(entity.FieldExpiresAt, q.OrderDirection == "desc")), "expiresAt"
 	case "location":
 		// Sort by the name of the nearest location ancestor.
 		return qb.Order(orderByLocation(gid, q.OrderDirection == "desc")), "location"
@@ -833,6 +858,9 @@ func (r *EntityRepository) QueryByGroup(ctx context.Context, gid uuid.UUID, q En
 	qb := r.db.Entity.Query().Where(
 		entity.HasGroupWith(group.ID(gid)),
 	)
+	if preds := expiryPredicates(q); len(preds) > 0 {
+		qb = qb.Where(preds...)
+	}
 
 	// Filter by exact entity types when provided; otherwise use legacy
 	// location-vs-item behavior for backward compatibility.
@@ -1342,6 +1370,9 @@ type EntityCreateFromTemplate struct {
 	EntityTypeID     uuid.UUID
 	Insured          bool
 	LifetimeWarranty bool
+	// ExpiresAt and ExpiryKind come from the template's expiry defaults.
+	ExpiresAt  types.Date
+	ExpiryKind string
 }
 
 // CreateFromTemplate creates an entity with all template data in a single transaction.
@@ -1374,6 +1405,10 @@ func (r *EntityRepository) CreateFromTemplate(ctx context.Context, gid uuid.UUID
 		return EntityOut{}, err
 	}
 	if err := assertTagsInGroup(ctx, r.db.Tag, gid, data.TagIDs); err != nil {
+		recordSpanError(span, err)
+		return EntityOut{}, err
+	}
+	if err := r.validateExpiry(ctx, gid, uuid.Nil, data.EntityTypeID, data.ExpiryKind, data.ExpiresAt); err != nil {
 		recordSpanError(span, err)
 		return EntityOut{}, err
 	}
@@ -1435,7 +1470,11 @@ func (r *EntityRepository) CreateFromTemplate(ctx context.Context, gid uuid.UUID
 		SetManufacturer(data.Manufacturer).
 		SetModelNumber(data.ModelNumber).
 		SetLifetimeWarranty(data.LifetimeWarranty).
-		SetWarrantyDetails(data.WarrantyDetails)
+		SetWarrantyDetails(data.WarrantyDetails).
+		SetExpiryKind(entity.ExpiryKind(expiryKindOrDefault(data.ExpiryKind)))
+	if t := data.ExpiresAt.Time(); !t.IsZero() {
+		entityBuilder.SetExpiresAt(t)
+	}
 
 	if templateParentID != uuid.Nil {
 		entityBuilder.SetParentID(templateParentID)
@@ -1773,6 +1812,22 @@ func (r *EntityRepository) UpdateByGroup(ctx context.Context, gid uuid.UUID, dat
 		return EntityOut{}, err
 	}
 
+	// Validate everything the client sent that is not a plain reference before
+	// the first write, so a rejected request leaves the entity untouched.
+	if err := r.validateExpiry(ctx, gid, data.ID, data.EntityTypeID, data.ExpiryKind, data.ExpiresAt); err != nil {
+		recordSpanError(span, err)
+		return EntityOut{}, err
+	}
+	fieldValues := make([]fieldtypes.Value, len(data.Fields))
+	for i, f := range data.Fields {
+		v, err := normalizeField(f)
+		if err != nil {
+			recordSpanError(span, err)
+			return EntityOut{}, err
+		}
+		fieldValues[i] = v
+	}
+
 	// See EntityRepository.Create for the rationale on these cross-group
 	// reference checks. Applied before the update so a rejected request never
 	// mutates the row.
@@ -1835,6 +1890,12 @@ func (r *EntityRepository) UpdateByGroup(ctx context.Context, gid uuid.UUID, dat
 	} else {
 		q.SetWarrantyExpires(t)
 	}
+	if t := data.ExpiresAt.Time(); t.IsZero() {
+		q.ClearExpiresAt()
+	} else {
+		q.SetExpiresAt(t)
+	}
+	q.SetExpiryKind(entity.ExpiryKind(expiryKindOrDefault(data.ExpiryKind)))
 
 	if data.EntityTypeID != uuid.Nil {
 		q.SetEntityTypeID(data.EntityTypeID)
@@ -1929,14 +1990,8 @@ func (r *EntityRepository) UpdateByGroup(ctx context.Context, gid uuid.UUID, dat
 	createdFields := 0
 	updatedFields := 0
 	// Update Existing Fields
-	for _, f := range data.Fields {
-		val, verr := normalizeField(f)
-		if verr != nil {
-			recordSpanError(fieldsSpan, verr)
-			fieldsSpan.End()
-			recordSpanError(span, verr)
-			return EntityOut{}, verr
-		}
+	for i, f := range data.Fields {
+		val := fieldValues[i]
 		if f.ID == uuid.Nil {
 			_, err = applyFieldCreate(r.db.EntityField.Create().
 				SetEntityID(data.ID).
@@ -2141,6 +2196,27 @@ func (r *EntityRepository) Patch(ctx context.Context, gid, id uuid.UUID, data En
 		}
 
 		q.SetQuantity(*data.Quantity)
+	}
+
+	if data.ExpiryKind != nil {
+		if !ValidExpiryKind(*data.ExpiryKind) {
+			err := expiryError("expiryKind must be one of expires, use_by, best_before")
+			recordSpanError(span, err)
+			return err
+		}
+		q.SetExpiryKind(entity.ExpiryKind(expiryKindOrDefault(*data.ExpiryKind)))
+	}
+	if data.ExpiresAt != nil {
+		if t := data.ExpiresAt.Time(); t.IsZero() {
+			// Clearing is refused where the type demands a date.
+			if err := r.validateExpiry(ctx, gid, id, data.EntityTypeID, "", types.Date{}); err != nil {
+				recordSpanError(span, err)
+				return err
+			}
+			q.ClearExpiresAt()
+		} else {
+			q.SetExpiresAt(t)
+		}
 	}
 
 	switch {
@@ -2552,6 +2628,10 @@ func (r *EntityRepository) Duplicate(ctx context.Context, gid, id uuid.UUID, opt
 	if t := originalEntity.SoldDate.Time(); !t.IsZero() {
 		entityBuilder.SetSoldDate(t)
 	}
+	if t := originalEntity.ExpiresAt.Time(); !t.IsZero() {
+		entityBuilder.SetExpiresAt(t)
+	}
+	entityBuilder.SetExpiryKind(entity.ExpiryKind(expiryKindOrDefault(originalEntity.ExpiryKind)))
 	if t := originalEntity.WarrantyExpires.Time(); !t.IsZero() {
 		entityBuilder.SetWarrantyExpires(t)
 	}

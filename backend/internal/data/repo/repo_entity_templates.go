@@ -70,6 +70,11 @@ type (
 		IncludeWarrantyFields bool `json:"includeWarrantyFields"`
 		IncludePurchaseFields bool `json:"includePurchaseFields"`
 		IncludeSoldFields     bool `json:"includeSoldFields"`
+		// Expiry: items made from the template expire DefaultExpiryOffsetDays days
+		// after they are added, when it is set.
+		IncludeExpiryFields     bool   `json:"includeExpiryFields"`
+		DefaultExpiryOffsetDays *int   `json:"defaultExpiryOffsetDays" extensions:"x-nullable"`
+		DefaultExpiryKind       string `json:"defaultExpiryKind"`
 	}
 
 	EntityTemplateUpdate struct {
@@ -95,6 +100,11 @@ type (
 		IncludeWarrantyFields bool `json:"includeWarrantyFields"`
 		IncludePurchaseFields bool `json:"includePurchaseFields"`
 		IncludeSoldFields     bool `json:"includeSoldFields"`
+		// Expiry: items made from the template expire DefaultExpiryOffsetDays days
+		// after they are added, when it is set.
+		IncludeExpiryFields     bool   `json:"includeExpiryFields"`
+		DefaultExpiryOffsetDays *int   `json:"defaultExpiryOffsetDays" extensions:"x-nullable"`
+		DefaultExpiryKind       string `json:"defaultExpiryKind"`
 	}
 
 	EntityTemplateSummary struct {
@@ -130,6 +140,11 @@ type (
 		IncludeWarrantyFields bool `json:"includeWarrantyFields"`
 		IncludePurchaseFields bool `json:"includePurchaseFields"`
 		IncludeSoldFields     bool `json:"includeSoldFields"`
+		// Expiry: items made from the template expire DefaultExpiryOffsetDays days
+		// after they are added, when it is set.
+		IncludeExpiryFields     bool   `json:"includeExpiryFields"`
+		DefaultExpiryOffsetDays *int   `json:"defaultExpiryOffsetDays" extensions:"x-nullable"`
+		DefaultExpiryKind       string `json:"defaultExpiryKind"`
 	}
 )
 
@@ -231,6 +246,9 @@ func (r *EntityTemplatesRepository) mapTemplateOut(ctx context.Context, template
 		IncludeWarrantyFields:   template.IncludeWarrantyFields,
 		IncludePurchaseFields:   template.IncludePurchaseFields,
 		IncludeSoldFields:       template.IncludeSoldFields,
+		IncludeExpiryFields:     template.IncludeExpiryFields,
+		DefaultExpiryOffsetDays: template.DefaultExpiryOffsetDays,
+		DefaultExpiryKind:       string(template.DefaultExpiryKind),
 		Fields:                  fields,
 	}
 }
@@ -307,6 +325,9 @@ func (r *EntityTemplatesRepository) Create(ctx context.Context, gid uuid.UUID, d
 	if err != nil {
 		return EntityTemplateOut{}, err
 	}
+	if err := validateTemplateExpiry(data.DefaultExpiryKind, data.DefaultExpiryOffsetDays); err != nil {
+		return EntityTemplateOut{}, err
+	}
 
 	if err := assertEntityInGroup(ctx, r.db.Entity, gid, data.DefaultLocationID); err != nil {
 		return EntityTemplateOut{}, err
@@ -327,6 +348,9 @@ func (r *EntityTemplatesRepository) Create(ctx context.Context, gid uuid.UUID, d
 		SetIncludeWarrantyFields(data.IncludeWarrantyFields).
 		SetIncludePurchaseFields(data.IncludePurchaseFields).
 		SetIncludeSoldFields(data.IncludeSoldFields).
+		SetIncludeExpiryFields(data.IncludeExpiryFields).
+		SetNillableDefaultExpiryOffsetDays(data.DefaultExpiryOffsetDays).
+		SetDefaultExpiryKind(entitytemplate.DefaultExpiryKind(expiryKindOrDefault(data.DefaultExpiryKind))).
 		SetGroupID(gid)
 
 	if data.DefaultLocationID != uuid.Nil {
@@ -364,6 +388,9 @@ func (r *EntityTemplatesRepository) Update(ctx context.Context, gid uuid.UUID, d
 	if err != nil {
 		return EntityTemplateOut{}, err
 	}
+	if err := validateTemplateExpiry(data.DefaultExpiryKind, data.DefaultExpiryOffsetDays); err != nil {
+		return EntityTemplateOut{}, err
+	}
 
 	if err := assertEntityInGroup(ctx, r.db.Entity, gid, data.DefaultLocationID); err != nil {
 		return EntityTemplateOut{}, err
@@ -396,7 +423,14 @@ func (r *EntityTemplatesRepository) Update(ctx context.Context, gid uuid.UUID, d
 		SetNillableDefaultWarrantyDetails(data.DefaultWarrantyDetails).
 		SetIncludeWarrantyFields(data.IncludeWarrantyFields).
 		SetIncludePurchaseFields(data.IncludePurchaseFields).
-		SetIncludeSoldFields(data.IncludeSoldFields)
+		SetIncludeSoldFields(data.IncludeSoldFields).
+		SetIncludeExpiryFields(data.IncludeExpiryFields).
+		SetDefaultExpiryKind(entitytemplate.DefaultExpiryKind(expiryKindOrDefault(data.DefaultExpiryKind)))
+	if data.DefaultExpiryOffsetDays != nil {
+		updateQ.SetDefaultExpiryOffsetDays(*data.DefaultExpiryOffsetDays)
+	} else {
+		updateQ.ClearDefaultExpiryOffsetDays()
+	}
 
 	// Update location: set when provided (not uuid.Nil), otherwise clear
 	if data.DefaultLocationID != uuid.Nil {

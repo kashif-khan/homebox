@@ -281,7 +281,14 @@
       label: "items.purchase_date",
       ref: "purchaseDate",
     },
+    {
+      type: "date",
+      label: "items.expires_at",
+      ref: "expiresAt",
+    },
   ];
+
+  const expiryKinds = ["expires", "use_by", "best_before"] as const;
 
   const warrantyFields: FormField[] = [
     {
@@ -761,6 +768,21 @@
                   :label="$t(field.label)"
                   inline
                 />
+              </div>
+            </div>
+            <div v-if="item.expiresAt" class="border-b px-4 pb-4 pt-2 sm:px-6" data-testid="expiry-kind">
+              <div class="sm:grid sm:grid-cols-4 sm:items-start sm:gap-4">
+                <Label for="expiry-kind" class="flex w-full px-1 py-2">{{ $t("items.expiry_kind") }}</Label>
+                <Select id="expiry-kind" v-model="item.expiryKind">
+                  <SelectTrigger class="sm:col-span-3">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="k in expiryKinds" :key="k" :value="k">{{
+                      $t(`items.expiry_kinds.${k}`)
+                    }}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>

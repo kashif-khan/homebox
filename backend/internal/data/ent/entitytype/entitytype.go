@@ -27,6 +27,8 @@ const (
 	FieldIsLocation = "is_location"
 	// FieldIcon holds the string denoting the icon field in the database.
 	FieldIcon = "icon"
+	// FieldExpiryRequired holds the string denoting the expiry_required field in the database.
+	FieldExpiryRequired = "expiry_required"
 	// EdgeGroup holds the string denoting the group edge name in mutations.
 	EdgeGroup = "group"
 	// EdgeEntities holds the string denoting the entities edge name in mutations.
@@ -67,6 +69,7 @@ var Columns = []string{
 	FieldDescription,
 	FieldIsLocation,
 	FieldIcon,
+	FieldExpiryRequired,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "entity_types"
@@ -106,6 +109,8 @@ var (
 	DefaultIsLocation bool
 	// IconValidator is a validator for the "icon" field. It is called by the builders before save.
 	IconValidator func(string) error
+	// DefaultExpiryRequired holds the default value on creation for the "expiry_required" field.
+	DefaultExpiryRequired bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -146,6 +151,11 @@ func ByIsLocation(opts ...sql.OrderTermOption) OrderOption {
 // ByIcon orders the results by the icon field.
 func ByIcon(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIcon, opts...).ToFunc()
+}
+
+// ByExpiryRequired orders the results by the expiry_required field.
+func ByExpiryRequired(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExpiryRequired, opts...).ToFunc()
 }
 
 // ByGroupField orders the results by group field.

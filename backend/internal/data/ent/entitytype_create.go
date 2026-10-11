@@ -100,6 +100,20 @@ func (_c *EntityTypeCreate) SetNillableIcon(v *string) *EntityTypeCreate {
 	return _c
 }
 
+// SetExpiryRequired sets the "expiry_required" field.
+func (_c *EntityTypeCreate) SetExpiryRequired(v bool) *EntityTypeCreate {
+	_c.mutation.SetExpiryRequired(v)
+	return _c
+}
+
+// SetNillableExpiryRequired sets the "expiry_required" field if the given value is not nil.
+func (_c *EntityTypeCreate) SetNillableExpiryRequired(v *bool) *EntityTypeCreate {
+	if v != nil {
+		_c.SetExpiryRequired(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *EntityTypeCreate) SetID(v uuid.UUID) *EntityTypeCreate {
 	_c.mutation.SetID(v)
@@ -206,6 +220,10 @@ func (_c *EntityTypeCreate) defaults() {
 		v := entitytype.DefaultIsLocation
 		_c.mutation.SetIsLocation(v)
 	}
+	if _, ok := _c.mutation.ExpiryRequired(); !ok {
+		v := entitytype.DefaultExpiryRequired
+		_c.mutation.SetExpiryRequired(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := entitytype.DefaultID()
 		_c.mutation.SetID(v)
@@ -240,6 +258,9 @@ func (_c *EntityTypeCreate) check() error {
 		if err := entitytype.IconValidator(v); err != nil {
 			return &ValidationError{Name: "icon", err: fmt.Errorf(`ent: validator failed for field "EntityType.icon": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.ExpiryRequired(); !ok {
+		return &ValidationError{Name: "expiry_required", err: errors.New(`ent: missing required field "EntityType.expiry_required"`)}
 	}
 	if len(_c.mutation.GroupIDs()) == 0 {
 		return &ValidationError{Name: "group", err: errors.New(`ent: missing required edge "EntityType.group"`)}
@@ -302,6 +323,10 @@ func (_c *EntityTypeCreate) createSpec() (*EntityType, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Icon(); ok {
 		_spec.SetField(entitytype.FieldIcon, field.TypeString, value)
 		_node.Icon = value
+	}
+	if value, ok := _c.mutation.ExpiryRequired(); ok {
+		_spec.SetField(entitytype.FieldExpiryRequired, field.TypeBool, value)
+		_node.ExpiryRequired = value
 	}
 	if nodes := _c.mutation.GroupIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

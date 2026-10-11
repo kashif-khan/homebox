@@ -32,6 +32,8 @@ type EntityType struct {
 	IsLocation bool `json:"is_location,omitempty"`
 	// Icon holds the value of the "icon" field.
 	Icon string `json:"icon,omitempty"`
+	// ExpiryRequired holds the value of the "expiry_required" field.
+	ExpiryRequired bool `json:"expiry_required,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the EntityTypeQuery when eager-loading is set.
 	Edges                        EntityTypeEdges `json:"edges"`
@@ -89,7 +91,7 @@ func (*EntityType) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case entitytype.FieldIsLocation:
+		case entitytype.FieldIsLocation, entitytype.FieldExpiryRequired:
 			values[i] = new(sql.NullBool)
 		case entitytype.FieldName, entitytype.FieldDescription, entitytype.FieldIcon:
 			values[i] = new(sql.NullString)
@@ -157,6 +159,12 @@ func (_m *EntityType) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field icon", values[i])
 			} else if value.Valid {
 				_m.Icon = value.String
+			}
+		case entitytype.FieldExpiryRequired:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field expiry_required", values[i])
+			} else if value.Valid {
+				_m.ExpiryRequired = value.Bool
 			}
 		case entitytype.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -240,6 +248,9 @@ func (_m *EntityType) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("icon=")
 	builder.WriteString(_m.Icon)
+	builder.WriteString(", ")
+	builder.WriteString("expiry_required=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ExpiryRequired))
 	builder.WriteByte(')')
 	return builder.String()
 }

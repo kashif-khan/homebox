@@ -136,6 +136,16 @@ func IncludeSoldFields(v bool) predicate.EntityTemplate {
 	return predicate.EntityTemplate(sql.FieldEQ(FieldIncludeSoldFields, v))
 }
 
+// IncludeExpiryFields applies equality check predicate on the "include_expiry_fields" field. It's identical to IncludeExpiryFieldsEQ.
+func IncludeExpiryFields(v bool) predicate.EntityTemplate {
+	return predicate.EntityTemplate(sql.FieldEQ(FieldIncludeExpiryFields, v))
+}
+
+// DefaultExpiryOffsetDays applies equality check predicate on the "default_expiry_offset_days" field. It's identical to DefaultExpiryOffsetDaysEQ.
+func DefaultExpiryOffsetDays(v int) predicate.EntityTemplate {
+	return predicate.EntityTemplate(sql.FieldEQ(FieldDefaultExpiryOffsetDays, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.EntityTemplate {
 	return predicate.EntityTemplate(sql.FieldEQ(FieldCreatedAt, v))
@@ -894,6 +904,86 @@ func IncludeSoldFieldsEQ(v bool) predicate.EntityTemplate {
 // IncludeSoldFieldsNEQ applies the NEQ predicate on the "include_sold_fields" field.
 func IncludeSoldFieldsNEQ(v bool) predicate.EntityTemplate {
 	return predicate.EntityTemplate(sql.FieldNEQ(FieldIncludeSoldFields, v))
+}
+
+// IncludeExpiryFieldsEQ applies the EQ predicate on the "include_expiry_fields" field.
+func IncludeExpiryFieldsEQ(v bool) predicate.EntityTemplate {
+	return predicate.EntityTemplate(sql.FieldEQ(FieldIncludeExpiryFields, v))
+}
+
+// IncludeExpiryFieldsNEQ applies the NEQ predicate on the "include_expiry_fields" field.
+func IncludeExpiryFieldsNEQ(v bool) predicate.EntityTemplate {
+	return predicate.EntityTemplate(sql.FieldNEQ(FieldIncludeExpiryFields, v))
+}
+
+// DefaultExpiryOffsetDaysEQ applies the EQ predicate on the "default_expiry_offset_days" field.
+func DefaultExpiryOffsetDaysEQ(v int) predicate.EntityTemplate {
+	return predicate.EntityTemplate(sql.FieldEQ(FieldDefaultExpiryOffsetDays, v))
+}
+
+// DefaultExpiryOffsetDaysNEQ applies the NEQ predicate on the "default_expiry_offset_days" field.
+func DefaultExpiryOffsetDaysNEQ(v int) predicate.EntityTemplate {
+	return predicate.EntityTemplate(sql.FieldNEQ(FieldDefaultExpiryOffsetDays, v))
+}
+
+// DefaultExpiryOffsetDaysIn applies the In predicate on the "default_expiry_offset_days" field.
+func DefaultExpiryOffsetDaysIn(vs ...int) predicate.EntityTemplate {
+	return predicate.EntityTemplate(sql.FieldIn(FieldDefaultExpiryOffsetDays, vs...))
+}
+
+// DefaultExpiryOffsetDaysNotIn applies the NotIn predicate on the "default_expiry_offset_days" field.
+func DefaultExpiryOffsetDaysNotIn(vs ...int) predicate.EntityTemplate {
+	return predicate.EntityTemplate(sql.FieldNotIn(FieldDefaultExpiryOffsetDays, vs...))
+}
+
+// DefaultExpiryOffsetDaysGT applies the GT predicate on the "default_expiry_offset_days" field.
+func DefaultExpiryOffsetDaysGT(v int) predicate.EntityTemplate {
+	return predicate.EntityTemplate(sql.FieldGT(FieldDefaultExpiryOffsetDays, v))
+}
+
+// DefaultExpiryOffsetDaysGTE applies the GTE predicate on the "default_expiry_offset_days" field.
+func DefaultExpiryOffsetDaysGTE(v int) predicate.EntityTemplate {
+	return predicate.EntityTemplate(sql.FieldGTE(FieldDefaultExpiryOffsetDays, v))
+}
+
+// DefaultExpiryOffsetDaysLT applies the LT predicate on the "default_expiry_offset_days" field.
+func DefaultExpiryOffsetDaysLT(v int) predicate.EntityTemplate {
+	return predicate.EntityTemplate(sql.FieldLT(FieldDefaultExpiryOffsetDays, v))
+}
+
+// DefaultExpiryOffsetDaysLTE applies the LTE predicate on the "default_expiry_offset_days" field.
+func DefaultExpiryOffsetDaysLTE(v int) predicate.EntityTemplate {
+	return predicate.EntityTemplate(sql.FieldLTE(FieldDefaultExpiryOffsetDays, v))
+}
+
+// DefaultExpiryOffsetDaysIsNil applies the IsNil predicate on the "default_expiry_offset_days" field.
+func DefaultExpiryOffsetDaysIsNil() predicate.EntityTemplate {
+	return predicate.EntityTemplate(sql.FieldIsNull(FieldDefaultExpiryOffsetDays))
+}
+
+// DefaultExpiryOffsetDaysNotNil applies the NotNil predicate on the "default_expiry_offset_days" field.
+func DefaultExpiryOffsetDaysNotNil() predicate.EntityTemplate {
+	return predicate.EntityTemplate(sql.FieldNotNull(FieldDefaultExpiryOffsetDays))
+}
+
+// DefaultExpiryKindEQ applies the EQ predicate on the "default_expiry_kind" field.
+func DefaultExpiryKindEQ(v DefaultExpiryKind) predicate.EntityTemplate {
+	return predicate.EntityTemplate(sql.FieldEQ(FieldDefaultExpiryKind, v))
+}
+
+// DefaultExpiryKindNEQ applies the NEQ predicate on the "default_expiry_kind" field.
+func DefaultExpiryKindNEQ(v DefaultExpiryKind) predicate.EntityTemplate {
+	return predicate.EntityTemplate(sql.FieldNEQ(FieldDefaultExpiryKind, v))
+}
+
+// DefaultExpiryKindIn applies the In predicate on the "default_expiry_kind" field.
+func DefaultExpiryKindIn(vs ...DefaultExpiryKind) predicate.EntityTemplate {
+	return predicate.EntityTemplate(sql.FieldIn(FieldDefaultExpiryKind, vs...))
+}
+
+// DefaultExpiryKindNotIn applies the NotIn predicate on the "default_expiry_kind" field.
+func DefaultExpiryKindNotIn(vs ...DefaultExpiryKind) predicate.EntityTemplate {
+	return predicate.EntityTemplate(sql.FieldNotIn(FieldDefaultExpiryKind, vs...))
 }
 
 // DefaultTagIdsIsNil applies the IsNil predicate on the "default_tag_ids" field.

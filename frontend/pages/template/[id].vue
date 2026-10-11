@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import TemplateExpiryDefaults from "~/components/Template/ExpiryDefaults.vue";
   import FormCustomFieldRow from "~/components/Form/CustomFieldRow.vue";
   import {
     blankField,
@@ -88,6 +89,9 @@
     includeWarrantyFields: false,
     includePurchaseFields: false,
     includeSoldFields: false,
+    includeExpiryFields: false,
+    defaultExpiryOffsetDays: null as number | null,
+    defaultExpiryKind: "expires",
     fields: [] as EditableField[],
   });
 
@@ -117,6 +121,9 @@
       includeWarrantyFields: template.value.includeWarrantyFields,
       includePurchaseFields: template.value.includePurchaseFields,
       includeSoldFields: template.value.includeSoldFields,
+      includeExpiryFields: template.value.includeExpiryFields,
+      defaultExpiryOffsetDays: template.value.defaultExpiryOffsetDays ?? null,
+      defaultExpiryKind: template.value.defaultExpiryKind || "expires",
       fields: template.value.fields.map(
         f =>
           ({
@@ -142,6 +149,7 @@
     const payload = {
       ...updateData,
       defaultLocationId: updateData.defaultLocation?.id ?? null,
+      defaultExpiryOffsetDays: updateData.includeExpiryFields ? updateData.defaultExpiryOffsetDays : null,
     };
 
     const { error, data } = await api.templates.update(templateId.value, payload);
@@ -228,6 +236,13 @@
             </div>
           </div>
         </div>
+
+        <Separator class="my-2" />
+        <TemplateExpiryDefaults
+          v-model:include="updateData.includeExpiryFields"
+          v-model:offset-days="updateData.defaultExpiryOffsetDays"
+          v-model:kind="updateData.defaultExpiryKind"
+        />
 
         <Separator class="my-2" />
         <div class="flex items-center justify-between">
@@ -341,6 +356,19 @@
               <dd>{{ template.defaultLifetimeWarranty ? $t("global.yes") : $t("global.no") }}</dd>
             </div>
           </dl>
+        </div>
+        <div v-if="template.includeExpiryFields">
+          <h3 class="mb-2 font-medium">{{ $t("items.expires_at") }}</h3>
+          <p class="text-sm" data-testid="template-expiry-summary">
+            {{
+              template.defaultExpiryOffsetDays == null
+                ? $t("components.template.form.expiry_by_hand")
+                : $t("components.template.form.expiry_after", { n: template.defaultExpiryOffsetDays })
+            }}
+            <span v-if="template.defaultExpiryKind && template.defaultExpiryKind !== 'expires'">
+              · {{ $t(`items.expiry_kinds.${template.defaultExpiryKind}`) }}
+            </span>
+          </p>
         </div>
         <div v-if="template.fields.length > 0">
           <h3 class="mb-2 font-medium">{{ $t("components.template.form.custom_fields") }}</h3>

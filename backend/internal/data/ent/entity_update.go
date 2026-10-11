@@ -259,6 +259,40 @@ func (_u *EntityUpdate) ClearManufacturer() *EntityUpdate {
 	return _u
 }
 
+// SetExpiresAt sets the "expires_at" field.
+func (_u *EntityUpdate) SetExpiresAt(v time.Time) *EntityUpdate {
+	_u.mutation.SetExpiresAt(v)
+	return _u
+}
+
+// SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
+func (_u *EntityUpdate) SetNillableExpiresAt(v *time.Time) *EntityUpdate {
+	if v != nil {
+		_u.SetExpiresAt(*v)
+	}
+	return _u
+}
+
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (_u *EntityUpdate) ClearExpiresAt() *EntityUpdate {
+	_u.mutation.ClearExpiresAt()
+	return _u
+}
+
+// SetExpiryKind sets the "expiry_kind" field.
+func (_u *EntityUpdate) SetExpiryKind(v entity.ExpiryKind) *EntityUpdate {
+	_u.mutation.SetExpiryKind(v)
+	return _u
+}
+
+// SetNillableExpiryKind sets the "expiry_kind" field if the given value is not nil.
+func (_u *EntityUpdate) SetNillableExpiryKind(v *entity.ExpiryKind) *EntityUpdate {
+	if v != nil {
+		_u.SetExpiryKind(*v)
+	}
+	return _u
+}
+
 // SetLifetimeWarranty sets the "lifetime_warranty" field.
 func (_u *EntityUpdate) SetLifetimeWarranty(v bool) *EntityUpdate {
 	_u.mutation.SetLifetimeWarranty(v)
@@ -833,6 +867,11 @@ func (_u *EntityUpdate) check() error {
 			return &ValidationError{Name: "manufacturer", err: fmt.Errorf(`ent: validator failed for field "Entity.manufacturer": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ExpiryKind(); ok {
+		if err := entity.ExpiryKindValidator(v); err != nil {
+			return &ValidationError{Name: "expiry_kind", err: fmt.Errorf(`ent: validator failed for field "Entity.expiry_kind": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.WarrantyDetails(); ok {
 		if err := entity.WarrantyDetailsValidator(v); err != nil {
 			return &ValidationError{Name: "warranty_details", err: fmt.Errorf(`ent: validator failed for field "Entity.warranty_details": %w`, err)}
@@ -926,6 +965,15 @@ func (_u *EntityUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.ManufacturerCleared() {
 		_spec.ClearField(entity.FieldManufacturer, field.TypeString)
+	}
+	if value, ok := _u.mutation.ExpiresAt(); ok {
+		_spec.SetField(entity.FieldExpiresAt, field.TypeTime, value)
+	}
+	if _u.mutation.ExpiresAtCleared() {
+		_spec.ClearField(entity.FieldExpiresAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.ExpiryKind(); ok {
+		_spec.SetField(entity.FieldExpiryKind, field.TypeEnum, value)
 	}
 	if value, ok := _u.mutation.LifetimeWarranty(); ok {
 		_spec.SetField(entity.FieldLifetimeWarranty, field.TypeBool, value)
@@ -1614,6 +1662,40 @@ func (_u *EntityUpdateOne) ClearManufacturer() *EntityUpdateOne {
 	return _u
 }
 
+// SetExpiresAt sets the "expires_at" field.
+func (_u *EntityUpdateOne) SetExpiresAt(v time.Time) *EntityUpdateOne {
+	_u.mutation.SetExpiresAt(v)
+	return _u
+}
+
+// SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
+func (_u *EntityUpdateOne) SetNillableExpiresAt(v *time.Time) *EntityUpdateOne {
+	if v != nil {
+		_u.SetExpiresAt(*v)
+	}
+	return _u
+}
+
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (_u *EntityUpdateOne) ClearExpiresAt() *EntityUpdateOne {
+	_u.mutation.ClearExpiresAt()
+	return _u
+}
+
+// SetExpiryKind sets the "expiry_kind" field.
+func (_u *EntityUpdateOne) SetExpiryKind(v entity.ExpiryKind) *EntityUpdateOne {
+	_u.mutation.SetExpiryKind(v)
+	return _u
+}
+
+// SetNillableExpiryKind sets the "expiry_kind" field if the given value is not nil.
+func (_u *EntityUpdateOne) SetNillableExpiryKind(v *entity.ExpiryKind) *EntityUpdateOne {
+	if v != nil {
+		_u.SetExpiryKind(*v)
+	}
+	return _u
+}
+
 // SetLifetimeWarranty sets the "lifetime_warranty" field.
 func (_u *EntityUpdateOne) SetLifetimeWarranty(v bool) *EntityUpdateOne {
 	_u.mutation.SetLifetimeWarranty(v)
@@ -2201,6 +2283,11 @@ func (_u *EntityUpdateOne) check() error {
 			return &ValidationError{Name: "manufacturer", err: fmt.Errorf(`ent: validator failed for field "Entity.manufacturer": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ExpiryKind(); ok {
+		if err := entity.ExpiryKindValidator(v); err != nil {
+			return &ValidationError{Name: "expiry_kind", err: fmt.Errorf(`ent: validator failed for field "Entity.expiry_kind": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.WarrantyDetails(); ok {
 		if err := entity.WarrantyDetailsValidator(v); err != nil {
 			return &ValidationError{Name: "warranty_details", err: fmt.Errorf(`ent: validator failed for field "Entity.warranty_details": %w`, err)}
@@ -2311,6 +2398,15 @@ func (_u *EntityUpdateOne) sqlSave(ctx context.Context) (_node *Entity, err erro
 	}
 	if _u.mutation.ManufacturerCleared() {
 		_spec.ClearField(entity.FieldManufacturer, field.TypeString)
+	}
+	if value, ok := _u.mutation.ExpiresAt(); ok {
+		_spec.SetField(entity.FieldExpiresAt, field.TypeTime, value)
+	}
+	if _u.mutation.ExpiresAtCleared() {
+		_spec.ClearField(entity.FieldExpiresAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.ExpiryKind(); ok {
+		_spec.SetField(entity.FieldExpiryKind, field.TypeEnum, value)
 	}
 	if value, ok := _u.mutation.LifetimeWarranty(); ok {
 		_spec.SetField(entity.FieldLifetimeWarranty, field.TypeBool, value)

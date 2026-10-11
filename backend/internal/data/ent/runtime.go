@@ -368,23 +368,23 @@ func init() {
 	// entity.ManufacturerValidator is a validator for the "manufacturer" field. It is called by the builders before save.
 	entity.ManufacturerValidator = entityDescManufacturer.Validators[0].(func(string) error)
 	// entityDescLifetimeWarranty is the schema descriptor for lifetime_warranty field.
-	entityDescLifetimeWarranty := entityFields[10].Descriptor()
+	entityDescLifetimeWarranty := entityFields[12].Descriptor()
 	// entity.DefaultLifetimeWarranty holds the default value on creation for the lifetime_warranty field.
 	entity.DefaultLifetimeWarranty = entityDescLifetimeWarranty.Default.(bool)
 	// entityDescWarrantyDetails is the schema descriptor for warranty_details field.
-	entityDescWarrantyDetails := entityFields[12].Descriptor()
+	entityDescWarrantyDetails := entityFields[14].Descriptor()
 	// entity.WarrantyDetailsValidator is a validator for the "warranty_details" field. It is called by the builders before save.
 	entity.WarrantyDetailsValidator = entityDescWarrantyDetails.Validators[0].(func(string) error)
 	// entityDescPurchasePrice is the schema descriptor for purchase_price field.
-	entityDescPurchasePrice := entityFields[15].Descriptor()
+	entityDescPurchasePrice := entityFields[17].Descriptor()
 	// entity.DefaultPurchasePrice holds the default value on creation for the purchase_price field.
 	entity.DefaultPurchasePrice = entityDescPurchasePrice.Default.(float64)
 	// entityDescSoldPrice is the schema descriptor for sold_price field.
-	entityDescSoldPrice := entityFields[18].Descriptor()
+	entityDescSoldPrice := entityFields[20].Descriptor()
 	// entity.DefaultSoldPrice holds the default value on creation for the sold_price field.
 	entity.DefaultSoldPrice = entityDescSoldPrice.Default.(float64)
 	// entityDescSoldNotes is the schema descriptor for sold_notes field.
-	entityDescSoldNotes := entityFields[19].Descriptor()
+	entityDescSoldNotes := entityFields[21].Descriptor()
 	// entity.SoldNotesValidator is a validator for the "sold_notes" field. It is called by the builders before save.
 	entity.SoldNotesValidator = entityDescSoldNotes.Validators[0].(func(string) error)
 	// entityDescID is the schema descriptor for id field.
@@ -545,6 +545,10 @@ func init() {
 	entitytemplateDescIncludeSoldFields := entitytemplateFields[11].Descriptor()
 	// entitytemplate.DefaultIncludeSoldFields holds the default value on creation for the include_sold_fields field.
 	entitytemplate.DefaultIncludeSoldFields = entitytemplateDescIncludeSoldFields.Default.(bool)
+	// entitytemplateDescIncludeExpiryFields is the schema descriptor for include_expiry_fields field.
+	entitytemplateDescIncludeExpiryFields := entitytemplateFields[12].Descriptor()
+	// entitytemplate.DefaultIncludeExpiryFields holds the default value on creation for the include_expiry_fields field.
+	entitytemplate.DefaultIncludeExpiryFields = entitytemplateDescIncludeExpiryFields.Default.(bool)
 	// entitytemplateDescID is the schema descriptor for id field.
 	entitytemplateDescID := entitytemplateMixinFields0[0].Descriptor()
 	// entitytemplate.DefaultID holds the default value on creation for the id field.
@@ -596,6 +600,10 @@ func init() {
 	entitytypeDescIcon := entitytypeFields[1].Descriptor()
 	// entitytype.IconValidator is a validator for the "icon" field. It is called by the builders before save.
 	entitytype.IconValidator = entitytypeDescIcon.Validators[0].(func(string) error)
+	// entitytypeDescExpiryRequired is the schema descriptor for expiry_required field.
+	entitytypeDescExpiryRequired := entitytypeFields[2].Descriptor()
+	// entitytype.DefaultExpiryRequired holds the default value on creation for the expiry_required field.
+	entitytype.DefaultExpiryRequired = entitytypeDescExpiryRequired.Default.(bool)
 	// entitytypeDescID is the schema descriptor for id field.
 	entitytypeDescID := entitytypeMixinFields0[0].Descriptor()
 	// entitytype.DefaultID holds the default value on creation for the id field.

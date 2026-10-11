@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"testing"
 	"time"
@@ -183,4 +184,32 @@ func TestTemplateFields_TypedAndAppliedToItems(t *testing.T) {
 	require.NotNil(t, dupFields["expiry"].TimeValue)
 	assert.Equal(t, itemFields["expiry"].TimeValue.UTC(), dupFields["expiry"].TimeValue.UTC())
 	assert.Equal(t, []string{"gold", "silver"}, dupFields["tier"].Choices)
+}
+
+func TestFieldJSON_IgnoresDerivedValuesFromOlderClients(t *testing.T) {
+	for _, in := range []string{
+		`{"name":"a","type":"text","textValue":"x","timeValue":""}`,
+		`{"name":"a","type":"text","textValue":"x","timeValue":null,"decimalValue":null}`,
+		`{"name":"a","type":"text","textValue":"x","timeValue":"2026-01-01T00:00:00Z","decimalValue":1.5}`,
+		`{"name":"a","type":"text","textValue":"x","timeValue":"garbage","decimalValue":"nope"}`,
+	} {
+		var f EntityFieldData
+		require.NoError(t, json.Unmarshal([]byte(in), &f), in)
+		assert.Equal(t, "x", f.TextValue, in)
+		assert.Nil(t, f.TimeValue, in)
+		assert.Nil(t, f.DecimalValue, in)
+
+		var tf TemplateField
+		require.NoError(t, json.Unmarshal([]byte(in), &tf), in)
+		assert.Equal(t, "x", tf.TextValue, in)
+		assert.Nil(t, tf.TimeValue, in)
+	}
+
+	// Output still carries them.
+	now := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
+	d := 2.5
+	out, err := json.Marshal(EntityFieldData{Name: "a", Type: "date", TimeValue: &now, DecimalValue: &d})
+	require.NoError(t, err)
+	assert.Contains(t, string(out), `"timeValue":"2026-03-01T00:00:00Z"`)
+	assert.Contains(t, string(out), `"decimalValue":2.5`)
 }
