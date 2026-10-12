@@ -42,6 +42,9 @@ type EntityService struct {
 	filepath string
 
 	autoIncrementAssetID bool
+
+	// lookups queues a product lookup for new items when those are automatic.
+	lookups *LookupService
 }
 
 func (svc *EntityService) Create(ctx Context, entity repo.EntityCreate) (repo.EntityOut, error) {
@@ -71,6 +74,9 @@ func (svc *EntityService) Create(ctx Context, entity repo.EntityCreate) (repo.En
 		return out, err
 	}
 	span.SetAttributes(attribute.String("entity.id", out.ID.String()))
+	if svc.lookups != nil {
+		svc.lookups.RequestForNew(ctx, out)
+	}
 	return out, nil
 }
 

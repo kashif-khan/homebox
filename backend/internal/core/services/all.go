@@ -8,6 +8,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/repo"
 	"github.com/sysadminsmedia/homebox/backend/internal/sys/config"
+	"github.com/sysadminsmedia/homebox/backend/internal/sys/validate"
 	"github.com/sysadminsmedia/homebox/backend/pkgs/mailer"
 )
 
@@ -20,6 +21,7 @@ type AllServices struct {
 	Backups           *BackupService
 	Currencies        *currencies.CurrencyRegistry
 	Webhooks          *WebhookService
+	Lookups           *LookupService
 }
 
 type OptionsFunc func(*options)
@@ -36,6 +38,7 @@ type options struct {
 	dialect              string
 	mailer               *mailer.Mailer
 	backup               config.BackupConf
+	barcode              config.BarcodeAPIConf
 }
 
 func WithAutoIncrementAssetID(v bool) func(*options) {
@@ -82,6 +85,14 @@ func WithBackupConfig(v config.BackupConf) func(*options) {
 func WithWebhooks(v config.WebhooksConf) func(*options) {
 	return func(o *options) {
 		o.webhooks = v
+	}
+}
+
+// WithProductLookup supplies the product lookup service settings. Without it
+// lookups are off.
+func WithProductLookup(v config.BarcodeAPIConf) func(*options) {
+	return func(o *options) {
+		o.barcode = v
 	}
 }
 
@@ -156,13 +167,17 @@ func New(repos *repo.AllRepos, opts ...OptionsFunc) *AllServices {
 	webhookSvc := NewWebhookService(repos, options.webhooks, options.notifierConfig)
 	backupSvc.events = webhookSvc
 
+	entitySvc := &EntityService{
+		repo:                 repos,
+		autoIncrementAssetID: options.autoIncrementAssetID,
+	}
+	lookupSvc := NewLookupService(repos, entitySvc, options.barcode, validate.NotifierHTTPClient(options.notifierConfig))
+	entitySvc.lookups = lookupSvc
+
 	return &AllServices{
-		User:  &UserService{repos: repos, mailer: options.mailer, isCurrency: currencyRegistry.IsSupported},
-		Group: &GroupService{repos},
-		Entities: &EntityService{
-			repo:                 repos,
-			autoIncrementAssetID: options.autoIncrementAssetID,
-		},
+		User:     &UserService{repos: repos, mailer: options.mailer, isCurrency: currencyRegistry.IsSupported},
+		Group:    &GroupService{repos},
+		Entities: entitySvc,
 		BackgroundService: &BackgroundService{
 			repos:          repos,
 			latest:         Latest{},
@@ -172,5 +187,6 @@ func New(repos *repo.AllRepos, opts ...OptionsFunc) *AllServices {
 		Backups:    backupSvc,
 		Currencies: currencyRegistry,
 		Webhooks:   webhookSvc,
+		Lookups:    lookupSvc,
 	}
 }

@@ -141,6 +141,14 @@ type (
 		Telemetry         TelemetryStatus `json:"telemetry"`
 		MCP               MCPStatus       `json:"mcp"`
 		Webhooks          WebhooksStatus  `json:"webhooks"`
+		ProductLookup     LookupStatus    `json:"productLookup"`
+	}
+
+	// LookupStatus tells the web UI whether to offer finding product details on
+	// the web, and whether new items are looked up without being asked.
+	LookupStatus struct {
+		Enabled bool `json:"enabled"`
+		Auto    bool `json:"auto"`
 	}
 
 	// WebhooksStatus tells the web UI whether to offer outbound webhooks.
@@ -223,6 +231,10 @@ func (ctrl *V1Controller) HandleBase(ready ReadyFunc, build Build) errchain.Hand
 				ButtonText:   ctrl.config.OIDC.ButtonText,
 				AutoRedirect: ctrl.config.OIDC.AutoRedirect,
 				AllowLocal:   ctrl.config.Options.AllowLocalLogin,
+			},
+			ProductLookup: LookupStatus{
+				Enabled: ctrl.svc.Lookups.Enabled(),
+				Auto:    ctrl.svc.Lookups.Auto(),
 			},
 			Telemetry: TelemetryStatus{
 				Enabled: ctrl.config.Otel.Enabled,
