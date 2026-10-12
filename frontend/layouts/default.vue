@@ -488,6 +488,12 @@
           to: "/collection/webhooks",
         },
         {
+          id: 633,
+          active: computed(() => route.path === "/collection/lookups"),
+          name: computed(() => t("collection.tabs.lookups")),
+          to: "/collection/lookups",
+        },
+        {
           id: 64,
           active: computed(() => route.path === "/collection/settings"),
           name: computed(() => t("collection.tabs.settings")),

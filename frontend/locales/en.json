@@ -33,6 +33,7 @@
             "title": "No Collections Found"
         },
         "no_invites": "No invites",
+        "no_invites_hint": "An invite is a link that lets someone join this collection with their own account, so you can share and manage the same inventory together. Create one with the + button and send them the link. Each invite expires and can only be used a limited number of times, so you control who gets in.",
         "remaining_uses": "Remaining uses",
         "tabs": {
             "entity_types": "Entity Types",
