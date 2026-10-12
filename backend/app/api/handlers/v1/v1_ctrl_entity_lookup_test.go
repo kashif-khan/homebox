@@ -25,6 +25,13 @@ func TestLookupErrorStatuses(t *testing.T) {
 		}
 	}
 
+	// The wrapper's own wording is not shown to the user.
+	err := lookupError(fmt.Errorf("%w: the address must start with http://", services.ErrLookupInvalid))
+	var re *validate.RequestError
+	if !errors.As(err, &re) || re.Error() != "The address must start with http://" {
+		t.Errorf("unexpected message: %v", err)
+	}
+
 	other := errors.New("boom")
 	if got := lookupError(other); !errors.Is(got, other) {
 		t.Errorf("unrelated errors must pass through unchanged, got %v", got)

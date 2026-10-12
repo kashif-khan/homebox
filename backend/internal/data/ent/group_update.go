@@ -139,6 +139,48 @@ func (_u *GroupUpdate) SetNillableMcpAccess(v *string) *GroupUpdate {
 	return _u
 }
 
+// SetLookupURL sets the "lookup_url" field.
+func (_u *GroupUpdate) SetLookupURL(v string) *GroupUpdate {
+	_u.mutation.SetLookupURL(v)
+	return _u
+}
+
+// SetNillableLookupURL sets the "lookup_url" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableLookupURL(v *string) *GroupUpdate {
+	if v != nil {
+		_u.SetLookupURL(*v)
+	}
+	return _u
+}
+
+// SetLookupToken sets the "lookup_token" field.
+func (_u *GroupUpdate) SetLookupToken(v string) *GroupUpdate {
+	_u.mutation.SetLookupToken(v)
+	return _u
+}
+
+// SetNillableLookupToken sets the "lookup_token" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableLookupToken(v *string) *GroupUpdate {
+	if v != nil {
+		_u.SetLookupToken(*v)
+	}
+	return _u
+}
+
+// SetLookupAuto sets the "lookup_auto" field.
+func (_u *GroupUpdate) SetLookupAuto(v bool) *GroupUpdate {
+	_u.mutation.SetLookupAuto(v)
+	return _u
+}
+
+// SetNillableLookupAuto sets the "lookup_auto" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableLookupAuto(v *bool) *GroupUpdate {
+	if v != nil {
+		_u.SetLookupAuto(*v)
+	}
+	return _u
+}
+
 // AddUserIDs adds the "users" edge to the User entity by IDs.
 func (_u *GroupUpdate) AddUserIDs(ids ...uuid.UUID) *GroupUpdate {
 	_u.mutation.AddUserIDs(ids...)
@@ -660,6 +702,16 @@ func (_u *GroupUpdate) check() error {
 			return &ValidationError{Name: "timezone", err: fmt.Errorf(`ent: validator failed for field "Group.timezone": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.LookupURL(); ok {
+		if err := group.LookupURLValidator(v); err != nil {
+			return &ValidationError{Name: "lookup_url", err: fmt.Errorf(`ent: validator failed for field "Group.lookup_url": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.LookupToken(); ok {
+		if err := group.LookupTokenValidator(v); err != nil {
+			return &ValidationError{Name: "lookup_token", err: fmt.Errorf(`ent: validator failed for field "Group.lookup_token": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -698,6 +750,15 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.McpAccess(); ok {
 		_spec.SetField(group.FieldMcpAccess, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.LookupURL(); ok {
+		_spec.SetField(group.FieldLookupURL, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.LookupToken(); ok {
+		_spec.SetField(group.FieldLookupToken, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.LookupAuto(); ok {
+		_spec.SetField(group.FieldLookupAuto, field.TypeBool, value)
 	}
 	if _u.mutation.UsersCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1413,6 +1474,48 @@ func (_u *GroupUpdateOne) SetNillableMcpAccess(v *string) *GroupUpdateOne {
 	return _u
 }
 
+// SetLookupURL sets the "lookup_url" field.
+func (_u *GroupUpdateOne) SetLookupURL(v string) *GroupUpdateOne {
+	_u.mutation.SetLookupURL(v)
+	return _u
+}
+
+// SetNillableLookupURL sets the "lookup_url" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableLookupURL(v *string) *GroupUpdateOne {
+	if v != nil {
+		_u.SetLookupURL(*v)
+	}
+	return _u
+}
+
+// SetLookupToken sets the "lookup_token" field.
+func (_u *GroupUpdateOne) SetLookupToken(v string) *GroupUpdateOne {
+	_u.mutation.SetLookupToken(v)
+	return _u
+}
+
+// SetNillableLookupToken sets the "lookup_token" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableLookupToken(v *string) *GroupUpdateOne {
+	if v != nil {
+		_u.SetLookupToken(*v)
+	}
+	return _u
+}
+
+// SetLookupAuto sets the "lookup_auto" field.
+func (_u *GroupUpdateOne) SetLookupAuto(v bool) *GroupUpdateOne {
+	_u.mutation.SetLookupAuto(v)
+	return _u
+}
+
+// SetNillableLookupAuto sets the "lookup_auto" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableLookupAuto(v *bool) *GroupUpdateOne {
+	if v != nil {
+		_u.SetLookupAuto(*v)
+	}
+	return _u
+}
+
 // AddUserIDs adds the "users" edge to the User entity by IDs.
 func (_u *GroupUpdateOne) AddUserIDs(ids ...uuid.UUID) *GroupUpdateOne {
 	_u.mutation.AddUserIDs(ids...)
@@ -1947,6 +2050,16 @@ func (_u *GroupUpdateOne) check() error {
 			return &ValidationError{Name: "timezone", err: fmt.Errorf(`ent: validator failed for field "Group.timezone": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.LookupURL(); ok {
+		if err := group.LookupURLValidator(v); err != nil {
+			return &ValidationError{Name: "lookup_url", err: fmt.Errorf(`ent: validator failed for field "Group.lookup_url": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.LookupToken(); ok {
+		if err := group.LookupTokenValidator(v); err != nil {
+			return &ValidationError{Name: "lookup_token", err: fmt.Errorf(`ent: validator failed for field "Group.lookup_token": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -2002,6 +2115,15 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if value, ok := _u.mutation.McpAccess(); ok {
 		_spec.SetField(group.FieldMcpAccess, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.LookupURL(); ok {
+		_spec.SetField(group.FieldLookupURL, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.LookupToken(); ok {
+		_spec.SetField(group.FieldLookupToken, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.LookupAuto(); ok {
+		_spec.SetField(group.FieldLookupAuto, field.TypeBool, value)
 	}
 	if _u.mutation.UsersCleared() {
 		edge := &sqlgraph.EdgeSpec{

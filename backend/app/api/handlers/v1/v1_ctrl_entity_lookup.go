@@ -3,6 +3,7 @@ package v1
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/hay-kot/httpkit/errchain"
@@ -19,8 +20,17 @@ func lookupError(err error) error {
 		return validate.NewRequestError(err, http.StatusNotImplemented)
 	case errors.Is(err, services.ErrLookupNotReady):
 		return validate.NewRequestError(err, http.StatusConflict)
-	case errors.Is(err, services.ErrLookupNotForLocations), errors.Is(err, services.ErrLookupInvalid):
+	case errors.Is(err, services.ErrLookupPicture):
+		return validate.NewRequestError(errors.New("The picture could not be downloaded."), http.StatusBadGateway)
+	case errors.Is(err, services.ErrLookupNotForLocations):
 		return validate.NewRequestError(err, http.StatusBadRequest)
+	case errors.Is(err, services.ErrLookupInvalid):
+		// Say what is wrong, without the internal prefix the error is wrapped in.
+		msg := strings.TrimPrefix(err.Error(), services.ErrLookupInvalid.Error()+": ")
+		if msg != "" {
+			msg = strings.ToUpper(msg[:1]) + msg[1:]
+		}
+		return validate.NewRequestError(errors.New(msg), http.StatusBadRequest)
 	}
 	return err
 }

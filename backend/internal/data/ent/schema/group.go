@@ -47,6 +47,19 @@ func (Group) Fields() []ent.Field {
 		// scopes.Ceiling.
 		field.String("mcp_access").
 			Default("off"),
+		// Product lookup: the scrapling-barcode service this collection asks for
+		// details about its items, and whether every new item is looked up. The
+		// token is a credential, so it is Sensitive: kept out of logs and never
+		// returned by the API. An empty URL falls back to the server's own setting.
+		field.String("lookup_url").
+			MaxLen(2083).
+			Default(""),
+		field.String("lookup_token").
+			Sensitive().
+			MaxLen(512).
+			Default(""),
+		field.Bool("lookup_auto").
+			Default(false),
 	}
 }
 

@@ -29,10 +29,27 @@ var Schema = map[string]any{"fields": map[string]any{
 	"country":      "country",
 	"barcode":      "barcode",
 	"imageURL":     "image_url",
+	"imageURLs":    "image_urls",
 	"sourceURL":    "source_url",
 	"confidence":   "confidence",
 	"sources":      "sources",
 }}
+
+// ErrUnauthorized means the service refused the token.
+var ErrUnauthorized = errors.New("the lookup service rejected the token")
+
+// SourceStatus is whether one of the service's sources is working.
+type SourceStatus struct {
+	Name   string `json:"name"`
+	OK     bool   `json:"ok"`
+	Detail string `json:"detail"`
+}
+
+// Status is what the service reports about itself.
+type Status struct {
+	Sources   []SourceStatus `json:"sources"`
+	WebSearch bool           `json:"webSearch"`
+}
 
 // Client calls one service instance.
 type Client struct {
@@ -77,6 +94,9 @@ func (c Client) Lookup(ctx context.Context, query string, limit int) (Result, er
 	}
 	defer func() { _ = resp.Body.Close() }()
 
+	if resp.StatusCode == http.StatusUnauthorized {
+		return Result{}, ErrUnauthorized
+	}
 	if resp.StatusCode != http.StatusOK {
 		return Result{}, fmt.Errorf("enrich service returned status code: %d", resp.StatusCode)
 	}
@@ -97,4 +117,40 @@ func (c Client) Lookup(ctx context.Context, query string, limit int) (Result, er
 		}
 	}
 	return out, nil
+}
+
+// Status asks the service which sources it has and whether each is working. It
+// is how a connection is tested without searching for anything.
+func (c Client) Status(ctx context.Context) (Status, error) {
+	base, err := url.Parse(c.BaseURL)
+	if err != nil || (base.Scheme != "http" && base.Scheme != "https") || base.Host == "" {
+		return Status{}, errors.New("invalid enrich_url")
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(c.BaseURL, "/")+"/v1/status", nil)
+	if err != nil {
+		return Status{}, err
+	}
+	if c.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.Token)
+	}
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return Status{}, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return Status{}, ErrUnauthorized
+	}
+	if resp.StatusCode != http.StatusOK {
+		return Status{}, fmt.Errorf("enrich service returned status code: %d", resp.StatusCode)
+	}
+	var out struct {
+		Sources   []SourceStatus `json:"sources"`
+		WebSearch bool           `json:"web_search"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, maxResponseBytes)).Decode(&out); err != nil {
+		return Status{}, err
+	}
+	return Status{Sources: out.Sources, WebSearch: out.WebSearch}, nil
 }

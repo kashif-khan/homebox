@@ -10,7 +10,8 @@ type LookupCandidate struct {
 	ModelNumber  string   `json:"modelNumber"`
 	Country      string   `json:"country"`
 	Barcode      string   `json:"barcode"`
-	ImageURL     string   `json:"imageURL"`
+	ImageURL     string   `json:"imageURL"` // the first of ImageURLs, kept for older readers
+	ImageURLs    []string `json:"imageURLs"`
 	SourceURL    string   `json:"sourceURL"`
 	Confidence   float64  `json:"confidence"`
 	Sources      []string `json:"sources"`

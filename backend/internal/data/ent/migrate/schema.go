@@ -526,6 +526,9 @@ var (
 		{Name: "notify_hour", Type: field.TypeInt, Default: 8},
 		{Name: "alert_rules_seeded", Type: field.TypeBool, Default: false},
 		{Name: "mcp_access", Type: field.TypeString, Default: "off"},
+		{Name: "lookup_url", Type: field.TypeString, Size: 2083, Default: ""},
+		{Name: "lookup_token", Type: field.TypeString, Size: 512, Default: ""},
+		{Name: "lookup_auto", Type: field.TypeBool, Default: false},
 	}
 	// GroupsTable holds the schema information for the "groups" table.
 	GroupsTable = &schema.Table{

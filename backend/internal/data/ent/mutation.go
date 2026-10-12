@@ -14925,6 +14925,9 @@ type GroupMutation struct {
 	addnotify_hour             *int
 	alert_rules_seeded         *bool
 	mcp_access                 *string
+	lookup_url                 *string
+	lookup_token               *string
+	lookup_auto                *bool
 	clearedFields              map[string]struct{}
 	users                      map[uuid.UUID]struct{}
 	removedusers               map[uuid.UUID]struct{}
@@ -15380,6 +15383,114 @@ func (m *GroupMutation) OldMcpAccess(ctx context.Context) (v string, err error) 
 // ResetMcpAccess resets all changes to the "mcp_access" field.
 func (m *GroupMutation) ResetMcpAccess() {
 	m.mcp_access = nil
+}
+
+// SetLookupURL sets the "lookup_url" field.
+func (m *GroupMutation) SetLookupURL(s string) {
+	m.lookup_url = &s
+}
+
+// LookupURL returns the value of the "lookup_url" field in the mutation.
+func (m *GroupMutation) LookupURL() (r string, exists bool) {
+	v := m.lookup_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLookupURL returns the old "lookup_url" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldLookupURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLookupURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLookupURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLookupURL: %w", err)
+	}
+	return oldValue.LookupURL, nil
+}
+
+// ResetLookupURL resets all changes to the "lookup_url" field.
+func (m *GroupMutation) ResetLookupURL() {
+	m.lookup_url = nil
+}
+
+// SetLookupToken sets the "lookup_token" field.
+func (m *GroupMutation) SetLookupToken(s string) {
+	m.lookup_token = &s
+}
+
+// LookupToken returns the value of the "lookup_token" field in the mutation.
+func (m *GroupMutation) LookupToken() (r string, exists bool) {
+	v := m.lookup_token
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLookupToken returns the old "lookup_token" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldLookupToken(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLookupToken is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLookupToken requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLookupToken: %w", err)
+	}
+	return oldValue.LookupToken, nil
+}
+
+// ResetLookupToken resets all changes to the "lookup_token" field.
+func (m *GroupMutation) ResetLookupToken() {
+	m.lookup_token = nil
+}
+
+// SetLookupAuto sets the "lookup_auto" field.
+func (m *GroupMutation) SetLookupAuto(b bool) {
+	m.lookup_auto = &b
+}
+
+// LookupAuto returns the value of the "lookup_auto" field in the mutation.
+func (m *GroupMutation) LookupAuto() (r bool, exists bool) {
+	v := m.lookup_auto
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLookupAuto returns the old "lookup_auto" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldLookupAuto(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLookupAuto is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLookupAuto requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLookupAuto: %w", err)
+	}
+	return oldValue.LookupAuto, nil
+}
+
+// ResetLookupAuto resets all changes to the "lookup_auto" field.
+func (m *GroupMutation) ResetLookupAuto() {
+	m.lookup_auto = nil
 }
 
 // AddUserIDs adds the "users" edge to the User entity by ids.
@@ -16118,7 +16229,7 @@ func (m *GroupMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GroupMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, group.FieldCreatedAt)
 	}
@@ -16142,6 +16253,15 @@ func (m *GroupMutation) Fields() []string {
 	}
 	if m.mcp_access != nil {
 		fields = append(fields, group.FieldMcpAccess)
+	}
+	if m.lookup_url != nil {
+		fields = append(fields, group.FieldLookupURL)
+	}
+	if m.lookup_token != nil {
+		fields = append(fields, group.FieldLookupToken)
+	}
+	if m.lookup_auto != nil {
+		fields = append(fields, group.FieldLookupAuto)
 	}
 	return fields
 }
@@ -16167,6 +16287,12 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 		return m.AlertRulesSeeded()
 	case group.FieldMcpAccess:
 		return m.McpAccess()
+	case group.FieldLookupURL:
+		return m.LookupURL()
+	case group.FieldLookupToken:
+		return m.LookupToken()
+	case group.FieldLookupAuto:
+		return m.LookupAuto()
 	}
 	return nil, false
 }
@@ -16192,6 +16318,12 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldAlertRulesSeeded(ctx)
 	case group.FieldMcpAccess:
 		return m.OldMcpAccess(ctx)
+	case group.FieldLookupURL:
+		return m.OldLookupURL(ctx)
+	case group.FieldLookupToken:
+		return m.OldLookupToken(ctx)
+	case group.FieldLookupAuto:
+		return m.OldLookupAuto(ctx)
 	}
 	return nil, fmt.Errorf("unknown Group field %s", name)
 }
@@ -16256,6 +16388,27 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetMcpAccess(v)
+		return nil
+	case group.FieldLookupURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLookupURL(v)
+		return nil
+	case group.FieldLookupToken:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLookupToken(v)
+		return nil
+	case group.FieldLookupAuto:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLookupAuto(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Group field %s", name)
@@ -16344,6 +16497,15 @@ func (m *GroupMutation) ResetField(name string) error {
 		return nil
 	case group.FieldMcpAccess:
 		m.ResetMcpAccess()
+		return nil
+	case group.FieldLookupURL:
+		m.ResetLookupURL()
+		return nil
+	case group.FieldLookupToken:
+		m.ResetLookupToken()
+		return nil
+	case group.FieldLookupAuto:
+		m.ResetLookupAuto()
 		return nil
 	}
 	return fmt.Errorf("unknown Group field %s", name)

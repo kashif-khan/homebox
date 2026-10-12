@@ -96,6 +96,21 @@ func McpAccess(v string) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldMcpAccess, v))
 }
 
+// LookupURL applies equality check predicate on the "lookup_url" field. It's identical to LookupURLEQ.
+func LookupURL(v string) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldLookupURL, v))
+}
+
+// LookupToken applies equality check predicate on the "lookup_token" field. It's identical to LookupTokenEQ.
+func LookupToken(v string) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldLookupToken, v))
+}
+
+// LookupAuto applies equality check predicate on the "lookup_auto" field. It's identical to LookupAutoEQ.
+func LookupAuto(v bool) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldLookupAuto, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldCreatedAt, v))
@@ -484,6 +499,146 @@ func McpAccessEqualFold(v string) predicate.Group {
 // McpAccessContainsFold applies the ContainsFold predicate on the "mcp_access" field.
 func McpAccessContainsFold(v string) predicate.Group {
 	return predicate.Group(sql.FieldContainsFold(FieldMcpAccess, v))
+}
+
+// LookupURLEQ applies the EQ predicate on the "lookup_url" field.
+func LookupURLEQ(v string) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldLookupURL, v))
+}
+
+// LookupURLNEQ applies the NEQ predicate on the "lookup_url" field.
+func LookupURLNEQ(v string) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldLookupURL, v))
+}
+
+// LookupURLIn applies the In predicate on the "lookup_url" field.
+func LookupURLIn(vs ...string) predicate.Group {
+	return predicate.Group(sql.FieldIn(FieldLookupURL, vs...))
+}
+
+// LookupURLNotIn applies the NotIn predicate on the "lookup_url" field.
+func LookupURLNotIn(vs ...string) predicate.Group {
+	return predicate.Group(sql.FieldNotIn(FieldLookupURL, vs...))
+}
+
+// LookupURLGT applies the GT predicate on the "lookup_url" field.
+func LookupURLGT(v string) predicate.Group {
+	return predicate.Group(sql.FieldGT(FieldLookupURL, v))
+}
+
+// LookupURLGTE applies the GTE predicate on the "lookup_url" field.
+func LookupURLGTE(v string) predicate.Group {
+	return predicate.Group(sql.FieldGTE(FieldLookupURL, v))
+}
+
+// LookupURLLT applies the LT predicate on the "lookup_url" field.
+func LookupURLLT(v string) predicate.Group {
+	return predicate.Group(sql.FieldLT(FieldLookupURL, v))
+}
+
+// LookupURLLTE applies the LTE predicate on the "lookup_url" field.
+func LookupURLLTE(v string) predicate.Group {
+	return predicate.Group(sql.FieldLTE(FieldLookupURL, v))
+}
+
+// LookupURLContains applies the Contains predicate on the "lookup_url" field.
+func LookupURLContains(v string) predicate.Group {
+	return predicate.Group(sql.FieldContains(FieldLookupURL, v))
+}
+
+// LookupURLHasPrefix applies the HasPrefix predicate on the "lookup_url" field.
+func LookupURLHasPrefix(v string) predicate.Group {
+	return predicate.Group(sql.FieldHasPrefix(FieldLookupURL, v))
+}
+
+// LookupURLHasSuffix applies the HasSuffix predicate on the "lookup_url" field.
+func LookupURLHasSuffix(v string) predicate.Group {
+	return predicate.Group(sql.FieldHasSuffix(FieldLookupURL, v))
+}
+
+// LookupURLEqualFold applies the EqualFold predicate on the "lookup_url" field.
+func LookupURLEqualFold(v string) predicate.Group {
+	return predicate.Group(sql.FieldEqualFold(FieldLookupURL, v))
+}
+
+// LookupURLContainsFold applies the ContainsFold predicate on the "lookup_url" field.
+func LookupURLContainsFold(v string) predicate.Group {
+	return predicate.Group(sql.FieldContainsFold(FieldLookupURL, v))
+}
+
+// LookupTokenEQ applies the EQ predicate on the "lookup_token" field.
+func LookupTokenEQ(v string) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldLookupToken, v))
+}
+
+// LookupTokenNEQ applies the NEQ predicate on the "lookup_token" field.
+func LookupTokenNEQ(v string) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldLookupToken, v))
+}
+
+// LookupTokenIn applies the In predicate on the "lookup_token" field.
+func LookupTokenIn(vs ...string) predicate.Group {
+	return predicate.Group(sql.FieldIn(FieldLookupToken, vs...))
+}
+
+// LookupTokenNotIn applies the NotIn predicate on the "lookup_token" field.
+func LookupTokenNotIn(vs ...string) predicate.Group {
+	return predicate.Group(sql.FieldNotIn(FieldLookupToken, vs...))
+}
+
+// LookupTokenGT applies the GT predicate on the "lookup_token" field.
+func LookupTokenGT(v string) predicate.Group {
+	return predicate.Group(sql.FieldGT(FieldLookupToken, v))
+}
+
+// LookupTokenGTE applies the GTE predicate on the "lookup_token" field.
+func LookupTokenGTE(v string) predicate.Group {
+	return predicate.Group(sql.FieldGTE(FieldLookupToken, v))
+}
+
+// LookupTokenLT applies the LT predicate on the "lookup_token" field.
+func LookupTokenLT(v string) predicate.Group {
+	return predicate.Group(sql.FieldLT(FieldLookupToken, v))
+}
+
+// LookupTokenLTE applies the LTE predicate on the "lookup_token" field.
+func LookupTokenLTE(v string) predicate.Group {
+	return predicate.Group(sql.FieldLTE(FieldLookupToken, v))
+}
+
+// LookupTokenContains applies the Contains predicate on the "lookup_token" field.
+func LookupTokenContains(v string) predicate.Group {
+	return predicate.Group(sql.FieldContains(FieldLookupToken, v))
+}
+
+// LookupTokenHasPrefix applies the HasPrefix predicate on the "lookup_token" field.
+func LookupTokenHasPrefix(v string) predicate.Group {
+	return predicate.Group(sql.FieldHasPrefix(FieldLookupToken, v))
+}
+
+// LookupTokenHasSuffix applies the HasSuffix predicate on the "lookup_token" field.
+func LookupTokenHasSuffix(v string) predicate.Group {
+	return predicate.Group(sql.FieldHasSuffix(FieldLookupToken, v))
+}
+
+// LookupTokenEqualFold applies the EqualFold predicate on the "lookup_token" field.
+func LookupTokenEqualFold(v string) predicate.Group {
+	return predicate.Group(sql.FieldEqualFold(FieldLookupToken, v))
+}
+
+// LookupTokenContainsFold applies the ContainsFold predicate on the "lookup_token" field.
+func LookupTokenContainsFold(v string) predicate.Group {
+	return predicate.Group(sql.FieldContainsFold(FieldLookupToken, v))
+}
+
+// LookupAutoEQ applies the EQ predicate on the "lookup_auto" field.
+func LookupAutoEQ(v bool) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldLookupAuto, v))
+}
+
+// LookupAutoNEQ applies the NEQ predicate on the "lookup_auto" field.
+func LookupAutoNEQ(v bool) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldLookupAuto, v))
 }
 
 // HasUsers applies the HasEdge predicate on the "users" edge.

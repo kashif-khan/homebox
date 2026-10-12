@@ -130,6 +130,17 @@ func exerciseFeatureMigrations(t *testing.T, c *ent.Client) {
 	require.NoError(t, mkd(nil))
 	require.NoError(t, mkd(nil), "deliveries without a key are never merged")
 
+	// Per-collection lookup settings live on the group.
+	require.Empty(t, g.LookupURL)
+	require.False(t, g.LookupAuto)
+	g, err = g.Update().SetLookupURL("http://barcode:8787").SetLookupToken("tok").SetLookupAuto(true).Save(ctx)
+	require.NoError(t, err)
+	got2, err := c.Group.Get(ctx, g.ID)
+	require.NoError(t, err)
+	require.Equal(t, "http://barcode:8787", got2.LookupURL)
+	require.Equal(t, "tok", got2.LookupToken)
+	require.True(t, got2.LookupAuto)
+
 	// Product lookups: one per item, candidates stored as JSON.
 	lk, err := c.EntityLookup.Create().SetGroupID(g.ID).SetEntityID(e.ID).SetQuery("aspirin").
 		SetCandidates([]types.LookupCandidate{{Name: "Aspirin 100mg", Confidence: 0.8, Sources: []string{"openfoodfacts"}}}).Save(ctx)

@@ -31,6 +31,12 @@ const (
 	FieldAlertRulesSeeded = "alert_rules_seeded"
 	// FieldMcpAccess holds the string denoting the mcp_access field in the database.
 	FieldMcpAccess = "mcp_access"
+	// FieldLookupURL holds the string denoting the lookup_url field in the database.
+	FieldLookupURL = "lookup_url"
+	// FieldLookupToken holds the string denoting the lookup_token field in the database.
+	FieldLookupToken = "lookup_token"
+	// FieldLookupAuto holds the string denoting the lookup_auto field in the database.
+	FieldLookupAuto = "lookup_auto"
 	// EdgeUsers holds the string denoting the users edge name in mutations.
 	EdgeUsers = "users"
 	// EdgeEntityTypes holds the string denoting the entity_types edge name in mutations.
@@ -170,6 +176,9 @@ var Columns = []string{
 	FieldNotifyHour,
 	FieldAlertRulesSeeded,
 	FieldMcpAccess,
+	FieldLookupURL,
+	FieldLookupToken,
+	FieldLookupAuto,
 }
 
 var (
@@ -209,6 +218,16 @@ var (
 	DefaultAlertRulesSeeded bool
 	// DefaultMcpAccess holds the default value on creation for the "mcp_access" field.
 	DefaultMcpAccess string
+	// DefaultLookupURL holds the default value on creation for the "lookup_url" field.
+	DefaultLookupURL string
+	// LookupURLValidator is a validator for the "lookup_url" field. It is called by the builders before save.
+	LookupURLValidator func(string) error
+	// DefaultLookupToken holds the default value on creation for the "lookup_token" field.
+	DefaultLookupToken string
+	// LookupTokenValidator is a validator for the "lookup_token" field. It is called by the builders before save.
+	LookupTokenValidator func(string) error
+	// DefaultLookupAuto holds the default value on creation for the "lookup_auto" field.
+	DefaultLookupAuto bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -259,6 +278,21 @@ func ByAlertRulesSeeded(opts ...sql.OrderTermOption) OrderOption {
 // ByMcpAccess orders the results by the mcp_access field.
 func ByMcpAccess(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMcpAccess, opts...).ToFunc()
+}
+
+// ByLookupURL orders the results by the lookup_url field.
+func ByLookupURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLookupURL, opts...).ToFunc()
+}
+
+// ByLookupToken orders the results by the lookup_token field.
+func ByLookupToken(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLookupToken, opts...).ToFunc()
+}
+
+// ByLookupAuto orders the results by the lookup_auto field.
+func ByLookupAuto(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLookupAuto, opts...).ToFunc()
 }
 
 // ByUsersCount orders the results by users count.

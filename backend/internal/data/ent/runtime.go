@@ -734,6 +734,22 @@ func init() {
 	groupDescMcpAccess := groupFields[5].Descriptor()
 	// group.DefaultMcpAccess holds the default value on creation for the mcp_access field.
 	group.DefaultMcpAccess = groupDescMcpAccess.Default.(string)
+	// groupDescLookupURL is the schema descriptor for lookup_url field.
+	groupDescLookupURL := groupFields[6].Descriptor()
+	// group.DefaultLookupURL holds the default value on creation for the lookup_url field.
+	group.DefaultLookupURL = groupDescLookupURL.Default.(string)
+	// group.LookupURLValidator is a validator for the "lookup_url" field. It is called by the builders before save.
+	group.LookupURLValidator = groupDescLookupURL.Validators[0].(func(string) error)
+	// groupDescLookupToken is the schema descriptor for lookup_token field.
+	groupDescLookupToken := groupFields[7].Descriptor()
+	// group.DefaultLookupToken holds the default value on creation for the lookup_token field.
+	group.DefaultLookupToken = groupDescLookupToken.Default.(string)
+	// group.LookupTokenValidator is a validator for the "lookup_token" field. It is called by the builders before save.
+	group.LookupTokenValidator = groupDescLookupToken.Validators[0].(func(string) error)
+	// groupDescLookupAuto is the schema descriptor for lookup_auto field.
+	groupDescLookupAuto := groupFields[8].Descriptor()
+	// group.DefaultLookupAuto holds the default value on creation for the lookup_auto field.
+	group.DefaultLookupAuto = groupDescLookupAuto.Default.(bool)
 	// groupDescID is the schema descriptor for id field.
 	groupDescID := groupMixinFields0[0].Descriptor()
 	// group.DefaultID holds the default value on creation for the id field.

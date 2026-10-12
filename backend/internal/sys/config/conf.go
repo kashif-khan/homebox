@@ -338,7 +338,7 @@ type BarcodeAPIConf struct {
 	// asks it to search the web for a barcode or product name. Off when empty.
 	EnrichURL     string        `yaml:"enrich_url"`
 	EnrichToken   string        `yaml:"enrich_token"`
-	EnrichTimeout time.Duration `yaml:"enrich_timeout" conf:"default:45s"`
+	EnrichTimeout time.Duration `yaml:"enrich_timeout" conf:"default:90s"`
 	// EnrichAuto looks every new item up in the background and leaves the matches
 	// for review on the item. Without it a lookup is started by hand from the item.
 	EnrichAuto bool `yaml:"enrich_auto" conf:"default:false"`

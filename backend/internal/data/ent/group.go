@@ -34,6 +34,12 @@ type Group struct {
 	AlertRulesSeeded bool `json:"alert_rules_seeded,omitempty"`
 	// McpAccess holds the value of the "mcp_access" field.
 	McpAccess string `json:"mcp_access,omitempty"`
+	// LookupURL holds the value of the "lookup_url" field.
+	LookupURL string `json:"lookup_url,omitempty"`
+	// LookupToken holds the value of the "lookup_token" field.
+	LookupToken string `json:"-"`
+	// LookupAuto holds the value of the "lookup_auto" field.
+	LookupAuto bool `json:"lookup_auto,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GroupQuery when eager-loading is set.
 	Edges        GroupEdges `json:"edges"`
@@ -206,11 +212,11 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case group.FieldAlertRulesSeeded:
+		case group.FieldAlertRulesSeeded, group.FieldLookupAuto:
 			values[i] = new(sql.NullBool)
 		case group.FieldNotifyHour:
 			values[i] = new(sql.NullInt64)
-		case group.FieldName, group.FieldCurrency, group.FieldTimezone, group.FieldMcpAccess:
+		case group.FieldName, group.FieldCurrency, group.FieldTimezone, group.FieldMcpAccess, group.FieldLookupURL, group.FieldLookupToken:
 			values[i] = new(sql.NullString)
 		case group.FieldCreatedAt, group.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -284,6 +290,24 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field mcp_access", values[i])
 			} else if value.Valid {
 				_m.McpAccess = value.String
+			}
+		case group.FieldLookupURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field lookup_url", values[i])
+			} else if value.Valid {
+				_m.LookupURL = value.String
+			}
+		case group.FieldLookupToken:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field lookup_token", values[i])
+			} else if value.Valid {
+				_m.LookupToken = value.String
+			}
+		case group.FieldLookupAuto:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field lookup_auto", values[i])
+			} else if value.Valid {
+				_m.LookupAuto = value.Bool
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -414,6 +438,14 @@ func (_m *Group) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("mcp_access=")
 	builder.WriteString(_m.McpAccess)
+	builder.WriteString(", ")
+	builder.WriteString("lookup_url=")
+	builder.WriteString(_m.LookupURL)
+	builder.WriteString(", ")
+	builder.WriteString("lookup_token=<sensitive>")
+	builder.WriteString(", ")
+	builder.WriteString("lookup_auto=")
+	builder.WriteString(fmt.Sprintf("%v", _m.LookupAuto))
 	builder.WriteByte(')')
 	return builder.String()
 }

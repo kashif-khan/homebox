@@ -171,7 +171,7 @@ func New(repos *repo.AllRepos, opts ...OptionsFunc) *AllServices {
 		repo:                 repos,
 		autoIncrementAssetID: options.autoIncrementAssetID,
 	}
-	lookupSvc := NewLookupService(repos, entitySvc, options.barcode, validate.NotifierHTTPClient(options.notifierConfig))
+	lookupSvc := NewLookupService(repos, entitySvc, options.barcode, options.notifierConfig, validate.NotifierHTTPClient(options.notifierConfig))
 	entitySvc.lookups = lookupSvc
 
 	return &AllServices{

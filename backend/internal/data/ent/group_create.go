@@ -138,6 +138,48 @@ func (_c *GroupCreate) SetNillableMcpAccess(v *string) *GroupCreate {
 	return _c
 }
 
+// SetLookupURL sets the "lookup_url" field.
+func (_c *GroupCreate) SetLookupURL(v string) *GroupCreate {
+	_c.mutation.SetLookupURL(v)
+	return _c
+}
+
+// SetNillableLookupURL sets the "lookup_url" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableLookupURL(v *string) *GroupCreate {
+	if v != nil {
+		_c.SetLookupURL(*v)
+	}
+	return _c
+}
+
+// SetLookupToken sets the "lookup_token" field.
+func (_c *GroupCreate) SetLookupToken(v string) *GroupCreate {
+	_c.mutation.SetLookupToken(v)
+	return _c
+}
+
+// SetNillableLookupToken sets the "lookup_token" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableLookupToken(v *string) *GroupCreate {
+	if v != nil {
+		_c.SetLookupToken(*v)
+	}
+	return _c
+}
+
+// SetLookupAuto sets the "lookup_auto" field.
+func (_c *GroupCreate) SetLookupAuto(v bool) *GroupCreate {
+	_c.mutation.SetLookupAuto(v)
+	return _c
+}
+
+// SetNillableLookupAuto sets the "lookup_auto" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableLookupAuto(v *bool) *GroupCreate {
+	if v != nil {
+		_c.SetLookupAuto(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *GroupCreate) SetID(v uuid.UUID) *GroupCreate {
 	_c.mutation.SetID(v)
@@ -410,6 +452,18 @@ func (_c *GroupCreate) defaults() {
 		v := group.DefaultMcpAccess
 		_c.mutation.SetMcpAccess(v)
 	}
+	if _, ok := _c.mutation.LookupURL(); !ok {
+		v := group.DefaultLookupURL
+		_c.mutation.SetLookupURL(v)
+	}
+	if _, ok := _c.mutation.LookupToken(); !ok {
+		v := group.DefaultLookupToken
+		_c.mutation.SetLookupToken(v)
+	}
+	if _, ok := _c.mutation.LookupAuto(); !ok {
+		v := group.DefaultLookupAuto
+		_c.mutation.SetLookupAuto(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := group.DefaultID()
 		_c.mutation.SetID(v)
@@ -451,6 +505,25 @@ func (_c *GroupCreate) check() error {
 	}
 	if _, ok := _c.mutation.McpAccess(); !ok {
 		return &ValidationError{Name: "mcp_access", err: errors.New(`ent: missing required field "Group.mcp_access"`)}
+	}
+	if _, ok := _c.mutation.LookupURL(); !ok {
+		return &ValidationError{Name: "lookup_url", err: errors.New(`ent: missing required field "Group.lookup_url"`)}
+	}
+	if v, ok := _c.mutation.LookupURL(); ok {
+		if err := group.LookupURLValidator(v); err != nil {
+			return &ValidationError{Name: "lookup_url", err: fmt.Errorf(`ent: validator failed for field "Group.lookup_url": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.LookupToken(); !ok {
+		return &ValidationError{Name: "lookup_token", err: errors.New(`ent: missing required field "Group.lookup_token"`)}
+	}
+	if v, ok := _c.mutation.LookupToken(); ok {
+		if err := group.LookupTokenValidator(v); err != nil {
+			return &ValidationError{Name: "lookup_token", err: fmt.Errorf(`ent: validator failed for field "Group.lookup_token": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.LookupAuto(); !ok {
+		return &ValidationError{Name: "lookup_auto", err: errors.New(`ent: missing required field "Group.lookup_auto"`)}
 	}
 	return nil
 }
@@ -518,6 +591,18 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.McpAccess(); ok {
 		_spec.SetField(group.FieldMcpAccess, field.TypeString, value)
 		_node.McpAccess = value
+	}
+	if value, ok := _c.mutation.LookupURL(); ok {
+		_spec.SetField(group.FieldLookupURL, field.TypeString, value)
+		_node.LookupURL = value
+	}
+	if value, ok := _c.mutation.LookupToken(); ok {
+		_spec.SetField(group.FieldLookupToken, field.TypeString, value)
+		_node.LookupToken = value
+	}
+	if value, ok := _c.mutation.LookupAuto(); ok {
+		_spec.SetField(group.FieldLookupAuto, field.TypeBool, value)
+		_node.LookupAuto = value
 	}
 	if nodes := _c.mutation.UsersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

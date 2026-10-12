@@ -87,9 +87,9 @@ func registerRecurringTasks(app *app, cfg *config.Config, runner *graceful.Runne
 		runner.AddFunc("webhook-delivery", app.services.Webhooks.Run)
 	}
 
-	if app.services.Lookups.Enabled() {
-		runner.AddFunc("product-lookup", app.services.Lookups.Run)
-	}
+	// Always on: the lookup service is set per collection from the web UI, and
+	// that can happen at any time.
+	runner.AddFunc("product-lookup", app.services.Lookups.Run)
 
 	runner.AddFunc("collection-export-subscription", func(ctx context.Context) error {
 		return runJobSubscription(ctx, cfg, "collection_export", func(ctx context.Context, msg *pubsub.Message) {
