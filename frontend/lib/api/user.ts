@@ -65,7 +65,7 @@ export class UserClient extends BaseAPI {
     this.notificationRules = new NotificationRulesAPI(requests);
     this.webhooks = new WebhooksAPI(requests);
     this.products = new ProductAPI(requests);
-    this.lookups = new LookupsAPI(requests);
+    this.lookups = new LookupsAPI(requests, attachmentToken);
     this.backups = new BackupsAPI(requests);
 
     // Backward-compat shim: api.locations.* delegates to api.items.*

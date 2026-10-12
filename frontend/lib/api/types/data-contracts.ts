@@ -2429,7 +2429,6 @@ export interface APISummary {
   mcp: MCPStatus;
   message: string;
   oidc: OIDCStatus;
-  productLookup: LookupStatus;
   telemetry: TelemetryStatus;
   title: string;
   versions: string[];
@@ -2593,12 +2592,6 @@ export interface WebhookDeliveriesPage {
   total: number;
 }
 
-export interface LookupStatus {
-  /** New items are looked up without being asked */
-  auto: boolean;
-  enabled: boolean;
-}
-
 /** One possible match for an item, found on the web. */
 export interface LookupCandidate {
   barcode: string;
@@ -2606,6 +2599,8 @@ export interface LookupCandidate {
   country: string;
   description: string;
   imageURL: string;
+  /** Pictures of the product; the first is also imageURL */
+  imageURLs: string[];
   manufacturer: string;
   modelNumber: string;
   name: string;
@@ -2628,6 +2623,69 @@ export interface LookupApply {
   candidate: number;
   /** name, description, manufacturer, modelNumber, image */
   fields: string[];
+  /** Which of the match's pictures to add, when fields has image */
+  imageIndex?: number;
+}
+
+export interface LookupSettingsOut {
+  auto: boolean;
+  configured: boolean;
+  /** The address comes from the server's own settings */
+  fromServer: boolean;
+  tokenSet: boolean;
+  url: string;
+}
+
+export interface LookupSettingsIn {
+  auto: boolean;
+  /** Omit to keep the stored token; an empty string clears it */
+  token?: string | null;
+  url: string;
+}
+
+export interface LookupSourceStatus {
+  detail: string;
+  name: string;
+  ok: boolean;
+}
+
+export interface LookupTestOut {
+  message: string;
+  ok: boolean;
+  sources: LookupSourceStatus[] | null;
+  webSearch: boolean;
+}
+
+export interface EntityLookupListItem {
+  entityId: string;
+  entityName: string;
+  error: string;
+  matches: number;
+  query: string;
+  status: "pending" | "done" | "failed";
+  updatedAt: string;
+}
+
+export interface LookupCounts {
+  done: number;
+  failed: number;
+  pending: number;
+}
+
+export interface LookupActivityOut {
+  counts: LookupCounts;
+  items: EntityLookupListItem[] | null;
+}
+
+export interface LookupQueueRequest {
+  dryRun: boolean;
+  /** description, manufacturer, modelNumber, photo */
+  missing: string[];
+}
+
+export interface LookupQueueOut {
+  matched: number;
+  queued: number;
 }
 
 export interface WebhooksStatus {

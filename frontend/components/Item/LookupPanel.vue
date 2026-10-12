@@ -50,20 +50,31 @@
               :class="idx === selected ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'"
               @click="select(idx)"
             >
-              <div class="flex flex-wrap items-baseline justify-between gap-2">
-                <span class="font-medium">{{ c.name }}</span>
-                <span class="text-xs text-muted-foreground">
-                  {{ $t("items.lookup.match_confidence", { percent: Math.round(c.confidence * 100) }) }}
-                </span>
+              <div class="flex gap-3">
+                <img
+                  v-if="pictures(c).length && !failed.has(`${idx}-0`)"
+                  :src="api.lookups.imageURL(item.id, idx, 0)"
+                  alt=""
+                  class="size-16 shrink-0 rounded border bg-white object-contain"
+                  @error="failed.add(`${idx}-0`)"
+                />
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-baseline justify-between gap-2">
+                    <span class="font-medium">{{ c.name }}</span>
+                    <span class="text-xs text-muted-foreground">
+                      {{ $t("items.lookup.match_confidence", { percent: Math.round(c.confidence * 100) }) }}
+                    </span>
+                  </div>
+                  <p class="text-xs text-muted-foreground">
+                    <span v-if="c.manufacturer">{{ c.manufacturer }}</span>
+                    <span v-if="c.manufacturer && c.modelNumber"> · </span>
+                    <span v-if="c.modelNumber">{{ c.modelNumber }}</span>
+                  </p>
+                  <p v-if="c.sources.length" class="text-xs text-muted-foreground">
+                    {{ $t("items.lookup.sources", { sources: c.sources.join(", ") }) }}
+                  </p>
+                </div>
               </div>
-              <p class="text-xs text-muted-foreground">
-                <span v-if="c.manufacturer">{{ c.manufacturer }}</span>
-                <span v-if="c.manufacturer && c.modelNumber"> · </span>
-                <span v-if="c.modelNumber">{{ c.modelNumber }}</span>
-              </p>
-              <p v-if="c.sources.length" class="text-xs text-muted-foreground">
-                {{ $t("items.lookup.sources", { sources: c.sources.join(", ") }) }}
-              </p>
             </button>
           </div>
 
@@ -108,7 +119,7 @@
                   </td>
                   <td class="max-w-64 break-words p-2">{{ row.suggested }}</td>
                 </tr>
-                <tr v-if="candidate.imageURL" class="border-t align-top">
+                <tr v-if="candidatePictures.length" class="border-t align-top">
                   <td class="p-2">
                     <Checkbox
                       id="lookup-image"
@@ -119,7 +130,35 @@
                   <td class="p-2 font-medium">
                     <label for="lookup-image" class="cursor-pointer">{{ $t("items.lookup.field_image") }}</label>
                   </td>
-                  <td colspan="2" class="p-2 text-muted-foreground">{{ $t("items.lookup.image_available") }}</td>
+                  <td colspan="2" class="p-2">
+                    <p class="mb-2 text-muted-foreground">
+                      {{
+                        candidatePictures.length > 1
+                          ? $t("items.lookup.pick_picture")
+                          : $t("items.lookup.image_available")
+                      }}
+                    </p>
+                    <div class="flex flex-wrap gap-2" role="radiogroup" :aria-label="$t('items.lookup.pick_picture')">
+                      <button
+                        v-for="p in candidatePictures"
+                        :key="p.index"
+                        type="button"
+                        role="radio"
+                        :aria-checked="p.index === imageIndex"
+                        :aria-label="$t('items.lookup.picture_n', { n: p.index + 1 })"
+                        class="overflow-hidden rounded border bg-white p-0.5 transition"
+                        :class="p.index === imageIndex ? 'ring-2 ring-primary' : 'opacity-70 hover:opacity-100'"
+                        @click="pickPicture(p.index)"
+                      >
+                        <img
+                          :src="p.src"
+                          alt=""
+                          class="size-24 object-contain"
+                          @error="failed.add(`${selected}-${p.index}`)"
+                        />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -177,6 +216,9 @@
 
   const lookup = ref<EntityLookupOut | null>(null);
   const selected = ref(0);
+  const imageIndex = ref(0);
+  // Pictures that could not be loaded, keyed "match-picture", so they are left out.
+  const failed = reactive(new Set<string>());
   const chosen = ref(new Set<string>());
   const applying = ref(false);
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -189,6 +231,24 @@
     const url = candidate.value?.sourceURL ?? "";
     return /^https?:\/\//i.test(url) ? url : "";
   });
+
+  // A match's pictures, with the position each has in the list the server holds.
+  function pictures(c: LookupCandidate) {
+    return c.imageURLs?.length ? c.imageURLs : c.imageURL ? [c.imageURL] : [];
+  }
+
+  const candidatePictures = computed(() => {
+    const c = candidate.value;
+    if (!c) return [];
+    return pictures(c)
+      .map((_, index) => ({ index, src: api.lookups.imageURL(props.item.id, selected.value, index) }))
+      .filter(p => !failed.has(`${selected.value}-${p.index}`));
+  });
+
+  function pickPicture(index: number) {
+    imageIndex.value = index;
+    toggle("image", true);
+  }
 
   const rows = computed(() => {
     const c = candidate.value;
@@ -211,7 +271,8 @@
     for (const row of rows.value) {
       if (!row.current) next.add(row.field);
     }
-    if (candidate.value?.imageURL && !hasPhoto()) next.add("image");
+    imageIndex.value = 0;
+    if (pictures(candidate.value ?? ({} as LookupCandidate)).length && !hasPhoto()) next.add("image");
     chosen.value = next;
   }
 
@@ -259,7 +320,11 @@
   async function apply() {
     if (applying.value || chosen.value.size === 0) return;
     applying.value = true;
-    const resp = await api.lookups.apply(props.item.id, { candidate: selected.value, fields: [...chosen.value] });
+    const resp = await api.lookups.apply(props.item.id, {
+      candidate: selected.value,
+      fields: [...chosen.value],
+      imageIndex: imageIndex.value,
+    });
     applying.value = false;
     if (resp.error) {
       toast.error(t("items.lookup.toast.apply_failed"));

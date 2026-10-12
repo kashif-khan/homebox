@@ -75,9 +75,11 @@
     return route.fullPath.split("/").at(-1) !== itemId.value;
   });
 
-  const pubApi = usePublicApi();
-  const { data: apiStatus } = useAsyncData("product-lookup-status", async () => (await pubApi.status()).data);
-  const lookupEnabled = computed(() => apiStatus.value?.productLookup?.enabled ?? false);
+  const { data: lookupSettings } = useAsyncData(
+    "product-lookup-settings",
+    async () => (await api.lookups.settings()).data
+  );
+  const lookupEnabled = computed(() => lookupSettings.value?.configured ?? false);
   const lookupPanel = ref<InstanceType<typeof ItemLookupPanel> | null>(null);
 
   const { data: item, refresh } = useAsyncData(itemId.value, async () => {

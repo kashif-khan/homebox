@@ -37,6 +37,7 @@
         "tabs": {
             "entity_types": "Entity Types",
             "invites": "Invites",
+            "lookups": "Product lookup",
             "members": "Members",
             "notifiers": "Notifiers",
             "settings": "Settings",
@@ -660,7 +661,9 @@
             "field_manufacturer": "Manufacturer",
             "field_modelNumber": "Model number",
             "field_image": "Picture",
-            "image_available": "A product picture is available. It is downloaded when you apply.",
+            "pick_picture": "Choose a picture",
+            "picture_n": "Picture {n}",
+            "image_available": "Added to the item as a photo when you apply.",
             "apply": "Apply selected",
             "nothing_selected": "Choose at least one detail to apply",
             "toast": {
@@ -833,6 +836,68 @@
             "location_updated": "Location updated"
         },
         "update_location": "Update Location"
+    },
+    "lookups": {
+        "title": "Product lookup",
+        "intro": "Finds product details on the web for your items and keeps them here for review. Nothing changes on an item until you apply a match.",
+        "settings": {
+            "title": "Connection",
+            "url": "Lookup service address",
+            "url_hint": "The address of the Scrapling Barcode app. In Home Assistant, take its hostname from the app's Info page and add :8787, for example http://abc123-scrapling-barcode:8787.",
+            "token": "Access token",
+            "token_saved": "A token is saved. Leave this empty to keep it.",
+            "token_hint": "Shown in the lookup app's log, or set in its options.",
+            "auto": "Look up new items automatically",
+            "auto_hint": "Searches in the background each time you add an item. You can also start one from an item's menu.",
+            "from_server": "This address comes from the server's configuration. Enter one here to use a different service for this collection.",
+            "save": "Save",
+            "saved": "Saved",
+            "save_failed": "Could not save the settings",
+            "test": "Test connection",
+            "testing": "Testing…",
+            "sources": "Sources",
+            "source_ok": "working",
+            "source_down": "not working",
+            "owner_only": "Only the owner of the collection can change these settings."
+        },
+        "activity": {
+            "title": "Activity",
+            "empty": "No lookups yet. Add an item, or look up the ones that are missing details below.",
+            "summary": "{pending} searching, {done} to review, {failed} failed",
+            "item": "Item",
+            "status": "Status",
+            "searched_for": "Searched for",
+            "when": "Updated",
+            "pending": "Searching",
+            "done": "To review",
+            "failed": "Failed",
+            "no_matches": "Nothing found",
+            "matches": "{count} matches",
+            "matches_one": "1 match",
+            "review": "Review",
+            "retry": "Try again",
+            "retry_failed": "Retry all failed",
+            "clear_finished": "Clear finished",
+            "dismiss": "Dismiss",
+            "cleared": "Cleared {count}",
+            "retried": "Retrying {count}",
+            "load_failed": "Could not load the lookups"
+        },
+        "bulk": {
+            "title": "Fill in the gaps",
+            "description": "Look up every item that is missing details. Locations, archived items and items that already have a lookup are skipped.",
+            "missing": "Look up items missing",
+            "photo": "Photo",
+            "count": "{count} items match",
+            "count_one": "1 item matches",
+            "none": "No items match",
+            "queue": "Look up {count} items",
+            "queue_one": "Look up 1 item",
+            "queued": "Queued {count} lookups",
+            "more": "Only the first {limit} were queued. Run it again for the rest.",
+            "set_up_first": "Set up the connection first.",
+            "failed": "Could not queue the lookups"
+        }
     },
     "maintenance": {
         "filter": {
