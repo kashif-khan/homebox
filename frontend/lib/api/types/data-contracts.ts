@@ -1525,6 +1525,9 @@ export interface BackupInput {
 
 export interface BarcodeProduct {
   barcode: string;
+  /** Set by the web enrichment lookup */
+  confidence?: number;
+  sourceURL?: string;
   imageBase64: string;
   imageURL: string;
   item: EntityCreate;
@@ -2426,6 +2429,7 @@ export interface APISummary {
   mcp: MCPStatus;
   message: string;
   oidc: OIDCStatus;
+  productLookup: LookupStatus;
   telemetry: TelemetryStatus;
   title: string;
   versions: string[];
@@ -2587,6 +2591,43 @@ export interface TokenResponse {
 export interface WebhookDeliveriesPage {
   items: WebhookDeliveryOut[];
   total: number;
+}
+
+export interface LookupStatus {
+  /** New items are looked up without being asked */
+  auto: boolean;
+  enabled: boolean;
+}
+
+/** One possible match for an item, found on the web. */
+export interface LookupCandidate {
+  barcode: string;
+  confidence: number;
+  country: string;
+  description: string;
+  imageURL: string;
+  manufacturer: string;
+  modelNumber: string;
+  name: string;
+  sourceURL: string;
+  sources: string[];
+}
+
+export interface EntityLookupOut {
+  candidates: LookupCandidate[];
+  createdAt: string;
+  entityId: string;
+  error: string;
+  id: string;
+  query: string;
+  status: "pending" | "done" | "failed";
+  updatedAt: string;
+}
+
+export interface LookupApply {
+  candidate: number;
+  /** name, description, manufacturer, modelNumber, image */
+  fields: string[];
 }
 
 export interface WebhooksStatus {

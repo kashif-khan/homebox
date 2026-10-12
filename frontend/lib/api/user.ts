@@ -13,6 +13,7 @@ import { NotificationRulesAPI } from "./classes/notification-rules";
 import { WebhooksAPI } from "./classes/webhooks";
 import { MaintenanceAPI } from "./classes/maintenance";
 import { ProductAPI } from "./classes/product";
+import { LookupsAPI } from "./classes/lookups";
 import { TemplatesApi } from "./classes/templates";
 import { BackupsAPI } from "./classes/backups";
 import type { Requests } from "~~/lib/requests";
@@ -33,6 +34,7 @@ export class UserClient extends BaseAPI {
   notificationRules: NotificationRulesAPI;
   webhooks: WebhooksAPI;
   products: ProductAPI;
+  lookups: LookupsAPI;
   backups: BackupsAPI;
 
   /** Backward-compat shim that delegates to the entities (items) API. */
@@ -63,6 +65,7 @@ export class UserClient extends BaseAPI {
     this.notificationRules = new NotificationRulesAPI(requests);
     this.webhooks = new WebhooksAPI(requests);
     this.products = new ProductAPI(requests);
+    this.lookups = new LookupsAPI(requests);
     this.backups = new BackupsAPI(requests);
 
     // Backward-compat shim: api.locations.* delegates to api.items.*
