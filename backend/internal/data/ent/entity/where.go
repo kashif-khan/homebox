@@ -1726,6 +1726,29 @@ func HasAttachmentsWith(preds ...predicate.Attachment) predicate.Entity {
 	})
 }
 
+// HasLookups applies the HasEdge predicate on the "lookups" edge.
+func HasLookups() predicate.Entity {
+	return predicate.Entity(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, LookupsTable, LookupsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasLookupsWith applies the HasEdge predicate on the "lookups" edge with a given conditions (other predicates).
+func HasLookupsWith(preds ...predicate.EntityLookup) predicate.Entity {
+	return predicate.Entity(func(s *sql.Selector) {
+		step := newLookupsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Entity) predicate.Entity {
 	return predicate.Entity(sql.AndPredicates(predicates...))

@@ -93,6 +93,18 @@ func (f EntityFieldFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value,
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EntityFieldMutation", m)
 }
 
+// The EntityLookupFunc type is an adapter to allow the use of ordinary
+// function as EntityLookup mutator.
+type EntityLookupFunc func(context.Context, *ent.EntityLookupMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EntityLookupFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.EntityLookupMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EntityLookupMutation", m)
+}
+
 // The EntityTemplateFunc type is an adapter to allow the use of ordinary
 // function as EntityTemplate mutator.
 type EntityTemplateFunc func(context.Context, *ent.EntityTemplateMutation) (ent.Value, error)

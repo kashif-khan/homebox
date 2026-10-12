@@ -15,6 +15,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/attachment"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entityfield"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitylookup"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytype"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/group"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/maintenanceentry"
@@ -639,6 +640,21 @@ func (_u *EntityUpdate) AddAttachments(v ...*Attachment) *EntityUpdate {
 	return _u.AddAttachmentIDs(ids...)
 }
 
+// AddLookupIDs adds the "lookups" edge to the EntityLookup entity by IDs.
+func (_u *EntityUpdate) AddLookupIDs(ids ...uuid.UUID) *EntityUpdate {
+	_u.mutation.AddLookupIDs(ids...)
+	return _u
+}
+
+// AddLookups adds the "lookups" edges to the EntityLookup entity.
+func (_u *EntityUpdate) AddLookups(v ...*EntityLookup) *EntityUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddLookupIDs(ids...)
+}
+
 // Mutation returns the EntityMutation object of the builder.
 func (_u *EntityUpdate) Mutation() *EntityMutation {
 	return _u.mutation
@@ -792,6 +808,27 @@ func (_u *EntityUpdate) RemoveAttachments(v ...*Attachment) *EntityUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveAttachmentIDs(ids...)
+}
+
+// ClearLookups clears all "lookups" edges to the EntityLookup entity.
+func (_u *EntityUpdate) ClearLookups() *EntityUpdate {
+	_u.mutation.ClearLookups()
+	return _u
+}
+
+// RemoveLookupIDs removes the "lookups" edge to EntityLookup entities by IDs.
+func (_u *EntityUpdate) RemoveLookupIDs(ids ...uuid.UUID) *EntityUpdate {
+	_u.mutation.RemoveLookupIDs(ids...)
+	return _u
+}
+
+// RemoveLookups removes "lookups" edges to EntityLookup entities.
+func (_u *EntityUpdate) RemoveLookups(v ...*EntityLookup) *EntityUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveLookupIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -1411,6 +1448,51 @@ func (_u *EntityUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(attachment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.LookupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.LookupsTable,
+			Columns: []string{entity.LookupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitylookup.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedLookupsIDs(); len(nodes) > 0 && !_u.mutation.LookupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.LookupsTable,
+			Columns: []string{entity.LookupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitylookup.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.LookupsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.LookupsTable,
+			Columns: []string{entity.LookupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitylookup.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -2042,6 +2124,21 @@ func (_u *EntityUpdateOne) AddAttachments(v ...*Attachment) *EntityUpdateOne {
 	return _u.AddAttachmentIDs(ids...)
 }
 
+// AddLookupIDs adds the "lookups" edge to the EntityLookup entity by IDs.
+func (_u *EntityUpdateOne) AddLookupIDs(ids ...uuid.UUID) *EntityUpdateOne {
+	_u.mutation.AddLookupIDs(ids...)
+	return _u
+}
+
+// AddLookups adds the "lookups" edges to the EntityLookup entity.
+func (_u *EntityUpdateOne) AddLookups(v ...*EntityLookup) *EntityUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddLookupIDs(ids...)
+}
+
 // Mutation returns the EntityMutation object of the builder.
 func (_u *EntityUpdateOne) Mutation() *EntityMutation {
 	return _u.mutation
@@ -2195,6 +2292,27 @@ func (_u *EntityUpdateOne) RemoveAttachments(v ...*Attachment) *EntityUpdateOne 
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveAttachmentIDs(ids...)
+}
+
+// ClearLookups clears all "lookups" edges to the EntityLookup entity.
+func (_u *EntityUpdateOne) ClearLookups() *EntityUpdateOne {
+	_u.mutation.ClearLookups()
+	return _u
+}
+
+// RemoveLookupIDs removes the "lookups" edge to EntityLookup entities by IDs.
+func (_u *EntityUpdateOne) RemoveLookupIDs(ids ...uuid.UUID) *EntityUpdateOne {
+	_u.mutation.RemoveLookupIDs(ids...)
+	return _u
+}
+
+// RemoveLookups removes "lookups" edges to EntityLookup entities.
+func (_u *EntityUpdateOne) RemoveLookups(v ...*EntityLookup) *EntityUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveLookupIDs(ids...)
 }
 
 // Where appends a list predicates to the EntityUpdate builder.
@@ -2844,6 +2962,51 @@ func (_u *EntityUpdateOne) sqlSave(ctx context.Context) (_node *Entity, err erro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(attachment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.LookupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.LookupsTable,
+			Columns: []string{entity.LookupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitylookup.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedLookupsIDs(); len(nodes) > 0 && !_u.mutation.LookupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.LookupsTable,
+			Columns: []string{entity.LookupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitylookup.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.LookupsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.LookupsTable,
+			Columns: []string{entity.LookupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitylookup.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

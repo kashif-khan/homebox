@@ -27,6 +27,7 @@ type AllRepos struct {
 	OAuth               *OAuthRepository
 	NotificationRules   *NotificationRuleRepository
 	Webhooks            *WebhookRepository
+	EntityLookups       *EntityLookupRepository
 }
 
 // New constructs the repository container. searchEngine selects the free-text
@@ -54,5 +55,6 @@ func New(db *ent.Client, bus *eventbus.EventBus, storage config.Storage, pubSubC
 		OAuth:               &OAuthRepository{db},
 		NotificationRules:   &NotificationRuleRepository{db},
 		Webhooks:            &WebhookRepository{db},
+		EntityLookups:       &EntityLookupRepository{db},
 	}
 }

@@ -338,6 +338,56 @@ var (
 			},
 		},
 	}
+	// EntityLookupsColumns holds the columns for the "entity_lookups" table.
+	EntityLookupsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "done", "failed"}, Default: "pending"},
+		{Name: "query", Type: field.TypeString, Size: 500, Default: ""},
+		{Name: "candidates", Type: field.TypeJSON, Nullable: true},
+		{Name: "error", Type: field.TypeString, Size: 500, Default: ""},
+		{Name: "attempts", Type: field.TypeInt, Default: 0},
+		{Name: "entity_id", Type: field.TypeUUID},
+		{Name: "group_id", Type: field.TypeUUID},
+	}
+	// EntityLookupsTable holds the schema information for the "entity_lookups" table.
+	EntityLookupsTable = &schema.Table{
+		Name:       "entity_lookups",
+		Columns:    EntityLookupsColumns,
+		PrimaryKey: []*schema.Column{EntityLookupsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "entity_lookups_entities_lookups",
+				Columns:    []*schema.Column{EntityLookupsColumns[8]},
+				RefColumns: []*schema.Column{EntitiesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "entity_lookups_groups_entity_lookups",
+				Columns:    []*schema.Column{EntityLookupsColumns[9]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "entitylookup_entity_id",
+				Unique:  true,
+				Columns: []*schema.Column{EntityLookupsColumns[8]},
+			},
+			{
+				Name:    "entitylookup_status_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{EntityLookupsColumns[3], EntityLookupsColumns[1]},
+			},
+			{
+				Name:    "entitylookup_group_id_status",
+				Unique:  false,
+				Columns: []*schema.Column{EntityLookupsColumns[9], EntityLookupsColumns[3]},
+			},
+		},
+	}
 	// EntityTemplatesColumns holds the columns for the "entity_templates" table.
 	EntityTemplatesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -1076,6 +1126,7 @@ var (
 		BackupDestinationsTable,
 		EntitiesTable,
 		EntityFieldsTable,
+		EntityLookupsTable,
 		EntityTemplatesTable,
 		EntityTypesTable,
 		ExportsTable,
@@ -1113,6 +1164,8 @@ func init() {
 	EntitiesTable.ForeignKeys[2].RefTable = EntityTypesTable
 	EntitiesTable.ForeignKeys[3].RefTable = GroupsTable
 	EntityFieldsTable.ForeignKeys[0].RefTable = EntitiesTable
+	EntityLookupsTable.ForeignKeys[0].RefTable = EntitiesTable
+	EntityLookupsTable.ForeignKeys[1].RefTable = GroupsTable
 	EntityTemplatesTable.ForeignKeys[0].RefTable = EntitiesTable
 	EntityTemplatesTable.ForeignKeys[1].RefTable = GroupsTable
 	EntityTypesTable.ForeignKeys[0].RefTable = EntityTemplatesTable

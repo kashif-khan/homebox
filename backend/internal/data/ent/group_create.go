@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/backupdestination"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitylookup"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytemplate"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytype"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/export"
@@ -329,6 +330,21 @@ func (_c *GroupCreate) AddWebhookEndpoints(v ...*WebhookEndpoint) *GroupCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddWebhookEndpointIDs(ids...)
+}
+
+// AddEntityLookupIDs adds the "entity_lookups" edge to the EntityLookup entity by IDs.
+func (_c *GroupCreate) AddEntityLookupIDs(ids ...uuid.UUID) *GroupCreate {
+	_c.mutation.AddEntityLookupIDs(ids...)
+	return _c
+}
+
+// AddEntityLookups adds the "entity_lookups" edges to the EntityLookup entity.
+func (_c *GroupCreate) AddEntityLookups(v ...*EntityLookup) *GroupCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddEntityLookupIDs(ids...)
 }
 
 // Mutation returns the GroupMutation object of the builder.
@@ -692,6 +708,22 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(webhookendpoint.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.EntityLookupsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.EntityLookupsTable,
+			Columns: []string{group.EntityLookupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitylookup.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

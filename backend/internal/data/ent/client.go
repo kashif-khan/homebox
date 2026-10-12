@@ -23,6 +23,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/backupdestination"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entityfield"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitylookup"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytemplate"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytype"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/export"
@@ -64,6 +65,8 @@ type Client struct {
 	Entity *EntityClient
 	// EntityField is the client for interacting with the EntityField builders.
 	EntityField *EntityFieldClient
+	// EntityLookup is the client for interacting with the EntityLookup builders.
+	EntityLookup *EntityLookupClient
 	// EntityTemplate is the client for interacting with the EntityTemplate builders.
 	EntityTemplate *EntityTemplateClient
 	// EntityType is the client for interacting with the EntityType builders.
@@ -122,6 +125,7 @@ func (c *Client) init() {
 	c.BackupDestination = NewBackupDestinationClient(c.config)
 	c.Entity = NewEntityClient(c.config)
 	c.EntityField = NewEntityFieldClient(c.config)
+	c.EntityLookup = NewEntityLookupClient(c.config)
 	c.EntityTemplate = NewEntityTemplateClient(c.config)
 	c.EntityType = NewEntityTypeClient(c.config)
 	c.Export = NewExportClient(c.config)
@@ -241,6 +245,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		BackupDestination:    NewBackupDestinationClient(cfg),
 		Entity:               NewEntityClient(cfg),
 		EntityField:          NewEntityFieldClient(cfg),
+		EntityLookup:         NewEntityLookupClient(cfg),
 		EntityTemplate:       NewEntityTemplateClient(cfg),
 		EntityType:           NewEntityTypeClient(cfg),
 		Export:               NewExportClient(cfg),
@@ -287,6 +292,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		BackupDestination:    NewBackupDestinationClient(cfg),
 		Entity:               NewEntityClient(cfg),
 		EntityField:          NewEntityFieldClient(cfg),
+		EntityLookup:         NewEntityLookupClient(cfg),
 		EntityTemplate:       NewEntityTemplateClient(cfg),
 		EntityType:           NewEntityTypeClient(cfg),
 		Export:               NewExportClient(cfg),
@@ -337,11 +343,11 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.APIKey, c.Attachment, c.AuthRoles, c.AuthTokens, c.BackupDestination,
-		c.Entity, c.EntityField, c.EntityTemplate, c.EntityType, c.Export, c.Group,
-		c.GroupInvitationToken, c.MaintenanceEntry, c.NotificationLog,
-		c.NotificationRule, c.Notifier, c.OAuthClient, c.OAuthGrant, c.OAuthRequest,
-		c.OAuthToken, c.PasswordResetTokens, c.Tag, c.TemplateField, c.User,
-		c.UserGroup, c.WebhookDelivery, c.WebhookEndpoint,
+		c.Entity, c.EntityField, c.EntityLookup, c.EntityTemplate, c.EntityType,
+		c.Export, c.Group, c.GroupInvitationToken, c.MaintenanceEntry,
+		c.NotificationLog, c.NotificationRule, c.Notifier, c.OAuthClient, c.OAuthGrant,
+		c.OAuthRequest, c.OAuthToken, c.PasswordResetTokens, c.Tag, c.TemplateField,
+		c.User, c.UserGroup, c.WebhookDelivery, c.WebhookEndpoint,
 	} {
 		n.Use(hooks...)
 	}
@@ -352,11 +358,11 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.APIKey, c.Attachment, c.AuthRoles, c.AuthTokens, c.BackupDestination,
-		c.Entity, c.EntityField, c.EntityTemplate, c.EntityType, c.Export, c.Group,
-		c.GroupInvitationToken, c.MaintenanceEntry, c.NotificationLog,
-		c.NotificationRule, c.Notifier, c.OAuthClient, c.OAuthGrant, c.OAuthRequest,
-		c.OAuthToken, c.PasswordResetTokens, c.Tag, c.TemplateField, c.User,
-		c.UserGroup, c.WebhookDelivery, c.WebhookEndpoint,
+		c.Entity, c.EntityField, c.EntityLookup, c.EntityTemplate, c.EntityType,
+		c.Export, c.Group, c.GroupInvitationToken, c.MaintenanceEntry,
+		c.NotificationLog, c.NotificationRule, c.Notifier, c.OAuthClient, c.OAuthGrant,
+		c.OAuthRequest, c.OAuthToken, c.PasswordResetTokens, c.Tag, c.TemplateField,
+		c.User, c.UserGroup, c.WebhookDelivery, c.WebhookEndpoint,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -379,6 +385,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Entity.mutate(ctx, m)
 	case *EntityFieldMutation:
 		return c.EntityField.mutate(ctx, m)
+	case *EntityLookupMutation:
+		return c.EntityLookup.mutate(ctx, m)
 	case *EntityTemplateMutation:
 		return c.EntityTemplate.mutate(ctx, m)
 	case *EntityTypeMutation:
@@ -1485,6 +1493,22 @@ func (c *EntityClient) QueryAttachments(_m *Entity) *AttachmentQuery {
 	return query
 }
 
+// QueryLookups queries the lookups edge of a Entity.
+func (c *EntityClient) QueryLookups(_m *Entity) *EntityLookupQuery {
+	query := (&EntityLookupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entity.Table, entity.FieldID, id),
+			sqlgraph.To(entitylookup.Table, entitylookup.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, entity.LookupsTable, entity.LookupsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *EntityClient) Hooks() []Hook {
 	return c.hooks.Entity
@@ -1656,6 +1680,171 @@ func (c *EntityFieldClient) mutate(ctx context.Context, m *EntityFieldMutation) 
 		return (&EntityFieldDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown EntityField mutation op: %q", m.Op())
+	}
+}
+
+// EntityLookupClient is a client for the EntityLookup schema.
+type EntityLookupClient struct {
+	config
+}
+
+// NewEntityLookupClient returns a client for the EntityLookup from the given config.
+func NewEntityLookupClient(c config) *EntityLookupClient {
+	return &EntityLookupClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `entitylookup.Hooks(f(g(h())))`.
+func (c *EntityLookupClient) Use(hooks ...Hook) {
+	c.hooks.EntityLookup = append(c.hooks.EntityLookup, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `entitylookup.Intercept(f(g(h())))`.
+func (c *EntityLookupClient) Intercept(interceptors ...Interceptor) {
+	c.inters.EntityLookup = append(c.inters.EntityLookup, interceptors...)
+}
+
+// Create returns a builder for creating a EntityLookup entity.
+func (c *EntityLookupClient) Create() *EntityLookupCreate {
+	mutation := newEntityLookupMutation(c.config, OpCreate)
+	return &EntityLookupCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of EntityLookup entities.
+func (c *EntityLookupClient) CreateBulk(builders ...*EntityLookupCreate) *EntityLookupCreateBulk {
+	return &EntityLookupCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *EntityLookupClient) MapCreateBulk(slice any, setFunc func(*EntityLookupCreate, int)) *EntityLookupCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &EntityLookupCreateBulk{err: fmt.Errorf("calling to EntityLookupClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*EntityLookupCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &EntityLookupCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for EntityLookup.
+func (c *EntityLookupClient) Update() *EntityLookupUpdate {
+	mutation := newEntityLookupMutation(c.config, OpUpdate)
+	return &EntityLookupUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *EntityLookupClient) UpdateOne(_m *EntityLookup) *EntityLookupUpdateOne {
+	mutation := newEntityLookupMutation(c.config, OpUpdateOne, withEntityLookup(_m))
+	return &EntityLookupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *EntityLookupClient) UpdateOneID(id uuid.UUID) *EntityLookupUpdateOne {
+	mutation := newEntityLookupMutation(c.config, OpUpdateOne, withEntityLookupID(id))
+	return &EntityLookupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for EntityLookup.
+func (c *EntityLookupClient) Delete() *EntityLookupDelete {
+	mutation := newEntityLookupMutation(c.config, OpDelete)
+	return &EntityLookupDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *EntityLookupClient) DeleteOne(_m *EntityLookup) *EntityLookupDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *EntityLookupClient) DeleteOneID(id uuid.UUID) *EntityLookupDeleteOne {
+	builder := c.Delete().Where(entitylookup.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &EntityLookupDeleteOne{builder}
+}
+
+// Query returns a query builder for EntityLookup.
+func (c *EntityLookupClient) Query() *EntityLookupQuery {
+	return &EntityLookupQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeEntityLookup},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a EntityLookup entity by its id.
+func (c *EntityLookupClient) Get(ctx context.Context, id uuid.UUID) (*EntityLookup, error) {
+	return c.Query().Where(entitylookup.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *EntityLookupClient) GetX(ctx context.Context, id uuid.UUID) *EntityLookup {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGroup queries the group edge of a EntityLookup.
+func (c *EntityLookupClient) QueryGroup(_m *EntityLookup) *GroupQuery {
+	query := (&GroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entitylookup.Table, entitylookup.FieldID, id),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, entitylookup.GroupTable, entitylookup.GroupColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEntity queries the entity edge of a EntityLookup.
+func (c *EntityLookupClient) QueryEntity(_m *EntityLookup) *EntityQuery {
+	query := (&EntityClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entitylookup.Table, entitylookup.FieldID, id),
+			sqlgraph.To(entity.Table, entity.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, entitylookup.EntityTable, entitylookup.EntityColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *EntityLookupClient) Hooks() []Hook {
+	return c.hooks.EntityLookup
+}
+
+// Interceptors returns the client interceptors.
+func (c *EntityLookupClient) Interceptors() []Interceptor {
+	return c.inters.EntityLookup
+}
+
+func (c *EntityLookupClient) mutate(ctx context.Context, m *EntityLookupMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&EntityLookupCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&EntityLookupUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&EntityLookupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&EntityLookupDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown EntityLookup mutation op: %q", m.Op())
 	}
 }
 
@@ -2463,6 +2652,22 @@ func (c *GroupClient) QueryWebhookEndpoints(_m *Group) *WebhookEndpointQuery {
 			sqlgraph.From(group.Table, group.FieldID, id),
 			sqlgraph.To(webhookendpoint.Table, webhookendpoint.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, group.WebhookEndpointsTable, group.WebhookEndpointsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEntityLookups queries the entity_lookups edge of a Group.
+func (c *GroupClient) QueryEntityLookups(_m *Group) *EntityLookupQuery {
+	query := (&EntityLookupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, id),
+			sqlgraph.To(entitylookup.Table, entitylookup.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, group.EntityLookupsTable, group.EntityLookupsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -5122,16 +5327,18 @@ func (c *WebhookEndpointClient) mutate(ctx context.Context, m *WebhookEndpointMu
 type (
 	hooks struct {
 		APIKey, Attachment, AuthRoles, AuthTokens, BackupDestination, Entity,
-		EntityField, EntityTemplate, EntityType, Export, Group, GroupInvitationToken,
-		MaintenanceEntry, NotificationLog, NotificationRule, Notifier, OAuthClient,
-		OAuthGrant, OAuthRequest, OAuthToken, PasswordResetTokens, Tag, TemplateField,
-		User, UserGroup, WebhookDelivery, WebhookEndpoint []ent.Hook
+		EntityField, EntityLookup, EntityTemplate, EntityType, Export, Group,
+		GroupInvitationToken, MaintenanceEntry, NotificationLog, NotificationRule,
+		Notifier, OAuthClient, OAuthGrant, OAuthRequest, OAuthToken,
+		PasswordResetTokens, Tag, TemplateField, User, UserGroup, WebhookDelivery,
+		WebhookEndpoint []ent.Hook
 	}
 	inters struct {
 		APIKey, Attachment, AuthRoles, AuthTokens, BackupDestination, Entity,
-		EntityField, EntityTemplate, EntityType, Export, Group, GroupInvitationToken,
-		MaintenanceEntry, NotificationLog, NotificationRule, Notifier, OAuthClient,
-		OAuthGrant, OAuthRequest, OAuthToken, PasswordResetTokens, Tag, TemplateField,
-		User, UserGroup, WebhookDelivery, WebhookEndpoint []ent.Interceptor
+		EntityField, EntityLookup, EntityTemplate, EntityType, Export, Group,
+		GroupInvitationToken, MaintenanceEntry, NotificationLog, NotificationRule,
+		Notifier, OAuthClient, OAuthGrant, OAuthRequest, OAuthToken,
+		PasswordResetTokens, Tag, TemplateField, User, UserGroup, WebhookDelivery,
+		WebhookEndpoint []ent.Interceptor
 	}
 )

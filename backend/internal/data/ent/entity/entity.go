@@ -88,6 +88,8 @@ const (
 	EdgeMaintenanceEntries = "maintenance_entries"
 	// EdgeAttachments holds the string denoting the attachments edge name in mutations.
 	EdgeAttachments = "attachments"
+	// EdgeLookups holds the string denoting the lookups edge name in mutations.
+	EdgeLookups = "lookups"
 	// Table holds the table name of the entity in the database.
 	Table = "entities"
 	// GroupTable is the table that holds the group relation/edge.
@@ -146,6 +148,13 @@ const (
 	AttachmentsInverseTable = "attachments"
 	// AttachmentsColumn is the table column denoting the attachments relation/edge.
 	AttachmentsColumn = "entity_attachments"
+	// LookupsTable is the table that holds the lookups relation/edge.
+	LookupsTable = "entity_lookups"
+	// LookupsInverseTable is the table name for the EntityLookup entity.
+	// It exists in this package in order to avoid circular dependency with the "entitylookup" package.
+	LookupsInverseTable = "entity_lookups"
+	// LookupsColumn is the table column denoting the lookups relation/edge.
+	LookupsColumn = "entity_id"
 )
 
 // Columns holds all SQL columns for entity fields.
@@ -530,6 +539,20 @@ func ByAttachments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newAttachmentsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByLookupsCount orders the results by lookups count.
+func ByLookupsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newLookupsStep(), opts...)
+	}
+}
+
+// ByLookups orders the results by lookups terms.
+func ByLookups(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newLookupsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newGroupStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -598,5 +621,12 @@ func newAttachmentsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(AttachmentsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, AttachmentsTable, AttachmentsColumn),
+	)
+}
+func newLookupsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(LookupsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, LookupsTable, LookupsColumn),
 	)
 }

@@ -55,6 +55,8 @@ const (
 	EdgeNotificationRules = "notification_rules"
 	// EdgeWebhookEndpoints holds the string denoting the webhook_endpoints edge name in mutations.
 	EdgeWebhookEndpoints = "webhook_endpoints"
+	// EdgeEntityLookups holds the string denoting the entity_lookups edge name in mutations.
+	EdgeEntityLookups = "entity_lookups"
 	// EdgeUserGroups holds the string denoting the user_groups edge name in mutations.
 	EdgeUserGroups = "user_groups"
 	// Table holds the table name of the group in the database.
@@ -141,6 +143,13 @@ const (
 	WebhookEndpointsInverseTable = "webhook_endpoints"
 	// WebhookEndpointsColumn is the table column denoting the webhook_endpoints relation/edge.
 	WebhookEndpointsColumn = "group_id"
+	// EntityLookupsTable is the table that holds the entity_lookups relation/edge.
+	EntityLookupsTable = "entity_lookups"
+	// EntityLookupsInverseTable is the table name for the EntityLookup entity.
+	// It exists in this package in order to avoid circular dependency with the "entitylookup" package.
+	EntityLookupsInverseTable = "entity_lookups"
+	// EntityLookupsColumn is the table column denoting the entity_lookups relation/edge.
+	EntityLookupsColumn = "group_id"
 	// UserGroupsTable is the table that holds the user_groups relation/edge.
 	UserGroupsTable = "user_groups"
 	// UserGroupsInverseTable is the table name for the UserGroup entity.
@@ -420,6 +429,20 @@ func ByWebhookEndpoints(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption 
 	}
 }
 
+// ByEntityLookupsCount orders the results by entity_lookups count.
+func ByEntityLookupsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newEntityLookupsStep(), opts...)
+	}
+}
+
+// ByEntityLookups orders the results by entity_lookups terms.
+func ByEntityLookups(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEntityLookupsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByUserGroupsCount orders the results by user_groups count.
 func ByUserGroupsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -515,6 +538,13 @@ func newWebhookEndpointsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(WebhookEndpointsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, WebhookEndpointsTable, WebhookEndpointsColumn),
+	)
+}
+func newEntityLookupsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EntityLookupsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, EntityLookupsTable, EntityLookupsColumn),
 	)
 }
 func newUserGroupsStep() *sqlgraph.Step {

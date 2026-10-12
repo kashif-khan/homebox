@@ -12,6 +12,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/backupdestination"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entityfield"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitylookup"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytemplate"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytype"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/export"
@@ -462,6 +463,41 @@ func init() {
 	entityfieldDescID := entityfieldMixinFields0[0].Descriptor()
 	// entityfield.DefaultID holds the default value on creation for the id field.
 	entityfield.DefaultID = entityfieldDescID.Default.(func() uuid.UUID)
+	entitylookupMixin := schema.EntityLookup{}.Mixin()
+	entitylookupMixinFields0 := entitylookupMixin[0].Fields()
+	_ = entitylookupMixinFields0
+	entitylookupFields := schema.EntityLookup{}.Fields()
+	_ = entitylookupFields
+	// entitylookupDescCreatedAt is the schema descriptor for created_at field.
+	entitylookupDescCreatedAt := entitylookupMixinFields0[1].Descriptor()
+	// entitylookup.DefaultCreatedAt holds the default value on creation for the created_at field.
+	entitylookup.DefaultCreatedAt = entitylookupDescCreatedAt.Default.(func() time.Time)
+	// entitylookupDescUpdatedAt is the schema descriptor for updated_at field.
+	entitylookupDescUpdatedAt := entitylookupMixinFields0[2].Descriptor()
+	// entitylookup.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	entitylookup.DefaultUpdatedAt = entitylookupDescUpdatedAt.Default.(func() time.Time)
+	// entitylookup.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	entitylookup.UpdateDefaultUpdatedAt = entitylookupDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// entitylookupDescQuery is the schema descriptor for query field.
+	entitylookupDescQuery := entitylookupFields[2].Descriptor()
+	// entitylookup.DefaultQuery holds the default value on creation for the query field.
+	entitylookup.DefaultQuery = entitylookupDescQuery.Default.(string)
+	// entitylookup.QueryValidator is a validator for the "query" field. It is called by the builders before save.
+	entitylookup.QueryValidator = entitylookupDescQuery.Validators[0].(func(string) error)
+	// entitylookupDescError is the schema descriptor for error field.
+	entitylookupDescError := entitylookupFields[4].Descriptor()
+	// entitylookup.DefaultError holds the default value on creation for the error field.
+	entitylookup.DefaultError = entitylookupDescError.Default.(string)
+	// entitylookup.ErrorValidator is a validator for the "error" field. It is called by the builders before save.
+	entitylookup.ErrorValidator = entitylookupDescError.Validators[0].(func(string) error)
+	// entitylookupDescAttempts is the schema descriptor for attempts field.
+	entitylookupDescAttempts := entitylookupFields[5].Descriptor()
+	// entitylookup.DefaultAttempts holds the default value on creation for the attempts field.
+	entitylookup.DefaultAttempts = entitylookupDescAttempts.Default.(int)
+	// entitylookupDescID is the schema descriptor for id field.
+	entitylookupDescID := entitylookupMixinFields0[0].Descriptor()
+	// entitylookup.DefaultID holds the default value on creation for the id field.
+	entitylookup.DefaultID = entitylookupDescID.Default.(func() uuid.UUID)
 	entitytemplateMixin := schema.EntityTemplate{}.Mixin()
 	entitytemplateMixinFields0 := entitytemplateMixin[0].Fields()
 	_ = entitytemplateMixinFields0

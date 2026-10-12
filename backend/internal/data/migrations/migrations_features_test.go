@@ -16,6 +16,7 @@ import (
 
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entityfield"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitylookup"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notificationlog"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notificationrule"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/templatefield"
@@ -23,6 +24,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/webhookendpoint"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/migrations"
 	_ "github.com/sysadminsmedia/homebox/backend/internal/data/migrations/postgres"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/types"
 )
 
 // TestSqliteFeatureMigrationsMatchEnt applies the real SQL migrations and then
@@ -128,12 +130,26 @@ func exerciseFeatureMigrations(t *testing.T, c *ent.Client) {
 	require.NoError(t, mkd(nil))
 	require.NoError(t, mkd(nil), "deliveries without a key are never merged")
 
+	// Product lookups: one per item, candidates stored as JSON.
+	lk, err := c.EntityLookup.Create().SetGroupID(g.ID).SetEntityID(e.ID).SetQuery("aspirin").
+		SetCandidates([]types.LookupCandidate{{Name: "Aspirin 100mg", Confidence: 0.8, Sources: []string{"openfoodfacts"}}}).Save(ctx)
+	require.NoError(t, err)
+	require.Equal(t, entitylookup.StatusPending, lk.Status)
+	got, err := c.EntityLookup.Get(ctx, lk.ID)
+	require.NoError(t, err)
+	require.Equal(t, "Aspirin 100mg", got.Candidates[0].Name)
+	_, err = c.EntityLookup.Create().SetGroupID(g.ID).SetEntityID(e.ID).Save(ctx)
+	require.True(t, ent.IsConstraintError(err), "an item has one lookup")
+
 	// Deleting the collection cascades through all of it.
 	require.NoError(t, c.Group.DeleteOneID(g.ID).Exec(ctx))
 	// Counted for this test's own rows: a shared database may hold others.
 	n, err := c.WebhookDelivery.Query().Where(webhookdelivery.HasEndpointWith(webhookendpoint.ID(ep.ID))).Count(ctx)
 	require.NoError(t, err)
 	require.Zero(t, n)
+	nl, err := c.EntityLookup.Query().Where(entitylookup.ID(lk.ID)).Count(ctx)
+	require.NoError(t, err)
+	require.Zero(t, nl, "lookups go with the collection")
 	n, err = c.NotificationLog.Query().Where(notificationlog.HasRuleWith(notificationrule.ID(rule.ID))).Count(ctx)
 	require.NoError(t, err)
 	require.Zero(t, n)

@@ -27,6 +27,9 @@ type Entity func(*sql.Selector)
 // EntityField is the predicate function for entityfield builders.
 type EntityField func(*sql.Selector)
 
+// EntityLookup is the predicate function for entitylookup builders.
+type EntityLookup func(*sql.Selector)
+
 // EntityTemplate is the predicate function for entitytemplate builders.
 type EntityTemplate func(*sql.Selector)
 

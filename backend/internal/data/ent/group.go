@@ -66,11 +66,13 @@ type GroupEdges struct {
 	NotificationRules []*NotificationRule `json:"notification_rules,omitempty"`
 	// WebhookEndpoints holds the value of the webhook_endpoints edge.
 	WebhookEndpoints []*WebhookEndpoint `json:"webhook_endpoints,omitempty"`
+	// EntityLookups holds the value of the entity_lookups edge.
+	EntityLookups []*EntityLookup `json:"entity_lookups,omitempty"`
 	// UserGroups holds the value of the user_groups edge.
 	UserGroups []*UserGroup `json:"user_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [13]bool
+	loadedTypes [14]bool
 }
 
 // UsersOrErr returns the Users value or an error if the edge
@@ -181,10 +183,19 @@ func (e GroupEdges) WebhookEndpointsOrErr() ([]*WebhookEndpoint, error) {
 	return nil, &NotLoadedError{edge: "webhook_endpoints"}
 }
 
+// EntityLookupsOrErr returns the EntityLookups value or an error if the edge
+// was not loaded in eager-loading.
+func (e GroupEdges) EntityLookupsOrErr() ([]*EntityLookup, error) {
+	if e.loadedTypes[12] {
+		return e.EntityLookups, nil
+	}
+	return nil, &NotLoadedError{edge: "entity_lookups"}
+}
+
 // UserGroupsOrErr returns the UserGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e GroupEdges) UserGroupsOrErr() ([]*UserGroup, error) {
-	if e.loadedTypes[12] {
+	if e.loadedTypes[13] {
 		return e.UserGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_groups"}
@@ -345,6 +356,11 @@ func (_m *Group) QueryNotificationRules() *NotificationRuleQuery {
 // QueryWebhookEndpoints queries the "webhook_endpoints" edge of the Group entity.
 func (_m *Group) QueryWebhookEndpoints() *WebhookEndpointQuery {
 	return NewGroupClient(_m.config).QueryWebhookEndpoints(_m)
+}
+
+// QueryEntityLookups queries the "entity_lookups" edge of the Group entity.
+func (_m *Group) QueryEntityLookups() *EntityLookupQuery {
+	return NewGroupClient(_m.config).QueryEntityLookups(_m)
 }
 
 // QueryUserGroups queries the "user_groups" edge of the Group entity.

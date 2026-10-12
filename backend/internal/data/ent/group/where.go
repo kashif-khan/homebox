@@ -762,6 +762,29 @@ func HasWebhookEndpointsWith(preds ...predicate.WebhookEndpoint) predicate.Group
 	})
 }
 
+// HasEntityLookups applies the HasEdge predicate on the "entity_lookups" edge.
+func HasEntityLookups() predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, EntityLookupsTable, EntityLookupsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEntityLookupsWith applies the HasEdge predicate on the "entity_lookups" edge with a given conditions (other predicates).
+func HasEntityLookupsWith(preds ...predicate.EntityLookup) predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := newEntityLookupsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasUserGroups applies the HasEdge predicate on the "user_groups" edge.
 func HasUserGroups() predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {

@@ -75,6 +75,7 @@ func (Group) Edges() []ent.Edge {
 		owned("oauth_grants", OAuthGrant.Type),
 		owned("notification_rules", NotificationRule.Type),
 		owned("webhook_endpoints", WebhookEndpoint.Type),
+		owned("entity_lookups", EntityLookup.Type),
 		// $scaffold_edge
 	}
 }
