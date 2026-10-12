@@ -31,6 +31,7 @@ export enum DialogID {
   EditMaintenance = "edit-maintenance",
   Import = "import",
   ItemImage = "item-image",
+  ItemLookupReview = "item-lookup-review",
   ItemTableSettings = "item-table-settings",
   PrintLabel = "print-label",
   ProductImport = "product-import",

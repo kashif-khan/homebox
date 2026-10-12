@@ -47,6 +47,8 @@
   import DetailsSection from "~/components/global/DetailsSection/DetailsSection.vue";
   import ItemAttachmentsList from "~/components/Item/AttachmentsList.vue";
   import ItemViewSelectable from "~/components/Item/View/Selectable.vue";
+  import ItemLookupPanel from "~/components/Item/LookupPanel.vue";
+  import MdiTextSearch from "~icons/mdi/text-search";
 
   const { t, locale } = useI18n();
 
@@ -72,6 +74,13 @@
   const hasNested = computed<boolean>(() => {
     return route.fullPath.split("/").at(-1) !== itemId.value;
   });
+
+  const { data: lookupSettings } = useAsyncData(
+    "product-lookup-settings",
+    async () => (await api.lookups.settings()).data
+  );
+  const lookupEnabled = computed(() => lookupSettings.value?.configured ?? false);
+  const lookupPanel = ref<InstanceType<typeof ItemLookupPanel> | null>(null);
 
   const { data: item, refresh } = useAsyncData(itemId.value, async () => {
     const { data, error } = await api.items.get(itemId.value);
@@ -762,6 +771,10 @@
                     <MdiPlusBoxMultipleOutline class="mr-2 size-4" />
                     {{ $t("global.duplicate") }}
                   </DropdownMenuItem>
+                  <DropdownMenuItem v-if="lookupEnabled" @click="lookupPanel?.request()">
+                    <MdiTextSearch class="mr-2 size-4" />
+                    {{ $t("items.lookup.find") }}
+                  </DropdownMenuItem>
                   <DropdownMenuItem @click="saveAsTemplate">
                     <MdiContentSaveEdit class="mr-2 size-4" />
                     {{ $t("components.template.save_as_template") }}
@@ -781,6 +794,8 @@
           <Markdown class="text-base" :source="item.description" />
         </div>
       </Card>
+
+      <ItemLookupPanel ref="lookupPanel" :item="item" @applied="refresh()" />
 
       <div class="mb-6 mt-3 flex flex-wrap items-center justify-between">
         <ButtonGroup>

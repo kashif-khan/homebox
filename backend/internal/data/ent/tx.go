@@ -26,6 +26,8 @@ type Tx struct {
 	Entity *EntityClient
 	// EntityField is the client for interacting with the EntityField builders.
 	EntityField *EntityFieldClient
+	// EntityLookup is the client for interacting with the EntityLookup builders.
+	EntityLookup *EntityLookupClient
 	// EntityTemplate is the client for interacting with the EntityTemplate builders.
 	EntityTemplate *EntityTemplateClient
 	// EntityType is the client for interacting with the EntityType builders.
@@ -204,6 +206,7 @@ func (tx *Tx) init() {
 	tx.BackupDestination = NewBackupDestinationClient(tx.config)
 	tx.Entity = NewEntityClient(tx.config)
 	tx.EntityField = NewEntityFieldClient(tx.config)
+	tx.EntityLookup = NewEntityLookupClient(tx.config)
 	tx.EntityTemplate = NewEntityTemplateClient(tx.config)
 	tx.EntityType = NewEntityTypeClient(tx.config)
 	tx.Export = NewExportClient(tx.config)

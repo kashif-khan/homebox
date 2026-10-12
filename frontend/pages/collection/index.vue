@@ -10,6 +10,7 @@
   import MdiBell from "~icons/mdi/bell";
   import MdiBellRing from "~icons/mdi/bell-ring";
   import MdiWebhook from "~icons/mdi/webhook";
+  import MdiTextSearch from "~icons/mdi/text-search";
   import MdiCog from "~icons/mdi/cog";
   import MdiShape from "~icons/mdi/shape";
   import MdiWrench from "~icons/mdi/wrench";
@@ -62,6 +63,12 @@
       label: "collection.tabs.webhooks",
       to: "/collection/webhooks",
       icon: MdiWebhook,
+    },
+    {
+      id: "lookups",
+      label: "collection.tabs.lookups",
+      to: "/collection/lookups",
+      icon: MdiTextSearch,
     },
     {
       id: "settings",

@@ -104,9 +104,11 @@ type EntityEdges struct {
 	MaintenanceEntries []*MaintenanceEntry `json:"maintenance_entries,omitempty"`
 	// Attachments holds the value of the attachments edge.
 	Attachments []*Attachment `json:"attachments,omitempty"`
+	// Lookups holds the value of the lookups edge.
+	Lookups []*EntityLookup `json:"lookups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [10]bool
+	loadedTypes [11]bool
 }
 
 // GroupOrErr returns the Group value or an error if the edge
@@ -205,6 +207,15 @@ func (e EntityEdges) AttachmentsOrErr() ([]*Attachment, error) {
 		return e.Attachments, nil
 	}
 	return nil, &NotLoadedError{edge: "attachments"}
+}
+
+// LookupsOrErr returns the Lookups value or an error if the edge
+// was not loaded in eager-loading.
+func (e EntityEdges) LookupsOrErr() ([]*EntityLookup, error) {
+	if e.loadedTypes[10] {
+		return e.Lookups, nil
+	}
+	return nil, &NotLoadedError{edge: "lookups"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -498,6 +509,11 @@ func (_m *Entity) QueryMaintenanceEntries() *MaintenanceEntryQuery {
 // QueryAttachments queries the "attachments" edge of the Entity entity.
 func (_m *Entity) QueryAttachments() *AttachmentQuery {
 	return NewEntityClient(_m.config).QueryAttachments(_m)
+}
+
+// QueryLookups queries the "lookups" edge of the Entity entity.
+func (_m *Entity) QueryLookups() *EntityLookupQuery {
+	return NewEntityClient(_m.config).QueryLookups(_m)
 }
 
 // Update returns a builder for updating this Entity.

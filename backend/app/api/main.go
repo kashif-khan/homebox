@@ -203,6 +203,7 @@ func run(cfg *config.Config) error {
 		services.WithMailer(&app.mailer),
 		services.WithBackupConfig(cfg.Backup),
 		services.WithWebhooks(cfg.Webhooks),
+		services.WithProductLookup(cfg.Barcode),
 	)
 
 	// Outbound webhooks hear about changes through the repositories and date

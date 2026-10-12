@@ -154,8 +154,9 @@
         {{ $t("collection.invite_token_warning") }}
       </div>
 
-      <div v-if="!allInvites.length" class="rounded-md border bg-card p-4 text-sm text-muted-foreground">
-        {{ $t("collection.no_invites") }}
+      <div v-if="!allInvites.length" class="space-y-1 rounded-md border bg-card p-4 text-sm text-muted-foreground">
+        <p class="font-medium text-foreground">{{ $t("collection.no_invites") }}</p>
+        <p>{{ $t("collection.no_invites_hint") }}</p>
       </div>
 
       <div v-else class="scroll-bg overflow-x-auto rounded-md border bg-card">

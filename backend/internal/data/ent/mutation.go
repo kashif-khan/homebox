@@ -19,6 +19,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/backupdestination"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entityfield"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitylookup"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytemplate"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytype"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/export"
@@ -40,6 +41,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/usergroup"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/webhookdelivery"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/webhookendpoint"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/types"
 )
 
 const (
@@ -58,6 +60,7 @@ const (
 	TypeBackupDestination    = "BackupDestination"
 	TypeEntity               = "Entity"
 	TypeEntityField          = "EntityField"
+	TypeEntityLookup         = "EntityLookup"
 	TypeEntityTemplate       = "EntityTemplate"
 	TypeEntityType           = "EntityType"
 	TypeExport               = "Export"
@@ -6092,6 +6095,9 @@ type EntityMutation struct {
 	attachments                 map[uuid.UUID]struct{}
 	removedattachments          map[uuid.UUID]struct{}
 	clearedattachments          bool
+	lookups                     map[uuid.UUID]struct{}
+	removedlookups              map[uuid.UUID]struct{}
+	clearedlookups              bool
 	done                        bool
 	oldValue                    func(context.Context) (*Entity, error)
 	predicates                  []predicate.Entity
@@ -7879,6 +7885,60 @@ func (m *EntityMutation) ResetAttachments() {
 	m.removedattachments = nil
 }
 
+// AddLookupIDs adds the "lookups" edge to the EntityLookup entity by ids.
+func (m *EntityMutation) AddLookupIDs(ids ...uuid.UUID) {
+	if m.lookups == nil {
+		m.lookups = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.lookups[ids[i]] = struct{}{}
+	}
+}
+
+// ClearLookups clears the "lookups" edge to the EntityLookup entity.
+func (m *EntityMutation) ClearLookups() {
+	m.clearedlookups = true
+}
+
+// LookupsCleared reports if the "lookups" edge to the EntityLookup entity was cleared.
+func (m *EntityMutation) LookupsCleared() bool {
+	return m.clearedlookups
+}
+
+// RemoveLookupIDs removes the "lookups" edge to the EntityLookup entity by IDs.
+func (m *EntityMutation) RemoveLookupIDs(ids ...uuid.UUID) {
+	if m.removedlookups == nil {
+		m.removedlookups = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.lookups, ids[i])
+		m.removedlookups[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedLookups returns the removed IDs of the "lookups" edge to the EntityLookup entity.
+func (m *EntityMutation) RemovedLookupsIDs() (ids []uuid.UUID) {
+	for id := range m.removedlookups {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// LookupsIDs returns the "lookups" edge IDs in the mutation.
+func (m *EntityMutation) LookupsIDs() (ids []uuid.UUID) {
+	for id := range m.lookups {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetLookups resets all changes to the "lookups" edge.
+func (m *EntityMutation) ResetLookups() {
+	m.lookups = nil
+	m.clearedlookups = false
+	m.removedlookups = nil
+}
+
 // Where appends a list predicates to the EntityMutation builder.
 func (m *EntityMutation) Where(ps ...predicate.Entity) {
 	m.predicates = append(m.predicates, ps...)
@@ -8575,7 +8635,7 @@ func (m *EntityMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *EntityMutation) AddedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 11)
 	if m.group != nil {
 		edges = append(edges, entity.EdgeGroup)
 	}
@@ -8605,6 +8665,9 @@ func (m *EntityMutation) AddedEdges() []string {
 	}
 	if m.attachments != nil {
 		edges = append(edges, entity.EdgeAttachments)
+	}
+	if m.lookups != nil {
+		edges = append(edges, entity.EdgeLookups)
 	}
 	return edges
 }
@@ -8665,13 +8728,19 @@ func (m *EntityMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case entity.EdgeLookups:
+		ids := make([]ent.Value, 0, len(m.lookups))
+		for id := range m.lookups {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *EntityMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 11)
 	if m.removedchildren != nil {
 		edges = append(edges, entity.EdgeChildren)
 	}
@@ -8689,6 +8758,9 @@ func (m *EntityMutation) RemovedEdges() []string {
 	}
 	if m.removedattachments != nil {
 		edges = append(edges, entity.EdgeAttachments)
+	}
+	if m.removedlookups != nil {
+		edges = append(edges, entity.EdgeLookups)
 	}
 	return edges
 }
@@ -8733,13 +8805,19 @@ func (m *EntityMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case entity.EdgeLookups:
+		ids := make([]ent.Value, 0, len(m.removedlookups))
+		for id := range m.removedlookups {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *EntityMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 11)
 	if m.clearedgroup {
 		edges = append(edges, entity.EdgeGroup)
 	}
@@ -8770,6 +8848,9 @@ func (m *EntityMutation) ClearedEdges() []string {
 	if m.clearedattachments {
 		edges = append(edges, entity.EdgeAttachments)
 	}
+	if m.clearedlookups {
+		edges = append(edges, entity.EdgeLookups)
+	}
 	return edges
 }
 
@@ -8797,6 +8878,8 @@ func (m *EntityMutation) EdgeCleared(name string) bool {
 		return m.clearedmaintenance_entries
 	case entity.EdgeAttachments:
 		return m.clearedattachments
+	case entity.EdgeLookups:
+		return m.clearedlookups
 	}
 	return false
 }
@@ -8854,6 +8937,9 @@ func (m *EntityMutation) ResetEdge(name string) error {
 		return nil
 	case entity.EdgeAttachments:
 		m.ResetAttachments()
+		return nil
+	case entity.EdgeLookups:
+		m.ResetLookups()
 		return nil
 	}
 	return fmt.Errorf("unknown Entity edge %s", name)
@@ -10090,6 +10176,945 @@ func (m *EntityFieldMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown EntityField edge %s", name)
+}
+
+// EntityLookupMutation represents an operation that mutates the EntityLookup nodes in the graph.
+type EntityLookupMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	created_at       *time.Time
+	updated_at       *time.Time
+	status           *entitylookup.Status
+	query            *string
+	candidates       *[]types.LookupCandidate
+	appendcandidates []types.LookupCandidate
+	error            *string
+	attempts         *int
+	addattempts      *int
+	clearedFields    map[string]struct{}
+	group            *uuid.UUID
+	clearedgroup     bool
+	entity           *uuid.UUID
+	clearedentity    bool
+	done             bool
+	oldValue         func(context.Context) (*EntityLookup, error)
+	predicates       []predicate.EntityLookup
+}
+
+var _ ent.Mutation = (*EntityLookupMutation)(nil)
+
+// entitylookupOption allows management of the mutation configuration using functional options.
+type entitylookupOption func(*EntityLookupMutation)
+
+// newEntityLookupMutation creates new mutation for the EntityLookup entity.
+func newEntityLookupMutation(c config, op Op, opts ...entitylookupOption) *EntityLookupMutation {
+	m := &EntityLookupMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeEntityLookup,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withEntityLookupID sets the ID field of the mutation.
+func withEntityLookupID(id uuid.UUID) entitylookupOption {
+	return func(m *EntityLookupMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *EntityLookup
+		)
+		m.oldValue = func(ctx context.Context) (*EntityLookup, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().EntityLookup.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withEntityLookup sets the old EntityLookup of the mutation.
+func withEntityLookup(node *EntityLookup) entitylookupOption {
+	return func(m *EntityLookupMutation) {
+		m.oldValue = func(context.Context) (*EntityLookup, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m EntityLookupMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m EntityLookupMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of EntityLookup entities.
+func (m *EntityLookupMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *EntityLookupMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *EntityLookupMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().EntityLookup.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *EntityLookupMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *EntityLookupMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the EntityLookup entity.
+// If the EntityLookup object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityLookupMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *EntityLookupMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *EntityLookupMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *EntityLookupMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the EntityLookup entity.
+// If the EntityLookup object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityLookupMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *EntityLookupMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetGroupID sets the "group_id" field.
+func (m *EntityLookupMutation) SetGroupID(u uuid.UUID) {
+	m.group = &u
+}
+
+// GroupID returns the value of the "group_id" field in the mutation.
+func (m *EntityLookupMutation) GroupID() (r uuid.UUID, exists bool) {
+	v := m.group
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGroupID returns the old "group_id" field's value of the EntityLookup entity.
+// If the EntityLookup object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityLookupMutation) OldGroupID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGroupID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGroupID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGroupID: %w", err)
+	}
+	return oldValue.GroupID, nil
+}
+
+// ResetGroupID resets all changes to the "group_id" field.
+func (m *EntityLookupMutation) ResetGroupID() {
+	m.group = nil
+}
+
+// SetEntityID sets the "entity_id" field.
+func (m *EntityLookupMutation) SetEntityID(u uuid.UUID) {
+	m.entity = &u
+}
+
+// EntityID returns the value of the "entity_id" field in the mutation.
+func (m *EntityLookupMutation) EntityID() (r uuid.UUID, exists bool) {
+	v := m.entity
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEntityID returns the old "entity_id" field's value of the EntityLookup entity.
+// If the EntityLookup object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityLookupMutation) OldEntityID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEntityID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEntityID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEntityID: %w", err)
+	}
+	return oldValue.EntityID, nil
+}
+
+// ResetEntityID resets all changes to the "entity_id" field.
+func (m *EntityLookupMutation) ResetEntityID() {
+	m.entity = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *EntityLookupMutation) SetStatus(e entitylookup.Status) {
+	m.status = &e
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *EntityLookupMutation) Status() (r entitylookup.Status, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the EntityLookup entity.
+// If the EntityLookup object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityLookupMutation) OldStatus(ctx context.Context) (v entitylookup.Status, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *EntityLookupMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetQuery sets the "query" field.
+func (m *EntityLookupMutation) SetQuery(s string) {
+	m.query = &s
+}
+
+// Query returns the value of the "query" field in the mutation.
+func (m *EntityLookupMutation) Query() (r string, exists bool) {
+	v := m.query
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldQuery returns the old "query" field's value of the EntityLookup entity.
+// If the EntityLookup object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityLookupMutation) OldQuery(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldQuery is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldQuery requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldQuery: %w", err)
+	}
+	return oldValue.Query, nil
+}
+
+// ResetQuery resets all changes to the "query" field.
+func (m *EntityLookupMutation) ResetQuery() {
+	m.query = nil
+}
+
+// SetCandidates sets the "candidates" field.
+func (m *EntityLookupMutation) SetCandidates(tc []types.LookupCandidate) {
+	m.candidates = &tc
+	m.appendcandidates = nil
+}
+
+// Candidates returns the value of the "candidates" field in the mutation.
+func (m *EntityLookupMutation) Candidates() (r []types.LookupCandidate, exists bool) {
+	v := m.candidates
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCandidates returns the old "candidates" field's value of the EntityLookup entity.
+// If the EntityLookup object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityLookupMutation) OldCandidates(ctx context.Context) (v []types.LookupCandidate, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCandidates is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCandidates requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCandidates: %w", err)
+	}
+	return oldValue.Candidates, nil
+}
+
+// AppendCandidates adds tc to the "candidates" field.
+func (m *EntityLookupMutation) AppendCandidates(tc []types.LookupCandidate) {
+	m.appendcandidates = append(m.appendcandidates, tc...)
+}
+
+// AppendedCandidates returns the list of values that were appended to the "candidates" field in this mutation.
+func (m *EntityLookupMutation) AppendedCandidates() ([]types.LookupCandidate, bool) {
+	if len(m.appendcandidates) == 0 {
+		return nil, false
+	}
+	return m.appendcandidates, true
+}
+
+// ClearCandidates clears the value of the "candidates" field.
+func (m *EntityLookupMutation) ClearCandidates() {
+	m.candidates = nil
+	m.appendcandidates = nil
+	m.clearedFields[entitylookup.FieldCandidates] = struct{}{}
+}
+
+// CandidatesCleared returns if the "candidates" field was cleared in this mutation.
+func (m *EntityLookupMutation) CandidatesCleared() bool {
+	_, ok := m.clearedFields[entitylookup.FieldCandidates]
+	return ok
+}
+
+// ResetCandidates resets all changes to the "candidates" field.
+func (m *EntityLookupMutation) ResetCandidates() {
+	m.candidates = nil
+	m.appendcandidates = nil
+	delete(m.clearedFields, entitylookup.FieldCandidates)
+}
+
+// SetError sets the "error" field.
+func (m *EntityLookupMutation) SetError(s string) {
+	m.error = &s
+}
+
+// Error returns the value of the "error" field in the mutation.
+func (m *EntityLookupMutation) Error() (r string, exists bool) {
+	v := m.error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldError returns the old "error" field's value of the EntityLookup entity.
+// If the EntityLookup object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityLookupMutation) OldError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldError: %w", err)
+	}
+	return oldValue.Error, nil
+}
+
+// ResetError resets all changes to the "error" field.
+func (m *EntityLookupMutation) ResetError() {
+	m.error = nil
+}
+
+// SetAttempts sets the "attempts" field.
+func (m *EntityLookupMutation) SetAttempts(i int) {
+	m.attempts = &i
+	m.addattempts = nil
+}
+
+// Attempts returns the value of the "attempts" field in the mutation.
+func (m *EntityLookupMutation) Attempts() (r int, exists bool) {
+	v := m.attempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAttempts returns the old "attempts" field's value of the EntityLookup entity.
+// If the EntityLookup object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityLookupMutation) OldAttempts(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAttempts is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAttempts requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAttempts: %w", err)
+	}
+	return oldValue.Attempts, nil
+}
+
+// AddAttempts adds i to the "attempts" field.
+func (m *EntityLookupMutation) AddAttempts(i int) {
+	if m.addattempts != nil {
+		*m.addattempts += i
+	} else {
+		m.addattempts = &i
+	}
+}
+
+// AddedAttempts returns the value that was added to the "attempts" field in this mutation.
+func (m *EntityLookupMutation) AddedAttempts() (r int, exists bool) {
+	v := m.addattempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAttempts resets all changes to the "attempts" field.
+func (m *EntityLookupMutation) ResetAttempts() {
+	m.attempts = nil
+	m.addattempts = nil
+}
+
+// ClearGroup clears the "group" edge to the Group entity.
+func (m *EntityLookupMutation) ClearGroup() {
+	m.clearedgroup = true
+	m.clearedFields[entitylookup.FieldGroupID] = struct{}{}
+}
+
+// GroupCleared reports if the "group" edge to the Group entity was cleared.
+func (m *EntityLookupMutation) GroupCleared() bool {
+	return m.clearedgroup
+}
+
+// GroupIDs returns the "group" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// GroupID instead. It exists only for internal usage by the builders.
+func (m *EntityLookupMutation) GroupIDs() (ids []uuid.UUID) {
+	if id := m.group; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetGroup resets all changes to the "group" edge.
+func (m *EntityLookupMutation) ResetGroup() {
+	m.group = nil
+	m.clearedgroup = false
+}
+
+// ClearEntity clears the "entity" edge to the Entity entity.
+func (m *EntityLookupMutation) ClearEntity() {
+	m.clearedentity = true
+	m.clearedFields[entitylookup.FieldEntityID] = struct{}{}
+}
+
+// EntityCleared reports if the "entity" edge to the Entity entity was cleared.
+func (m *EntityLookupMutation) EntityCleared() bool {
+	return m.clearedentity
+}
+
+// EntityIDs returns the "entity" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// EntityID instead. It exists only for internal usage by the builders.
+func (m *EntityLookupMutation) EntityIDs() (ids []uuid.UUID) {
+	if id := m.entity; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetEntity resets all changes to the "entity" edge.
+func (m *EntityLookupMutation) ResetEntity() {
+	m.entity = nil
+	m.clearedentity = false
+}
+
+// Where appends a list predicates to the EntityLookupMutation builder.
+func (m *EntityLookupMutation) Where(ps ...predicate.EntityLookup) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the EntityLookupMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *EntityLookupMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.EntityLookup, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *EntityLookupMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *EntityLookupMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (EntityLookup).
+func (m *EntityLookupMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *EntityLookupMutation) Fields() []string {
+	fields := make([]string, 0, 9)
+	if m.created_at != nil {
+		fields = append(fields, entitylookup.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, entitylookup.FieldUpdatedAt)
+	}
+	if m.group != nil {
+		fields = append(fields, entitylookup.FieldGroupID)
+	}
+	if m.entity != nil {
+		fields = append(fields, entitylookup.FieldEntityID)
+	}
+	if m.status != nil {
+		fields = append(fields, entitylookup.FieldStatus)
+	}
+	if m.query != nil {
+		fields = append(fields, entitylookup.FieldQuery)
+	}
+	if m.candidates != nil {
+		fields = append(fields, entitylookup.FieldCandidates)
+	}
+	if m.error != nil {
+		fields = append(fields, entitylookup.FieldError)
+	}
+	if m.attempts != nil {
+		fields = append(fields, entitylookup.FieldAttempts)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *EntityLookupMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case entitylookup.FieldCreatedAt:
+		return m.CreatedAt()
+	case entitylookup.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case entitylookup.FieldGroupID:
+		return m.GroupID()
+	case entitylookup.FieldEntityID:
+		return m.EntityID()
+	case entitylookup.FieldStatus:
+		return m.Status()
+	case entitylookup.FieldQuery:
+		return m.Query()
+	case entitylookup.FieldCandidates:
+		return m.Candidates()
+	case entitylookup.FieldError:
+		return m.Error()
+	case entitylookup.FieldAttempts:
+		return m.Attempts()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *EntityLookupMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case entitylookup.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case entitylookup.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case entitylookup.FieldGroupID:
+		return m.OldGroupID(ctx)
+	case entitylookup.FieldEntityID:
+		return m.OldEntityID(ctx)
+	case entitylookup.FieldStatus:
+		return m.OldStatus(ctx)
+	case entitylookup.FieldQuery:
+		return m.OldQuery(ctx)
+	case entitylookup.FieldCandidates:
+		return m.OldCandidates(ctx)
+	case entitylookup.FieldError:
+		return m.OldError(ctx)
+	case entitylookup.FieldAttempts:
+		return m.OldAttempts(ctx)
+	}
+	return nil, fmt.Errorf("unknown EntityLookup field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *EntityLookupMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case entitylookup.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case entitylookup.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case entitylookup.FieldGroupID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGroupID(v)
+		return nil
+	case entitylookup.FieldEntityID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEntityID(v)
+		return nil
+	case entitylookup.FieldStatus:
+		v, ok := value.(entitylookup.Status)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case entitylookup.FieldQuery:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetQuery(v)
+		return nil
+	case entitylookup.FieldCandidates:
+		v, ok := value.([]types.LookupCandidate)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCandidates(v)
+		return nil
+	case entitylookup.FieldError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetError(v)
+		return nil
+	case entitylookup.FieldAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAttempts(v)
+		return nil
+	}
+	return fmt.Errorf("unknown EntityLookup field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *EntityLookupMutation) AddedFields() []string {
+	var fields []string
+	if m.addattempts != nil {
+		fields = append(fields, entitylookup.FieldAttempts)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *EntityLookupMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case entitylookup.FieldAttempts:
+		return m.AddedAttempts()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *EntityLookupMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case entitylookup.FieldAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAttempts(v)
+		return nil
+	}
+	return fmt.Errorf("unknown EntityLookup numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *EntityLookupMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(entitylookup.FieldCandidates) {
+		fields = append(fields, entitylookup.FieldCandidates)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *EntityLookupMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *EntityLookupMutation) ClearField(name string) error {
+	switch name {
+	case entitylookup.FieldCandidates:
+		m.ClearCandidates()
+		return nil
+	}
+	return fmt.Errorf("unknown EntityLookup nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *EntityLookupMutation) ResetField(name string) error {
+	switch name {
+	case entitylookup.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case entitylookup.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case entitylookup.FieldGroupID:
+		m.ResetGroupID()
+		return nil
+	case entitylookup.FieldEntityID:
+		m.ResetEntityID()
+		return nil
+	case entitylookup.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case entitylookup.FieldQuery:
+		m.ResetQuery()
+		return nil
+	case entitylookup.FieldCandidates:
+		m.ResetCandidates()
+		return nil
+	case entitylookup.FieldError:
+		m.ResetError()
+		return nil
+	case entitylookup.FieldAttempts:
+		m.ResetAttempts()
+		return nil
+	}
+	return fmt.Errorf("unknown EntityLookup field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *EntityLookupMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.group != nil {
+		edges = append(edges, entitylookup.EdgeGroup)
+	}
+	if m.entity != nil {
+		edges = append(edges, entitylookup.EdgeEntity)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *EntityLookupMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case entitylookup.EdgeGroup:
+		if id := m.group; id != nil {
+			return []ent.Value{*id}
+		}
+	case entitylookup.EdgeEntity:
+		if id := m.entity; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *EntityLookupMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *EntityLookupMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *EntityLookupMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedgroup {
+		edges = append(edges, entitylookup.EdgeGroup)
+	}
+	if m.clearedentity {
+		edges = append(edges, entitylookup.EdgeEntity)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *EntityLookupMutation) EdgeCleared(name string) bool {
+	switch name {
+	case entitylookup.EdgeGroup:
+		return m.clearedgroup
+	case entitylookup.EdgeEntity:
+		return m.clearedentity
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *EntityLookupMutation) ClearEdge(name string) error {
+	switch name {
+	case entitylookup.EdgeGroup:
+		m.ClearGroup()
+		return nil
+	case entitylookup.EdgeEntity:
+		m.ClearEntity()
+		return nil
+	}
+	return fmt.Errorf("unknown EntityLookup unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *EntityLookupMutation) ResetEdge(name string) error {
+	switch name {
+	case entitylookup.EdgeGroup:
+		m.ResetGroup()
+		return nil
+	case entitylookup.EdgeEntity:
+		m.ResetEntity()
+		return nil
+	}
+	return fmt.Errorf("unknown EntityLookup edge %s", name)
 }
 
 // EntityTemplateMutation represents an operation that mutates the EntityTemplate nodes in the graph.
@@ -13900,6 +14925,9 @@ type GroupMutation struct {
 	addnotify_hour             *int
 	alert_rules_seeded         *bool
 	mcp_access                 *string
+	lookup_url                 *string
+	lookup_token               *string
+	lookup_auto                *bool
 	clearedFields              map[string]struct{}
 	users                      map[uuid.UUID]struct{}
 	removedusers               map[uuid.UUID]struct{}
@@ -13937,6 +14965,9 @@ type GroupMutation struct {
 	webhook_endpoints          map[uuid.UUID]struct{}
 	removedwebhook_endpoints   map[uuid.UUID]struct{}
 	clearedwebhook_endpoints   bool
+	entity_lookups             map[uuid.UUID]struct{}
+	removedentity_lookups      map[uuid.UUID]struct{}
+	clearedentity_lookups      bool
 	done                       bool
 	oldValue                   func(context.Context) (*Group, error)
 	predicates                 []predicate.Group
@@ -14352,6 +15383,114 @@ func (m *GroupMutation) OldMcpAccess(ctx context.Context) (v string, err error) 
 // ResetMcpAccess resets all changes to the "mcp_access" field.
 func (m *GroupMutation) ResetMcpAccess() {
 	m.mcp_access = nil
+}
+
+// SetLookupURL sets the "lookup_url" field.
+func (m *GroupMutation) SetLookupURL(s string) {
+	m.lookup_url = &s
+}
+
+// LookupURL returns the value of the "lookup_url" field in the mutation.
+func (m *GroupMutation) LookupURL() (r string, exists bool) {
+	v := m.lookup_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLookupURL returns the old "lookup_url" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldLookupURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLookupURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLookupURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLookupURL: %w", err)
+	}
+	return oldValue.LookupURL, nil
+}
+
+// ResetLookupURL resets all changes to the "lookup_url" field.
+func (m *GroupMutation) ResetLookupURL() {
+	m.lookup_url = nil
+}
+
+// SetLookupToken sets the "lookup_token" field.
+func (m *GroupMutation) SetLookupToken(s string) {
+	m.lookup_token = &s
+}
+
+// LookupToken returns the value of the "lookup_token" field in the mutation.
+func (m *GroupMutation) LookupToken() (r string, exists bool) {
+	v := m.lookup_token
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLookupToken returns the old "lookup_token" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldLookupToken(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLookupToken is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLookupToken requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLookupToken: %w", err)
+	}
+	return oldValue.LookupToken, nil
+}
+
+// ResetLookupToken resets all changes to the "lookup_token" field.
+func (m *GroupMutation) ResetLookupToken() {
+	m.lookup_token = nil
+}
+
+// SetLookupAuto sets the "lookup_auto" field.
+func (m *GroupMutation) SetLookupAuto(b bool) {
+	m.lookup_auto = &b
+}
+
+// LookupAuto returns the value of the "lookup_auto" field in the mutation.
+func (m *GroupMutation) LookupAuto() (r bool, exists bool) {
+	v := m.lookup_auto
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLookupAuto returns the old "lookup_auto" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldLookupAuto(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLookupAuto is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLookupAuto requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLookupAuto: %w", err)
+	}
+	return oldValue.LookupAuto, nil
+}
+
+// ResetLookupAuto resets all changes to the "lookup_auto" field.
+func (m *GroupMutation) ResetLookupAuto() {
+	m.lookup_auto = nil
 }
 
 // AddUserIDs adds the "users" edge to the User entity by ids.
@@ -15002,6 +16141,60 @@ func (m *GroupMutation) ResetWebhookEndpoints() {
 	m.removedwebhook_endpoints = nil
 }
 
+// AddEntityLookupIDs adds the "entity_lookups" edge to the EntityLookup entity by ids.
+func (m *GroupMutation) AddEntityLookupIDs(ids ...uuid.UUID) {
+	if m.entity_lookups == nil {
+		m.entity_lookups = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.entity_lookups[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEntityLookups clears the "entity_lookups" edge to the EntityLookup entity.
+func (m *GroupMutation) ClearEntityLookups() {
+	m.clearedentity_lookups = true
+}
+
+// EntityLookupsCleared reports if the "entity_lookups" edge to the EntityLookup entity was cleared.
+func (m *GroupMutation) EntityLookupsCleared() bool {
+	return m.clearedentity_lookups
+}
+
+// RemoveEntityLookupIDs removes the "entity_lookups" edge to the EntityLookup entity by IDs.
+func (m *GroupMutation) RemoveEntityLookupIDs(ids ...uuid.UUID) {
+	if m.removedentity_lookups == nil {
+		m.removedentity_lookups = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.entity_lookups, ids[i])
+		m.removedentity_lookups[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEntityLookups returns the removed IDs of the "entity_lookups" edge to the EntityLookup entity.
+func (m *GroupMutation) RemovedEntityLookupsIDs() (ids []uuid.UUID) {
+	for id := range m.removedentity_lookups {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EntityLookupsIDs returns the "entity_lookups" edge IDs in the mutation.
+func (m *GroupMutation) EntityLookupsIDs() (ids []uuid.UUID) {
+	for id := range m.entity_lookups {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEntityLookups resets all changes to the "entity_lookups" edge.
+func (m *GroupMutation) ResetEntityLookups() {
+	m.entity_lookups = nil
+	m.clearedentity_lookups = false
+	m.removedentity_lookups = nil
+}
+
 // Where appends a list predicates to the GroupMutation builder.
 func (m *GroupMutation) Where(ps ...predicate.Group) {
 	m.predicates = append(m.predicates, ps...)
@@ -15036,7 +16229,7 @@ func (m *GroupMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GroupMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, group.FieldCreatedAt)
 	}
@@ -15060,6 +16253,15 @@ func (m *GroupMutation) Fields() []string {
 	}
 	if m.mcp_access != nil {
 		fields = append(fields, group.FieldMcpAccess)
+	}
+	if m.lookup_url != nil {
+		fields = append(fields, group.FieldLookupURL)
+	}
+	if m.lookup_token != nil {
+		fields = append(fields, group.FieldLookupToken)
+	}
+	if m.lookup_auto != nil {
+		fields = append(fields, group.FieldLookupAuto)
 	}
 	return fields
 }
@@ -15085,6 +16287,12 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 		return m.AlertRulesSeeded()
 	case group.FieldMcpAccess:
 		return m.McpAccess()
+	case group.FieldLookupURL:
+		return m.LookupURL()
+	case group.FieldLookupToken:
+		return m.LookupToken()
+	case group.FieldLookupAuto:
+		return m.LookupAuto()
 	}
 	return nil, false
 }
@@ -15110,6 +16318,12 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldAlertRulesSeeded(ctx)
 	case group.FieldMcpAccess:
 		return m.OldMcpAccess(ctx)
+	case group.FieldLookupURL:
+		return m.OldLookupURL(ctx)
+	case group.FieldLookupToken:
+		return m.OldLookupToken(ctx)
+	case group.FieldLookupAuto:
+		return m.OldLookupAuto(ctx)
 	}
 	return nil, fmt.Errorf("unknown Group field %s", name)
 }
@@ -15174,6 +16388,27 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetMcpAccess(v)
+		return nil
+	case group.FieldLookupURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLookupURL(v)
+		return nil
+	case group.FieldLookupToken:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLookupToken(v)
+		return nil
+	case group.FieldLookupAuto:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLookupAuto(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Group field %s", name)
@@ -15263,13 +16498,22 @@ func (m *GroupMutation) ResetField(name string) error {
 	case group.FieldMcpAccess:
 		m.ResetMcpAccess()
 		return nil
+	case group.FieldLookupURL:
+		m.ResetLookupURL()
+		return nil
+	case group.FieldLookupToken:
+		m.ResetLookupToken()
+		return nil
+	case group.FieldLookupAuto:
+		m.ResetLookupAuto()
+		return nil
 	}
 	return fmt.Errorf("unknown Group field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *GroupMutation) AddedEdges() []string {
-	edges := make([]string, 0, 12)
+	edges := make([]string, 0, 13)
 	if m.users != nil {
 		edges = append(edges, group.EdgeUsers)
 	}
@@ -15305,6 +16549,9 @@ func (m *GroupMutation) AddedEdges() []string {
 	}
 	if m.webhook_endpoints != nil {
 		edges = append(edges, group.EdgeWebhookEndpoints)
+	}
+	if m.entity_lookups != nil {
+		edges = append(edges, group.EdgeEntityLookups)
 	}
 	return edges
 }
@@ -15385,13 +16632,19 @@ func (m *GroupMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case group.EdgeEntityLookups:
+		ids := make([]ent.Value, 0, len(m.entity_lookups))
+		for id := range m.entity_lookups {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *GroupMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 12)
+	edges := make([]string, 0, 13)
 	if m.removedusers != nil {
 		edges = append(edges, group.EdgeUsers)
 	}
@@ -15427,6 +16680,9 @@ func (m *GroupMutation) RemovedEdges() []string {
 	}
 	if m.removedwebhook_endpoints != nil {
 		edges = append(edges, group.EdgeWebhookEndpoints)
+	}
+	if m.removedentity_lookups != nil {
+		edges = append(edges, group.EdgeEntityLookups)
 	}
 	return edges
 }
@@ -15507,13 +16763,19 @@ func (m *GroupMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case group.EdgeEntityLookups:
+		ids := make([]ent.Value, 0, len(m.removedentity_lookups))
+		for id := range m.removedentity_lookups {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *GroupMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 12)
+	edges := make([]string, 0, 13)
 	if m.clearedusers {
 		edges = append(edges, group.EdgeUsers)
 	}
@@ -15550,6 +16812,9 @@ func (m *GroupMutation) ClearedEdges() []string {
 	if m.clearedwebhook_endpoints {
 		edges = append(edges, group.EdgeWebhookEndpoints)
 	}
+	if m.clearedentity_lookups {
+		edges = append(edges, group.EdgeEntityLookups)
+	}
 	return edges
 }
 
@@ -15581,6 +16846,8 @@ func (m *GroupMutation) EdgeCleared(name string) bool {
 		return m.clearednotification_rules
 	case group.EdgeWebhookEndpoints:
 		return m.clearedwebhook_endpoints
+	case group.EdgeEntityLookups:
+		return m.clearedentity_lookups
 	}
 	return false
 }
@@ -15632,6 +16899,9 @@ func (m *GroupMutation) ResetEdge(name string) error {
 		return nil
 	case group.EdgeWebhookEndpoints:
 		m.ResetWebhookEndpoints()
+		return nil
+	case group.EdgeEntityLookups:
+		m.ResetEntityLookups()
 		return nil
 	}
 	return fmt.Errorf("unknown Group edge %s", name)

@@ -413,7 +413,13 @@ func lookupOpenFacts(contact string, source openFactsSource, iEan string) ([]rep
 
 // fetchImageBase64 fetches an image from the given HTTPS URL and returns it as a base64-encoded data URI.
 func fetchImageBase64(imageURL string) (string, error) {
-	res, err := barcodeHTTPClient.Get(imageURL)
+	return fetchImageBase64With(barcodeHTTPClient, imageURL)
+}
+
+// fetchImageBase64With downloads an image through client, so callers handling
+// untrusted image URLs can pass a client that enforces the SSRF policy.
+func fetchImageBase64With(client *http.Client, imageURL string) (string, error) {
+	res, err := client.Get(imageURL)
 	if err != nil {
 		return "", err
 	}

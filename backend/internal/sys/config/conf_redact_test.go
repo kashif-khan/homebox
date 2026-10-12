@@ -102,6 +102,16 @@ func Test_BarcodeAPIConf_RedactsToken(t *testing.T) {
 	assert.Contains(t, string(out), sentinel)
 }
 
+func Test_BarcodeAPIConf_RedactsEnrichToken(t *testing.T) {
+	c := BarcodeAPIConf{EnrichURL: "http://barcode:8787", EnrichToken: "enrich-secret"}
+
+	out, err := json.Marshal(c)
+	require.NoError(t, err)
+
+	assert.NotContains(t, string(out), "enrich-secret")
+	assert.Contains(t, string(out), "http://barcode:8787")
+}
+
 func Test_OTelConfig_RedactsHeaders(t *testing.T) {
 	c := OTelConfig{Headers: "Authorization=Bearer hunter2,X-Other=val"}
 

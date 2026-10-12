@@ -31,6 +31,12 @@ const (
 	FieldAlertRulesSeeded = "alert_rules_seeded"
 	// FieldMcpAccess holds the string denoting the mcp_access field in the database.
 	FieldMcpAccess = "mcp_access"
+	// FieldLookupURL holds the string denoting the lookup_url field in the database.
+	FieldLookupURL = "lookup_url"
+	// FieldLookupToken holds the string denoting the lookup_token field in the database.
+	FieldLookupToken = "lookup_token"
+	// FieldLookupAuto holds the string denoting the lookup_auto field in the database.
+	FieldLookupAuto = "lookup_auto"
 	// EdgeUsers holds the string denoting the users edge name in mutations.
 	EdgeUsers = "users"
 	// EdgeEntityTypes holds the string denoting the entity_types edge name in mutations.
@@ -55,6 +61,8 @@ const (
 	EdgeNotificationRules = "notification_rules"
 	// EdgeWebhookEndpoints holds the string denoting the webhook_endpoints edge name in mutations.
 	EdgeWebhookEndpoints = "webhook_endpoints"
+	// EdgeEntityLookups holds the string denoting the entity_lookups edge name in mutations.
+	EdgeEntityLookups = "entity_lookups"
 	// EdgeUserGroups holds the string denoting the user_groups edge name in mutations.
 	EdgeUserGroups = "user_groups"
 	// Table holds the table name of the group in the database.
@@ -141,6 +149,13 @@ const (
 	WebhookEndpointsInverseTable = "webhook_endpoints"
 	// WebhookEndpointsColumn is the table column denoting the webhook_endpoints relation/edge.
 	WebhookEndpointsColumn = "group_id"
+	// EntityLookupsTable is the table that holds the entity_lookups relation/edge.
+	EntityLookupsTable = "entity_lookups"
+	// EntityLookupsInverseTable is the table name for the EntityLookup entity.
+	// It exists in this package in order to avoid circular dependency with the "entitylookup" package.
+	EntityLookupsInverseTable = "entity_lookups"
+	// EntityLookupsColumn is the table column denoting the entity_lookups relation/edge.
+	EntityLookupsColumn = "group_id"
 	// UserGroupsTable is the table that holds the user_groups relation/edge.
 	UserGroupsTable = "user_groups"
 	// UserGroupsInverseTable is the table name for the UserGroup entity.
@@ -161,6 +176,9 @@ var Columns = []string{
 	FieldNotifyHour,
 	FieldAlertRulesSeeded,
 	FieldMcpAccess,
+	FieldLookupURL,
+	FieldLookupToken,
+	FieldLookupAuto,
 }
 
 var (
@@ -200,6 +218,16 @@ var (
 	DefaultAlertRulesSeeded bool
 	// DefaultMcpAccess holds the default value on creation for the "mcp_access" field.
 	DefaultMcpAccess string
+	// DefaultLookupURL holds the default value on creation for the "lookup_url" field.
+	DefaultLookupURL string
+	// LookupURLValidator is a validator for the "lookup_url" field. It is called by the builders before save.
+	LookupURLValidator func(string) error
+	// DefaultLookupToken holds the default value on creation for the "lookup_token" field.
+	DefaultLookupToken string
+	// LookupTokenValidator is a validator for the "lookup_token" field. It is called by the builders before save.
+	LookupTokenValidator func(string) error
+	// DefaultLookupAuto holds the default value on creation for the "lookup_auto" field.
+	DefaultLookupAuto bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -250,6 +278,21 @@ func ByAlertRulesSeeded(opts ...sql.OrderTermOption) OrderOption {
 // ByMcpAccess orders the results by the mcp_access field.
 func ByMcpAccess(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMcpAccess, opts...).ToFunc()
+}
+
+// ByLookupURL orders the results by the lookup_url field.
+func ByLookupURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLookupURL, opts...).ToFunc()
+}
+
+// ByLookupToken orders the results by the lookup_token field.
+func ByLookupToken(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLookupToken, opts...).ToFunc()
+}
+
+// ByLookupAuto orders the results by the lookup_auto field.
+func ByLookupAuto(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLookupAuto, opts...).ToFunc()
 }
 
 // ByUsersCount orders the results by users count.
@@ -420,6 +463,20 @@ func ByWebhookEndpoints(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption 
 	}
 }
 
+// ByEntityLookupsCount orders the results by entity_lookups count.
+func ByEntityLookupsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newEntityLookupsStep(), opts...)
+	}
+}
+
+// ByEntityLookups orders the results by entity_lookups terms.
+func ByEntityLookups(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEntityLookupsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByUserGroupsCount orders the results by user_groups count.
 func ByUserGroupsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -515,6 +572,13 @@ func newWebhookEndpointsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(WebhookEndpointsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, WebhookEndpointsTable, WebhookEndpointsColumn),
+	)
+}
+func newEntityLookupsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EntityLookupsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, EntityLookupsTable, EntityLookupsColumn),
 	)
 }
 func newUserGroupsStep() *sqlgraph.Step {

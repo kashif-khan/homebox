@@ -5,4 +5,9 @@ export class ProductAPI extends BaseAPI {
   searchFromBarcode(productEAN: string) {
     return this.http.get<BarcodeProduct[]>({ url: route(`/products/search-from-barcode`, { productEAN }) });
   }
+
+  /** Slow web search through the configured scrapling-barcode service; a barcode or a product name. */
+  enrich(q: string) {
+    return this.http.get<BarcodeProduct[]>({ url: route(`/products/enrich`, { q }) });
+  }
 }

@@ -241,6 +241,18 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 		r.Put("/entities/{id}", chain.ToHandlerFunc(v1Ctrl.HandleEntityUpdate(), userMW...))
 		r.Patch("/entities/{id}", chain.ToHandlerFunc(v1Ctrl.HandleEntityPatch(), userMW...))
 		r.Delete("/entities/{id}", chain.ToHandlerFunc(v1Ctrl.HandleEntityDelete(), userMW...))
+		r.Get("/lookups", chain.ToHandlerFunc(v1Ctrl.HandleLookupActivity(), userMW...))
+		r.Delete("/lookups", chain.ToHandlerFunc(v1Ctrl.HandleLookupClear(), userMW...))
+		r.Post("/lookups/retry-failed", chain.ToHandlerFunc(v1Ctrl.HandleLookupRetryFailed(), userMW...))
+		// What the lookup service is, and filling gaps in bulk, are for the owner.
+		r.Get("/lookups/settings", chain.ToHandlerFunc(v1Ctrl.HandleLookupSettingsGet(), userMW...))
+		r.Put("/lookups/settings", chain.ToHandlerFunc(v1Ctrl.HandleLookupSettingsSet(), ownerMW...))
+		r.Post("/lookups/settings/test", chain.ToHandlerFunc(v1Ctrl.HandleLookupSettingsTest(), ownerMW...))
+		r.Post("/lookups/queue", chain.ToHandlerFunc(v1Ctrl.HandleLookupQueue(), ownerMW...))
+		r.Get("/entities/{id}/lookup", chain.ToHandlerFunc(v1Ctrl.HandleEntityLookupGet(), userMW...))
+		r.Post("/entities/{id}/lookup", chain.ToHandlerFunc(v1Ctrl.HandleEntityLookupRequest(), userMW...))
+		r.Post("/entities/{id}/lookup/apply", chain.ToHandlerFunc(v1Ctrl.HandleEntityLookupApply(), userMW...))
+		r.Delete("/entities/{id}/lookup", chain.ToHandlerFunc(v1Ctrl.HandleEntityLookupDismiss(), userMW...))
 		r.Post("/entities/{id}/duplicate", chain.ToHandlerFunc(v1Ctrl.HandleEntityDuplicate(), userMW...))
 
 		// Entity attachment endpoints
@@ -297,6 +309,9 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 		}
 
 		r.Get("/products/search-from-barcode", chain.ToHandlerFunc(v1Ctrl.HandleProductSearchFromBarcode(a.conf.Barcode), userMW...))
+		r.Get("/products/enrich", chain.ToHandlerFunc(v1Ctrl.HandleProductEnrich(a.conf.Barcode, &a.conf.Notifier), userMW...))
+
+		r.Get("/entities/{id}/lookup/image", chain.ToHandlerFunc(v1Ctrl.HandleEntityLookupImage(), assetMW...))
 
 		r.Get("/qrcode", chain.ToHandlerFunc(v1Ctrl.HandleGenerateQRCode(), assetMW...))
 		r.Get(

@@ -14,5 +14,9 @@ type BarcodeProduct struct {
 	ImageURL    string `json:"imageURL"`
 	ImageBase64 string `json:"imageBase64"`
 
+	// Set by the web enrichment lookup so the user can judge how far to trust a match.
+	Confidence float64 `json:"confidence,omitempty"`
+	SourceURL  string  `json:"sourceURL,omitempty"`
+
 	Item EntityCreate `json:"item"`
 }

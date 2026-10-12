@@ -34,6 +34,12 @@ type Group struct {
 	AlertRulesSeeded bool `json:"alert_rules_seeded,omitempty"`
 	// McpAccess holds the value of the "mcp_access" field.
 	McpAccess string `json:"mcp_access,omitempty"`
+	// LookupURL holds the value of the "lookup_url" field.
+	LookupURL string `json:"lookup_url,omitempty"`
+	// LookupToken holds the value of the "lookup_token" field.
+	LookupToken string `json:"-"`
+	// LookupAuto holds the value of the "lookup_auto" field.
+	LookupAuto bool `json:"lookup_auto,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GroupQuery when eager-loading is set.
 	Edges        GroupEdges `json:"edges"`
@@ -66,11 +72,13 @@ type GroupEdges struct {
 	NotificationRules []*NotificationRule `json:"notification_rules,omitempty"`
 	// WebhookEndpoints holds the value of the webhook_endpoints edge.
 	WebhookEndpoints []*WebhookEndpoint `json:"webhook_endpoints,omitempty"`
+	// EntityLookups holds the value of the entity_lookups edge.
+	EntityLookups []*EntityLookup `json:"entity_lookups,omitempty"`
 	// UserGroups holds the value of the user_groups edge.
 	UserGroups []*UserGroup `json:"user_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [13]bool
+	loadedTypes [14]bool
 }
 
 // UsersOrErr returns the Users value or an error if the edge
@@ -181,10 +189,19 @@ func (e GroupEdges) WebhookEndpointsOrErr() ([]*WebhookEndpoint, error) {
 	return nil, &NotLoadedError{edge: "webhook_endpoints"}
 }
 
+// EntityLookupsOrErr returns the EntityLookups value or an error if the edge
+// was not loaded in eager-loading.
+func (e GroupEdges) EntityLookupsOrErr() ([]*EntityLookup, error) {
+	if e.loadedTypes[12] {
+		return e.EntityLookups, nil
+	}
+	return nil, &NotLoadedError{edge: "entity_lookups"}
+}
+
 // UserGroupsOrErr returns the UserGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e GroupEdges) UserGroupsOrErr() ([]*UserGroup, error) {
-	if e.loadedTypes[12] {
+	if e.loadedTypes[13] {
 		return e.UserGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_groups"}
@@ -195,11 +212,11 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case group.FieldAlertRulesSeeded:
+		case group.FieldAlertRulesSeeded, group.FieldLookupAuto:
 			values[i] = new(sql.NullBool)
 		case group.FieldNotifyHour:
 			values[i] = new(sql.NullInt64)
-		case group.FieldName, group.FieldCurrency, group.FieldTimezone, group.FieldMcpAccess:
+		case group.FieldName, group.FieldCurrency, group.FieldTimezone, group.FieldMcpAccess, group.FieldLookupURL, group.FieldLookupToken:
 			values[i] = new(sql.NullString)
 		case group.FieldCreatedAt, group.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -274,6 +291,24 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.McpAccess = value.String
 			}
+		case group.FieldLookupURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field lookup_url", values[i])
+			} else if value.Valid {
+				_m.LookupURL = value.String
+			}
+		case group.FieldLookupToken:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field lookup_token", values[i])
+			} else if value.Valid {
+				_m.LookupToken = value.String
+			}
+		case group.FieldLookupAuto:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field lookup_auto", values[i])
+			} else if value.Valid {
+				_m.LookupAuto = value.Bool
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -347,6 +382,11 @@ func (_m *Group) QueryWebhookEndpoints() *WebhookEndpointQuery {
 	return NewGroupClient(_m.config).QueryWebhookEndpoints(_m)
 }
 
+// QueryEntityLookups queries the "entity_lookups" edge of the Group entity.
+func (_m *Group) QueryEntityLookups() *EntityLookupQuery {
+	return NewGroupClient(_m.config).QueryEntityLookups(_m)
+}
+
 // QueryUserGroups queries the "user_groups" edge of the Group entity.
 func (_m *Group) QueryUserGroups() *UserGroupQuery {
 	return NewGroupClient(_m.config).QueryUserGroups(_m)
@@ -398,6 +438,14 @@ func (_m *Group) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("mcp_access=")
 	builder.WriteString(_m.McpAccess)
+	builder.WriteString(", ")
+	builder.WriteString("lookup_url=")
+	builder.WriteString(_m.LookupURL)
+	builder.WriteString(", ")
+	builder.WriteString("lookup_token=<sensitive>")
+	builder.WriteString(", ")
+	builder.WriteString("lookup_auto=")
+	builder.WriteString(fmt.Sprintf("%v", _m.LookupAuto))
 	builder.WriteByte(')')
 	return builder.String()
 }

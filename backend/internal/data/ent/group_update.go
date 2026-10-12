@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/backupdestination"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitylookup"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytemplate"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytype"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/export"
@@ -134,6 +135,48 @@ func (_u *GroupUpdate) SetMcpAccess(v string) *GroupUpdate {
 func (_u *GroupUpdate) SetNillableMcpAccess(v *string) *GroupUpdate {
 	if v != nil {
 		_u.SetMcpAccess(*v)
+	}
+	return _u
+}
+
+// SetLookupURL sets the "lookup_url" field.
+func (_u *GroupUpdate) SetLookupURL(v string) *GroupUpdate {
+	_u.mutation.SetLookupURL(v)
+	return _u
+}
+
+// SetNillableLookupURL sets the "lookup_url" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableLookupURL(v *string) *GroupUpdate {
+	if v != nil {
+		_u.SetLookupURL(*v)
+	}
+	return _u
+}
+
+// SetLookupToken sets the "lookup_token" field.
+func (_u *GroupUpdate) SetLookupToken(v string) *GroupUpdate {
+	_u.mutation.SetLookupToken(v)
+	return _u
+}
+
+// SetNillableLookupToken sets the "lookup_token" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableLookupToken(v *string) *GroupUpdate {
+	if v != nil {
+		_u.SetLookupToken(*v)
+	}
+	return _u
+}
+
+// SetLookupAuto sets the "lookup_auto" field.
+func (_u *GroupUpdate) SetLookupAuto(v bool) *GroupUpdate {
+	_u.mutation.SetLookupAuto(v)
+	return _u
+}
+
+// SetNillableLookupAuto sets the "lookup_auto" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableLookupAuto(v *bool) *GroupUpdate {
+	if v != nil {
+		_u.SetLookupAuto(*v)
 	}
 	return _u
 }
@@ -316,6 +359,21 @@ func (_u *GroupUpdate) AddWebhookEndpoints(v ...*WebhookEndpoint) *GroupUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddWebhookEndpointIDs(ids...)
+}
+
+// AddEntityLookupIDs adds the "entity_lookups" edge to the EntityLookup entity by IDs.
+func (_u *GroupUpdate) AddEntityLookupIDs(ids ...uuid.UUID) *GroupUpdate {
+	_u.mutation.AddEntityLookupIDs(ids...)
+	return _u
+}
+
+// AddEntityLookups adds the "entity_lookups" edges to the EntityLookup entity.
+func (_u *GroupUpdate) AddEntityLookups(v ...*EntityLookup) *GroupUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEntityLookupIDs(ids...)
 }
 
 // Mutation returns the GroupMutation object of the builder.
@@ -575,6 +633,27 @@ func (_u *GroupUpdate) RemoveWebhookEndpoints(v ...*WebhookEndpoint) *GroupUpdat
 	return _u.RemoveWebhookEndpointIDs(ids...)
 }
 
+// ClearEntityLookups clears all "entity_lookups" edges to the EntityLookup entity.
+func (_u *GroupUpdate) ClearEntityLookups() *GroupUpdate {
+	_u.mutation.ClearEntityLookups()
+	return _u
+}
+
+// RemoveEntityLookupIDs removes the "entity_lookups" edge to EntityLookup entities by IDs.
+func (_u *GroupUpdate) RemoveEntityLookupIDs(ids ...uuid.UUID) *GroupUpdate {
+	_u.mutation.RemoveEntityLookupIDs(ids...)
+	return _u
+}
+
+// RemoveEntityLookups removes "entity_lookups" edges to EntityLookup entities.
+func (_u *GroupUpdate) RemoveEntityLookups(v ...*EntityLookup) *GroupUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEntityLookupIDs(ids...)
+}
+
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *GroupUpdate) Save(ctx context.Context) (int, error) {
 	_u.defaults()
@@ -623,6 +702,16 @@ func (_u *GroupUpdate) check() error {
 			return &ValidationError{Name: "timezone", err: fmt.Errorf(`ent: validator failed for field "Group.timezone": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.LookupURL(); ok {
+		if err := group.LookupURLValidator(v); err != nil {
+			return &ValidationError{Name: "lookup_url", err: fmt.Errorf(`ent: validator failed for field "Group.lookup_url": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.LookupToken(); ok {
+		if err := group.LookupTokenValidator(v); err != nil {
+			return &ValidationError{Name: "lookup_token", err: fmt.Errorf(`ent: validator failed for field "Group.lookup_token": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -661,6 +750,15 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.McpAccess(); ok {
 		_spec.SetField(group.FieldMcpAccess, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.LookupURL(); ok {
+		_spec.SetField(group.FieldLookupURL, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.LookupToken(); ok {
+		_spec.SetField(group.FieldLookupToken, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.LookupAuto(); ok {
+		_spec.SetField(group.FieldLookupAuto, field.TypeBool, value)
 	}
 	if _u.mutation.UsersCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1214,6 +1312,51 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.EntityLookupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.EntityLookupsTable,
+			Columns: []string{group.EntityLookupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitylookup.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEntityLookupsIDs(); len(nodes) > 0 && !_u.mutation.EntityLookupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.EntityLookupsTable,
+			Columns: []string{group.EntityLookupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitylookup.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EntityLookupsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.EntityLookupsTable,
+			Columns: []string{group.EntityLookupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitylookup.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{group.Label}
@@ -1327,6 +1470,48 @@ func (_u *GroupUpdateOne) SetMcpAccess(v string) *GroupUpdateOne {
 func (_u *GroupUpdateOne) SetNillableMcpAccess(v *string) *GroupUpdateOne {
 	if v != nil {
 		_u.SetMcpAccess(*v)
+	}
+	return _u
+}
+
+// SetLookupURL sets the "lookup_url" field.
+func (_u *GroupUpdateOne) SetLookupURL(v string) *GroupUpdateOne {
+	_u.mutation.SetLookupURL(v)
+	return _u
+}
+
+// SetNillableLookupURL sets the "lookup_url" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableLookupURL(v *string) *GroupUpdateOne {
+	if v != nil {
+		_u.SetLookupURL(*v)
+	}
+	return _u
+}
+
+// SetLookupToken sets the "lookup_token" field.
+func (_u *GroupUpdateOne) SetLookupToken(v string) *GroupUpdateOne {
+	_u.mutation.SetLookupToken(v)
+	return _u
+}
+
+// SetNillableLookupToken sets the "lookup_token" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableLookupToken(v *string) *GroupUpdateOne {
+	if v != nil {
+		_u.SetLookupToken(*v)
+	}
+	return _u
+}
+
+// SetLookupAuto sets the "lookup_auto" field.
+func (_u *GroupUpdateOne) SetLookupAuto(v bool) *GroupUpdateOne {
+	_u.mutation.SetLookupAuto(v)
+	return _u
+}
+
+// SetNillableLookupAuto sets the "lookup_auto" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableLookupAuto(v *bool) *GroupUpdateOne {
+	if v != nil {
+		_u.SetLookupAuto(*v)
 	}
 	return _u
 }
@@ -1509,6 +1694,21 @@ func (_u *GroupUpdateOne) AddWebhookEndpoints(v ...*WebhookEndpoint) *GroupUpdat
 		ids[i] = v[i].ID
 	}
 	return _u.AddWebhookEndpointIDs(ids...)
+}
+
+// AddEntityLookupIDs adds the "entity_lookups" edge to the EntityLookup entity by IDs.
+func (_u *GroupUpdateOne) AddEntityLookupIDs(ids ...uuid.UUID) *GroupUpdateOne {
+	_u.mutation.AddEntityLookupIDs(ids...)
+	return _u
+}
+
+// AddEntityLookups adds the "entity_lookups" edges to the EntityLookup entity.
+func (_u *GroupUpdateOne) AddEntityLookups(v ...*EntityLookup) *GroupUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEntityLookupIDs(ids...)
 }
 
 // Mutation returns the GroupMutation object of the builder.
@@ -1768,6 +1968,27 @@ func (_u *GroupUpdateOne) RemoveWebhookEndpoints(v ...*WebhookEndpoint) *GroupUp
 	return _u.RemoveWebhookEndpointIDs(ids...)
 }
 
+// ClearEntityLookups clears all "entity_lookups" edges to the EntityLookup entity.
+func (_u *GroupUpdateOne) ClearEntityLookups() *GroupUpdateOne {
+	_u.mutation.ClearEntityLookups()
+	return _u
+}
+
+// RemoveEntityLookupIDs removes the "entity_lookups" edge to EntityLookup entities by IDs.
+func (_u *GroupUpdateOne) RemoveEntityLookupIDs(ids ...uuid.UUID) *GroupUpdateOne {
+	_u.mutation.RemoveEntityLookupIDs(ids...)
+	return _u
+}
+
+// RemoveEntityLookups removes "entity_lookups" edges to EntityLookup entities.
+func (_u *GroupUpdateOne) RemoveEntityLookups(v ...*EntityLookup) *GroupUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEntityLookupIDs(ids...)
+}
+
 // Where appends a list predicates to the GroupUpdate builder.
 func (_u *GroupUpdateOne) Where(ps ...predicate.Group) *GroupUpdateOne {
 	_u.mutation.Where(ps...)
@@ -1829,6 +2050,16 @@ func (_u *GroupUpdateOne) check() error {
 			return &ValidationError{Name: "timezone", err: fmt.Errorf(`ent: validator failed for field "Group.timezone": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.LookupURL(); ok {
+		if err := group.LookupURLValidator(v); err != nil {
+			return &ValidationError{Name: "lookup_url", err: fmt.Errorf(`ent: validator failed for field "Group.lookup_url": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.LookupToken(); ok {
+		if err := group.LookupTokenValidator(v); err != nil {
+			return &ValidationError{Name: "lookup_token", err: fmt.Errorf(`ent: validator failed for field "Group.lookup_token": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -1884,6 +2115,15 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if value, ok := _u.mutation.McpAccess(); ok {
 		_spec.SetField(group.FieldMcpAccess, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.LookupURL(); ok {
+		_spec.SetField(group.FieldLookupURL, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.LookupToken(); ok {
+		_spec.SetField(group.FieldLookupToken, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.LookupAuto(); ok {
+		_spec.SetField(group.FieldLookupAuto, field.TypeBool, value)
 	}
 	if _u.mutation.UsersCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -2430,6 +2670,51 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(webhookendpoint.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EntityLookupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.EntityLookupsTable,
+			Columns: []string{group.EntityLookupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitylookup.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEntityLookupsIDs(); len(nodes) > 0 && !_u.mutation.EntityLookupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.EntityLookupsTable,
+			Columns: []string{group.EntityLookupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitylookup.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EntityLookupsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.EntityLookupsTable,
+			Columns: []string{group.EntityLookupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitylookup.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

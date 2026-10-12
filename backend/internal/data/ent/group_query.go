@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/backupdestination"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitylookup"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytemplate"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytype"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/export"
@@ -49,6 +50,7 @@ type GroupQuery struct {
 	withOauthGrants        *OAuthGrantQuery
 	withNotificationRules  *NotificationRuleQuery
 	withWebhookEndpoints   *WebhookEndpointQuery
+	withEntityLookups      *EntityLookupQuery
 	withUserGroups         *UserGroupQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -350,6 +352,28 @@ func (_q *GroupQuery) QueryWebhookEndpoints() *WebhookEndpointQuery {
 	return query
 }
 
+// QueryEntityLookups chains the current query on the "entity_lookups" edge.
+func (_q *GroupQuery) QueryEntityLookups() *EntityLookupQuery {
+	query := (&EntityLookupClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, selector),
+			sqlgraph.To(entitylookup.Table, entitylookup.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, group.EntityLookupsTable, group.EntityLookupsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryUserGroups chains the current query on the "user_groups" edge.
 func (_q *GroupQuery) QueryUserGroups() *UserGroupQuery {
 	query := (&UserGroupClient{config: _q.config}).Query()
@@ -576,6 +600,7 @@ func (_q *GroupQuery) Clone() *GroupQuery {
 		withOauthGrants:        _q.withOauthGrants.Clone(),
 		withNotificationRules:  _q.withNotificationRules.Clone(),
 		withWebhookEndpoints:   _q.withWebhookEndpoints.Clone(),
+		withEntityLookups:      _q.withEntityLookups.Clone(),
 		withUserGroups:         _q.withUserGroups.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -715,6 +740,17 @@ func (_q *GroupQuery) WithWebhookEndpoints(opts ...func(*WebhookEndpointQuery)) 
 	return _q
 }
 
+// WithEntityLookups tells the query-builder to eager-load the nodes that are connected to
+// the "entity_lookups" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *GroupQuery) WithEntityLookups(opts ...func(*EntityLookupQuery)) *GroupQuery {
+	query := (&EntityLookupClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withEntityLookups = query
+	return _q
+}
+
 // WithUserGroups tells the query-builder to eager-load the nodes that are connected to
 // the "user_groups" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *GroupQuery) WithUserGroups(opts ...func(*UserGroupQuery)) *GroupQuery {
@@ -804,7 +840,7 @@ func (_q *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 	var (
 		nodes       = []*Group{}
 		_spec       = _q.querySpec()
-		loadedTypes = [13]bool{
+		loadedTypes = [14]bool{
 			_q.withUsers != nil,
 			_q.withEntityTypes != nil,
 			_q.withEntities != nil,
@@ -817,6 +853,7 @@ func (_q *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 			_q.withOauthGrants != nil,
 			_q.withNotificationRules != nil,
 			_q.withWebhookEndpoints != nil,
+			_q.withEntityLookups != nil,
 			_q.withUserGroups != nil,
 		}
 	)
@@ -923,6 +960,13 @@ func (_q *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 		if err := _q.loadWebhookEndpoints(ctx, query, nodes,
 			func(n *Group) { n.Edges.WebhookEndpoints = []*WebhookEndpoint{} },
 			func(n *Group, e *WebhookEndpoint) { n.Edges.WebhookEndpoints = append(n.Edges.WebhookEndpoints, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withEntityLookups; query != nil {
+		if err := _q.loadEntityLookups(ctx, query, nodes,
+			func(n *Group) { n.Edges.EntityLookups = []*EntityLookup{} },
+			func(n *Group, e *EntityLookup) { n.Edges.EntityLookups = append(n.Edges.EntityLookups, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1318,6 +1362,36 @@ func (_q *GroupQuery) loadWebhookEndpoints(ctx context.Context, query *WebhookEn
 	}
 	query.Where(predicate.WebhookEndpoint(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(group.WebhookEndpointsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.GroupID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "group_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *GroupQuery) loadEntityLookups(ctx context.Context, query *EntityLookupQuery, nodes []*Group, init func(*Group), assign func(*Group, *EntityLookup)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Group)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(entitylookup.FieldGroupID)
+	}
+	query.Where(predicate.EntityLookup(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(group.EntityLookupsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

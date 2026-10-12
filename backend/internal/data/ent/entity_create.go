@@ -14,6 +14,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/attachment"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entityfield"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitylookup"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytype"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/group"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/maintenanceentry"
@@ -547,6 +548,21 @@ func (_c *EntityCreate) AddAttachments(v ...*Attachment) *EntityCreate {
 	return _c.AddAttachmentIDs(ids...)
 }
 
+// AddLookupIDs adds the "lookups" edge to the EntityLookup entity by IDs.
+func (_c *EntityCreate) AddLookupIDs(ids ...uuid.UUID) *EntityCreate {
+	_c.mutation.AddLookupIDs(ids...)
+	return _c
+}
+
+// AddLookups adds the "lookups" edges to the EntityLookup entity.
+func (_c *EntityCreate) AddLookups(v ...*EntityLookup) *EntityCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddLookupIDs(ids...)
+}
+
 // Mutation returns the EntityMutation object of the builder.
 func (_c *EntityCreate) Mutation() *EntityMutation {
 	return _c.mutation
@@ -1022,6 +1038,22 @@ func (_c *EntityCreate) createSpec() (*Entity, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(attachment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.LookupsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.LookupsTable,
+			Columns: []string{entity.LookupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitylookup.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
